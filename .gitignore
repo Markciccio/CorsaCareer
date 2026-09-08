@@ -1,0 +1,30 @@
+# --------------------------------------------------------------------------
+# Cosa non finisce nel repository.
+#
+# La regola generale: tutto quello che si rigenera compilando, e niente di
+# quello che serve a far funzionare il programma su un altro computer.
+# --------------------------------------------------------------------------
+
+# Output di compilazione: si rigenera con un build, e pesa quanto tutto il resto
+bin/
+obj/
+publish/
+
+# Anteprime di layout rese da tests/UiRender
+ui-preview/
+
+# Screenshot di verifica delle iterazioni di sviluppo.
+#
+# Le illustrazioni del gioco NON vanno escluse, e la regola precedente le
+# escludeva a metà: «!assets/*.png» riapriva solo il primo livello, quindi le
+# ventuno icone dell'interfaccia e i loghi delle squadre — che stanno nelle
+# sottocartelle e devono restare PNG per la trasparenza — sarebbero rimasti
+# fuori dal repository. Sull'altro computer il programma si sarebbe trovato
+# senza icone senza che nessuno capisse perché.
+*.png
+!assets/**
+!assets/**/*.png
+
+# Salvataggi e referti di prova prodotti girando
+debug-carriera/
+*.user

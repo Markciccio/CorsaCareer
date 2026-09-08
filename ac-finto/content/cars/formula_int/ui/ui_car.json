@@ -1,0 +1,15 @@
+{
+  "name": "Formula Internazionale",
+  "brand": "Veloce",
+  "class": "formula 2",
+  "tags": [
+    "formula 2"
+  ],
+  "specs": {
+    "power": "620 bhp",
+    "weight": "755 kg"
+  },
+  "power": "620",
+  "mass": "755 kg",
+  "year": 2021
+}

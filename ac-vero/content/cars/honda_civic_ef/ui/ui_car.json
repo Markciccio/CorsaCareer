@@ -1,0 +1,12 @@
+{
+  "name": "Honda Civic EF",
+  "brand": "Honda",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "160 bhp",
+    "weight": "950 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1989
+}

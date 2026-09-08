@@ -1,0 +1,15 @@
+{
+  "name": "Ayrton Senna DAP Kart",
+  "brand": "Ayrton",
+  "class": "race",
+  "tags": [
+    "Kart",
+    "singleseater"
+  ],
+  "specs": {
+    "bhp": "20 bhp",
+    "weight": "145 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2001
+}

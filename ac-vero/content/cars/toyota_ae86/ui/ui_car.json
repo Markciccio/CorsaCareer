@@ -1,0 +1,12 @@
+{
+  "name": "iDS 2022 Toyota Corolla Levin AE86",
+  "brand": "iDS",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "130 bhp",
+    "weight": "940 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1985
+}

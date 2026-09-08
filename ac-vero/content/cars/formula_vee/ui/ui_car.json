@@ -1,0 +1,14 @@
+{
+  "name": "Volkswagen Formula Vee",
+  "brand": "Volkswagen",
+  "class": "race",
+  "tags": [
+    "formula"
+  ],
+  "specs": {
+    "bhp": "45 bhp",
+    "weight": "400 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1999
+}

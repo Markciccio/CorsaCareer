@@ -1,0 +1,186 @@
+SKIP live race_out.json: nessuna gara reale conclusa nel momento del test
+OK qualification/grid fixture
+OK explicit player identity
+OK named player identity fallback
+OK race season identity persistence
+OK story cast memory persistence
+OK practice-only rejected for race import
+OK test telemetry without classification
+OK incomplete result rejected
+OK malformed classification rejected
+OK truncated result rejected safely
+OK Assetto Corsa result locator
+OK rookie evaluation from real facts
+OK content category scanner
+OK raceable category rule
+OK raceable availability
+OK content package install
+OK content package provenance
+OK verified download validation
+OK wrapped content package install
+OK unsafe content package rejected
+OK race import identity
+OK Content Manager preset validation
+OK Content Manager direct quick-drive launch command
+OK persistent AI identity
+OK narrative calendar
+OK career progression tier mapping
+OK mixed grid fallback
+OK photo source caption
+OK Assetto screenshot caption
+OK unverified photo provenance guard
+OK editorial asset caption
+OK media editorial sequences
+OK media sequence state persistence
+OK career livery persistence
+OK preferred voice persistence
+OK manual narration default
+OK voice catalog (3 italian voices)
+OK audio briefing factual guard
+OK classic narrative style
+OK paddock roster audio guard
+OK screenshot audio factual guard
+OK season audio context guard
+OK contract expiry audio guard
+OK audio test/race context guard
+OK non-race article factual guard
+OK newspaper race context guard
+OK dated race context resolution
+OK result integrity
+OK magazine race context guard
+OK sponsor progression rules
+OK collaudo di base (78 verifiche)
+OK content availability status
+OK normalizzazione lunghezza circuito
+OK distanza di gara dalla lunghezza reale (50 giri su 2 km, 5 su 20,8 km)
+OK profilo distanza (11 → 34 giri)
+OK fallback lunghezza circuito dichiarato
+OK meteo limitato ai contenuti installati
+OK meteo stagionale (nuvolosità media estate 24%, inverno 52,5%)
+OK condizioni deterministiche e variabili fra round
+OK orario e temperatura entro i limiti di Assetto Corsa
+OK livello e aggressività AI da categoria e profilo
+OK calibrazione AI solo da referti reali
+OK calibrazione AI limitata
+OK round di durata (20 → 50 giri)
+OK sessione di test senza gara né qualifica
+OK preset Content Manager coerente con il piano
+OK scansione lunghezza circuito, box e meteo installati
+OK metadati numerici in stringa e forme inattese non interrompono la scansione (3 auto rilevate)
+OK regolamento punti per categoria
+OK punti bonus da regolamento
+OK giro veloce solo dai tempi del referto
+OK reputazione per risultato (P1 +8, P2 +5, P6 +2, P12 -2, DNF -4)
+OK reputazione da aspettativa, compagno, qualifica e categoria
+OK reputazione limitata con rendimenti decrescenti
+OK premi per categoria, posizione e gruppo (P1 avanzata € 92.000)
+OK costi di riparazione e trasferta (danno 0,5 → € -22.500)
+OK premio finale da classifica (P1 € 480.000, P3 € 240.000, P10 € 48.000)
+OK promozione multi-fattore (stagione forte 86/100, debole 10/100)
+OK promozione bloccata da budget e stagione troppo corta
+OK categoria successiva solo dai contenuti installati
+OK bivio reale di fine stagione
+OK calendario stabile gara dopo gara
+OK inizio stagione successiva sempre in avanti
+OK ancora di calendario dedotta per i salvataggi precedenti
+OK obiettivo dalla lunghezza (kart 900 m 00:48.150, Monza 01:55.620, Nordschleife 08:09.148)
+OK stima entro il 12% dei tempi reali di riferimento
+OK obiettivo dal tipo di tracciato
+OK obiettivo dalla categoria (turismo 02:13.621, GT3 01:55.620, formula 01:29.258)
+OK correzione dal peso/potenza dichiarato, con limiti
+OK fallback dichiarato senza lunghezza del circuito
+OK tempo reale prevale sulla stima (riferimento 1:48.000 → obiettivo 01:55.560)
+OK esito relativo al riferimento (5% di scarto → 85/100 su entrambe le piste)
+OK referto senza tempo utilizzabile gestito
+OK l'articolo usa il nome reale del pilota
+OK articoli non ripetitivi (10/10 corpi, 10/10 titoli, 8/10 aperture distinti)
+OK lo stesso evento riaperto resta identico
+OK memoria anti-ripetizione attiva (36 formulazioni ricordate, 3/6 articoli variati)
+OK profondità dal peso della notizia (anonimo 28 → 2 blocchi, prima vittoria 98 → 6)
+OK pagella dal risultato reale (vittoria 10/10, ultimo 1/10)
+OK angolazioni scelte dai fatti (crisi: risultato, sponsor, economia, serie)
+OK un evento non-gara non cita numeri di gara
+OK continuità garantita (9/9 articoli, 8 citano il round precedente)
+OK memoria del cast citata nell'articolo di gara
+OK nessuna biografia inventata nel testo
+OK la scheda del weekend riporta solo dati registrati
+OK screenshot reale riconosciuto e documentato
+OK foto importata dall'utente dichiarata
+OK illustrazione AI usata ma sempre dichiarata come non documentaria
+OK immagine senza sidecar non viene presentata come documento
+SKIP asset del pacchetto non presente nella build di test
+OK assenza di fotografia dichiarata senza sostituzioni
+OK foto d'archivio recuperata ma dichiarata come sessione precedente
+OK voce predefinita Google italiano it-IT (ordine: Google italiano · Microsoft Cosimo · Microsoft Elsa Desktop · Voce italiana svizzera)
+OK velocità di lettura +10% (browser 0.97×, Windows +1%)
+OK data d'inizio 12/03/2023, dieci stagioni fino al 2035
+OK epoca narrativa derivata dall'anno del contenuto, con default moderno
+OK pulsante di ritorno al portale presente e degradabile
+OK decisioni obbligatorie dove dichiarate (6 attività con scelta)
+OK la scelta sposta rischio ed effetti (prudente 18%, esposta 38%)
+OK esiti distinti per scelta (3 combinazioni su 3 opzioni)
+OK la scelta è registrata, persistita e raccontata
+OK servizio dell'agenda generato (2 blocchi, angolazioni: agenda, conseguenze, sponsor, fuoripista)
+OK servizi dell'agenda sempre diversi (8/8)
+OK il servizio dell'agenda non cita numeri di gara
+OK prova abbandonata: tentativo consumato (-2 reputazione, -3 team)
+OK annullamento tecnico senza penalità ma sempre registrato
+OK gara abbandonata: round consumato, reputazione -6, trasferta € -18.000
+OK il costo dell'abbandono è dichiarato prima della scelta
+OK il racconto del ritiro non attribuisce nessuna posizione
+OK nessuna pagella e nessuna angolazione di gara (impatto 58, angolazioni: ritiro-weekend, costo-ritiro, economia, persone)
+OK la carriera apre con un solo appuntamento (Prova di valutazione · Circuito 01 · 12 marzo 2023)
+OK nessun round di campionato prima della firma
+OK l'esito decide il seguito (vicino → ConfirmationTest, lontano → EvaluationTest, superata → invito a gara)
+OK invito solo con valutazione almeno 65/100; risultati scarsi → test di recupero
+OK calendario per categoria su 20 circuiti (Rookie 6, top 12)
+OK calendario ruotato fra stagioni (10 round, 7 circuiti in comune)
+OK ogni appuntamento dichiara la propria causa (10 verificati)
+OK inserimento idempotente e chiusura degli appuntamenti
+OK diario datato in ordine inverso (6 voci, prima: martedì 14 maggio 2024)
+OK ogni voce apre il proprio articolo
+OK intervalli fra le voci (esempio: «un anno prima»)
+OK separatori di giornata corretti anche con più voci nello stesso giorno
+OK etichette di sezione distinte per tipo di fatto
+OK righe di contesto dai soli dati registrati (esempio: «Imola · P3 · 15 punti · 22 giri · sereno, 24 °C»)
+OK voci archiviate escluse e indici stabili
+OK catalogo attività per categoria (Rookie 14, avanzata 16)
+OK giorni e budget verificati prima di ogni attività
+OK esito deterministico e variabile fra momenti diversi
+OK la stanchezza aumenta il rischio e riduce i guadagni
+OK rendimento decrescente sulla ripetizione (3/10 esiti negativi)
+OK riposo e preparazione recuperano la condizione
+OK costi e compensi applicati (coaching € -9.000, istruttore € 6.000)
+OK nessuna attività può influenzare un risultato di gara
+OK il referto disponibile ha sempre la precedenza
+OK sessione in corso riconosciuta e ricordata
+OK avvio lento tollerato per 3 minuti
+OK «mai avviato» distinto da «chiuso senza referto»
+OK chiusura del simulatore senza referto rilevata
+OK riapertura della sessione riarma la sorveglianza
+OK sequenza completa di una sessione reale (simulatore ora in esecuzione: False)
+OK denaro come vincolo reale (inizio € 900, soglia € 250)
+OK rischio dichiarato prima della scelta (18.000 su 35.000 → alto)
+OK reputazione su 6 dimensioni indipendenti
+OK dimensioni reattive a fatti diversi (stampa: vettura debole +13, forte +0)
+OK proposte derivate dallo stato (sconosciuto 3, affermato 6)
+OK la fiducia decide chi paga il test (senza fiducia € 4.000, con fiducia € 0)
+OK rifiutare pesa solo dove deve (contratto 60→54, pagante invariato)
+OK promesse condizionali verificate sui risultati reali
+OK le occasioni non colte scadono e si perdono
+OK in difficoltà arrivano solo occasioni per ricostruire (Proposta di sponsorizzazione, Evento promozionale, Gara di categoria minore)
+OK scenario completo: rifiuto per rischio → 2 vittorie → stampa 18→33 → sponsor € 33.400 → test accessibile (basso)
+OK risultato simulato (327 verifiche)
+OK fasi della carriera (90 verifiche)
+OK scala della carriera (26 verifiche)
+OK transizioni fra le schermate (206 verifiche)
+OK illustrazioni coerenti (44 verifiche)
+OK mezzi nelle illustrazioni (50 verifiche)
+OK dalla firma alla gara (42 verifiche)
+OK colonna sonora (10 verifiche)
+OK ricerca sponsor (158 verifiche)
+OK cassa della carriera (47 verifiche)
+OK giornata del pilota (158 verifiche)
+OK corri o salti (20 verifiche)
+OK tavole delle scene (103 verifiche)
+OK opportunity flow

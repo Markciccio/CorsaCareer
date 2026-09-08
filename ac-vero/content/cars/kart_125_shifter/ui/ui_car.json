@@ -1,0 +1,17 @@
+{
+  "name": "Kart 125 Shifter",
+  "brand": "Kart",
+  "class": "race",
+  "tags": [
+    "rwd",
+    "kart",
+    "race",
+    "petrol"
+  ],
+  "specs": {
+    "bhp": "42 bhp",
+    "weight": "74 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2004
+}

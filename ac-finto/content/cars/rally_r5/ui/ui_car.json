@@ -1,0 +1,15 @@
+{
+  "name": "Rally Nazionale R5",
+  "brand": "Bianchi",
+  "class": "rally",
+  "tags": [
+    "rally"
+  ],
+  "specs": {
+    "power": "300 bhp",
+    "weight": "1230 kg"
+  },
+  "power": "300",
+  "mass": "1230 kg",
+  "year": 2021
+}

@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Banco di prova della carriera.
+
+    Compila i sorgenti di produzione — gli stessi file, non una copia — e li
+    percorre come farebbe un giocatore: test di valutazione, gare, offerte,
+    opportunità, attività quotidiane, fine stagione. Nessun motore viene
+    riscritto qui: se la carriera si blocca, si blocca nel programma vero.
+
+    L'unica cosa che questo progetto aggiunge è un punto d'ingresso da riga di
+    comando e una parte di MainForm (stessa classe, altro file) che può quindi
+    chiamare i metodi privati del portale senza aprire nessuna finestra.
+  -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>CareerSim</AssemblyName>
+    <StartupObject>CorsaCareer1991.CareerSimEntry</StartupObject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\..\*.cs" />
+    <Compile Include="*.cs" />
+  </ItemGroup>
+
+</Project>

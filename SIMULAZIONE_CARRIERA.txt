@@ -1,0 +1,669 @@
+
+──────────────────────────────────────────────────────────────────────────────
+PUNTO DI PARTENZA
+──────────────────────────────────────────────────────────────────────────────
+Marco Ruga · 12 marzo 2023
+Patrimonio € 32.000 — SOSTENIBILE — categorie minori accessibili
+Reputazione: fiducia dei team 30 · interesse degli sponsor 25 · popolarità 10 · considerazione della stampa 15 · prestigio sportivo 20 · affidabilità 50
+Nessun contratto, nessun campionato, nessuno sponsor.
+
+──────────────────────────────────────────────────────────────────────────────
+12 MARZO 2023 · PATRIMONIO € 32.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 30 · interesse degli sponsor 25 · popolarità 10 · considerazione della stampa 15 · prestigio sportivo 20 · affidabilità 50
+
+Sul tavolo:
+  · Test privato a Cremona con Orion Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Orion Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Monza
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Le gare open accettano iscrizioni da chiunque abbia una licenza: è il modo più economico per accumulare referti.
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Monza»
+    Patrimonio attuale     € 32.000
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 29.500
+    Rischio economico      BASSO — impegna solo il 8% del patrimonio
+    → Pagati € 2.500 per «Gara open a Monza»
+
+  GARA a Binetto: P6 su 12 · 1 punti · premio € 6.000 · trasferta € -2.500
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+
+──────────────────────────────────────────────────────────────────────────────
+21 MARZO 2023 · PATRIMONIO € 33.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 32 · interesse degli sponsor 27 · popolarità 10 · considerazione della stampa 17 · prestigio sportivo 21 · affidabilità 51
+
+Sul tavolo:
+  · Test privato a Cremona con Orion Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Orion Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Cremona con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Monza
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Monza apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Vallelunga Squadra Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Vallelunga Squadra Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Monza»
+    Patrimonio attuale     € 33.000
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 30.500
+    Rischio economico      BASSO — impegna solo il 8% del patrimonio
+    → Pagati € 2.500 per «Gara open a Monza»
+
+  GARA a Imola: P8 su 12 · 0 punti · premio € 5.000 · trasferta € -2.500
+    → Reputazione: affidabilità +2
+    → Scaduta senza risposta: «Test privato a Cremona con Orion Motorsport» di Orion Motorsport
+
+──────────────────────────────────────────────────────────────────────────────
+30 MARZO 2023 · PATRIMONIO € 33.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 32 · interesse degli sponsor 27 · popolarità 10 · considerazione della stampa 17 · prestigio sportivo 21 · affidabilità 52
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Cremona con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Vallelunga Squadra Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Vallelunga Squadra Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Franciacorta con Bianchi Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Bianchi Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Mugello
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Mugello apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Meridian Race Team
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Meridian Race Team vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Mugello»
+    Patrimonio attuale     € 33.000
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 30.500
+    Rischio economico      BASSO — impegna solo il 8% del patrimonio
+    → Pagati € 2.500 per «Gara open a Mugello»
+
+  GARA a Varano: P10 su 12 · 0 punti · premio € 4.000 · trasferta € -2.500
+    → Reputazione: prestigio sportivo -2, considerazione della stampa -2, interesse degli sponsor -2, affidabilità +2
+    → Scaduta senza risposta: «Sedile Categoria regionale da finanziare con Delta Corse» di Delta Corse
+    → Scaduta senza risposta: «Test privato a Cremona con Apex Competition» di Apex Competition
+
+──────────────────────────────────────────────────────────────────────────────
+08 APRILE 2023 · PATRIMONIO € 32.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 32 · interesse degli sponsor 25 · popolarità 10 · considerazione della stampa 15 · prestigio sportivo 19 · affidabilità 53
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Vallelunga Squadra Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Vallelunga Squadra Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Franciacorta con Bianchi Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Bianchi Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Meridian Race Team
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Meridian Race Team vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Pergusa con Northline Racing
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Cremona
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Cremona apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Cremona»
+    Patrimonio attuale     € 32.000
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 29.500
+    Rischio economico      BASSO — impegna solo il 8% del patrimonio
+    → Pagati € 2.500 per «Gara open a Cremona»
+
+  GARA a Adria: P5 su 12 · 2 punti · premio € 7.000 · trasferta € -2.500
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta senza risposta: «Sedile Categoria regionale da finanziare con Vallelunga Squadra Corse» di Vallelunga Squadra Corse
+    → Scaduta senza risposta: «Test privato a Franciacorta con Bianchi Motorsport» di Bianchi Motorsport
+
+──────────────────────────────────────────────────────────────────────────────
+17 APRILE 2023 · PATRIMONIO € 34.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 34 · interesse degli sponsor 27 · popolarità 10 · considerazione della stampa 17 · prestigio sportivo 20 · affidabilità 54
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Meridian Race Team
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Meridian Race Team vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Pergusa con Northline Racing
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Misano con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Varano
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Varano apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Orion Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Orion Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Varano»
+    Patrimonio attuale     € 34.000
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 31.500
+    Rischio economico      BASSO — impegna solo il 7% del patrimonio
+    → Pagati € 2.500 per «Gara open a Varano»
+
+  GARA a Mugello: P9 su 12 · 0 punti · premio € 4.500 · trasferta € -2.500
+    → Reputazione: affidabilità +2
+    → Scaduta senza risposta: «Sedile Categoria regionale da finanziare con Meridian Race Team» di Meridian Race Team
+    → Scaduta senza risposta: «Test privato a Pergusa con Northline Racing» di Northline Racing
+
+──────────────────────────────────────────────────────────────────────────────
+26 APRILE 2023 · PATRIMONIO € 33.500
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 34 · interesse degli sponsor 27 · popolarità 10 · considerazione della stampa 17 · prestigio sportivo 20 · affidabilità 55
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Misano con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Orion Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Orion Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Vallelunga con Orion Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Orion Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Franciacorta
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Franciacorta apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Franciacorta»
+    Patrimonio attuale     € 33.500
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 31.000
+    Rischio economico      BASSO — impegna solo il 7% del patrimonio
+    → Pagati € 2.500 per «Gara open a Franciacorta»
+
+  GARA a Imola: P5 su 12 · 2 punti · premio € 7.000 · trasferta € -2.500
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta senza risposta: «Sedile Categoria regionale da finanziare con Bianchi Motorsport» di Bianchi Motorsport
+    → Scaduta senza risposta: «Test privato a Misano con Apex Competition» di Apex Competition
+
+──────────────────────────────────────────────────────────────────────────────
+05 MAGGIO 2023 · PATRIMONIO € 35.500
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 36 · interesse degli sponsor 29 · popolarità 10 · considerazione della stampa 19 · prestigio sportivo 21 · affidabilità 56
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Orion Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Orion Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Vallelunga con Orion Motorsport
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Orion Motorsport affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Franciacorta con Northline Racing
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Mugello
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Mugello apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+DECISIONE: accetta «Gara open a Mugello»
+    Patrimonio attuale     € 35.500
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 33.000
+    Rischio economico      BASSO — impegna solo il 7% del patrimonio
+    → Pagati € 2.500 per «Gara open a Mugello»
+
+  GARA a Pergusa: P6 su 12 · 1 punti · premio € 6.000 · trasferta € -2.500
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta senza risposta: «Sedile Categoria regionale da finanziare con Orion Motorsport» di Orion Motorsport
+    → Scaduta senza risposta: «Test privato a Vallelunga con Orion Motorsport» di Orion Motorsport
+
+──────────────────────────────────────────────────────────────────────────────
+14 MAGGIO 2023 · PATRIMONIO € 36.500
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 38 · interesse degli sponsor 31 · popolarità 10 · considerazione della stampa 21 · prestigio sportivo 22 · affidabilità 57
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Franciacorta con Northline Racing
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio NON SOSTENIBILE
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Novara Logistica propone una sponsorizzazione
+    Proposta di sponsorizzazione · costo nessuno · rischio BASSO
+    Novara Logistica segue la categoria e valuta un pilota su cui investire; l'interesse verso Marco Ruga è a 31/100.
+  · Test privato a Cremona con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Monza
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Monza apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Novara Logistica propone una sponsorizzazione»
+    Patrimonio attuale     € 36.500
+    Costo dell'opportunità € 0
+    Guadagno possibile     € 28.600  (massimo € 28.600, minimo € 28.600)
+    Saldo nel caso peggiore € 65.100
+    Rischio economico      BASSO — nessun costo d'ingresso
+    → Incassati € 28.600 da Novara Logistica
+    → Novara Logistica diventa lo sponsor del pilota
+    → impegno fuori dalla pista concluso
+
+──────────────────────────────────────────────────────────────────────────────
+24 MAGGIO 2023 · PATRIMONIO € 65.100
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 38 · interesse degli sponsor 31 · popolarità 10 · considerazione della stampa 21 · prestigio sportivo 22 · affidabilità 57
+
+Sul tavolo:
+  · Sedile Categoria regionale da finanziare con Delta Corse
+    Sedile da finanziare · costo € 60.000 · rischio PROIBITIVO
+    Nessun team sta investendo su Marco Ruga: Delta Corse vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Franciacorta con Northline Racing
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Bianchi Motorsport
+    Sedile da finanziare · costo € 60.000 · rischio PROIBITIVO
+    Nessun team sta investendo su Marco Ruga: Bianchi Motorsport vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Test privato a Cremona con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Monza
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Monza apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+  · Sedile Categoria regionale da finanziare con Apex Competition
+    Sedile da finanziare · costo € 60.000 · rischio PROIBITIVO
+    Nessun team sta investendo su Marco Ruga: Apex Competition vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+
+RIFIUTATA: Sedile Categoria regionale da finanziare con Delta Corse — proibitivo
+    → Proposta «Sedile Categoria regionale da finanziare con Delta Corse» rifiutata: nessuna conseguenza sui rapporti
+
+RIFIUTATA: Sedile Categoria regionale da finanziare con Bianchi Motorsport — proibitivo
+    → Proposta «Sedile Categoria regionale da finanziare con Bianchi Motorsport» rifiutata: nessuna conseguenza sui rapporti
+
+RIFIUTATA: Sedile Categoria regionale da finanziare con Apex Competition — proibitivo
+    → Proposta «Sedile Categoria regionale da finanziare con Apex Competition» rifiutata: nessuna conseguenza sui rapporti
+
+DECISIONE: accetta «Gara open a Monza»
+    Patrimonio attuale     € 65.100
+    Costo dell'opportunità € 2.500
+    Guadagno possibile     € 4.000  (massimo € 10.000, minimo € 0)
+    Saldo nel caso peggiore € 62.600
+    Rischio economico      BASSO — impegna solo il 4% del patrimonio
+    → Pagati € 2.500 per «Gara open a Monza»
+
+  GARA a Pergusa: P6 su 12 · 1 punti · premio € 6.000 · trasferta € -2.500
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta senza risposta: «Test privato a Franciacorta con Northline Racing» di Northline Racing
+
+──────────────────────────────────────────────────────────────────────────────
+23 MAGGIO 2023 · PATRIMONIO € 66.100
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 40 · interesse degli sponsor 33 · popolarità 10 · considerazione della stampa 23 · prestigio sportivo 23 · affidabilità 58
+
+Sul tavolo:
+  · Test privato a Cremona con Apex Competition
+    Test privato a pagamento · costo € 4.000 · rischio BASSO
+    Apex Competition affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Test privato a Vallelunga con Delta Corse
+    Test con costo coperto · costo € 2.400 · rischio BASSO
+    Delta Corse affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Sedile Categoria regionale da finanziare con Apex Competition
+    Sedile da finanziare · costo € 60.000 · rischio PROIBITIVO
+    Nessun team sta investendo su Marco Ruga: Apex Competition vende un sedile per l'intera stagione. Il conto è interamente del pilota.
+  · Gara open a Franciacorta
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Franciacorta apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+RIFIUTATA: Sedile Categoria regionale da finanziare con Apex Competition — proibitivo
+    → Proposta «Sedile Categoria regionale da finanziare con Apex Competition» rifiutata: nessuna conseguenza sui rapporti
+
+DECISIONE: accetta «Test privato a Vallelunga con Delta Corse»
+    Patrimonio attuale     € 66.100
+    Costo dell'opportunità € 2.400
+    Guadagno possibile     € 0  (massimo € 0, minimo € 0)
+    Saldo nel caso peggiore € 63.700
+    Rischio economico      BASSO — impegna solo il 4% del patrimonio
+    → Pagati € 2.400 per «Test privato a Vallelunga con Delta Corse»
+    → Delta Corse ha coperto il 40% del costo (€ 1.600)
+    → Delta Corse: Delta Corse valuterebbe un sedile per la stagione successiva se riuscirai a chiudere entro il 30% del gruppo entro il 22 luglio 2023
+
+  PROVA a Vallelunga: riferimento centrato
+    → Reputazione: fiducia dei team +8, prestigio sportivo +4, considerazione della stampa +3
+    → Scaduta senza risposta: «Test privato a Cremona con Apex Competition» di Apex Competition
+    → Scaduta senza risposta: «Gara open a Franciacorta» di Organizzazione locale
+
+──────────────────────────────────────────────────────────────────────────────
+10 GIUGNO 2023 · PATRIMONIO € 63.700
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 46 · interesse degli sponsor 33 · popolarità 10 · considerazione della stampa 25 · prestigio sportivo 26 · affidabilità 58
+
+Sul tavolo:
+  · Sedile Categoria regionale con Orion Motorsport, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 34.200 · rischio ALTO
+    Orion Motorsport è disposta a coprire il 43% della stagione: la fiducia dei team è a 46/100 e il prestigio sportivo a 26/100.
+  · Test privato a Franciacorta con Northline Racing
+    Test con costo coperto · costo € 2.400 · rischio BASSO
+    Northline Racing affitta una giornata di test a piloti esterni. Nessuno sta investendo su Marco Ruga: il costo è tutto suo.
+  · Gara open a Mugello
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Mugello apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Sedile Categoria regionale con Orion Motorsport, stagione parzialmente finanziata»
+    Patrimonio attuale     € 63.700
+    Costo dell'opportunità € 34.200
+    Guadagno possibile     € 33.000  (massimo € 78.000, minimo € 0)
+    Saldo nel caso peggiore € 29.500
+    Rischio economico      ALTO — impegna il 54% del patrimonio
+    → Pagati € 34.200 per «Sedile Categoria regionale con Orion Motorsport, stagione parzialmente finanziata»
+    → Orion Motorsport ha coperto il 43% del costo (€ 25.800)
+    → Orion Motorsport: Orion Motorsport finanzierebbe interamente la stagione successiva se riuscirai a arrivare entro la posizione 3 entro il 05 febbraio 2024
+    → contratto con Orion Motorsport in Categoria regionale
+
+  GARA · round 1 a Mugello: P8 su 16 · 8 punti · premio € 12.000 · trasferta € -7.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta la promessa di Delta Corse: chiudere entro il 30% del gruppo non è stato raggiunto entro il termine
+    → Scaduta senza risposta: «Test privato a Franciacorta con Northline Racing» di Northline Racing
+    → Scaduta senza risposta: «Gara open a Mugello» di Organizzazione locale
+
+  GARA · round 2 a Pergusa: P7 su 16 · 9 punti · premio € 13.000 · trasferta € -7.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +3, affidabilità +2, prestigio sportivo +1
+
+  GARA · round 3 a Mugello: P5 su 16 · 11 punti · premio € 17.000 · trasferta € -7.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +5, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1, popolarità +1
+
+  GARA · round 4 a Pergusa: P6 su 16 · 10 punti · premio € 14.500 · trasferta € -7.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +4, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1, popolarità +1
+
+──────────────────────────────────────────────────────────────────────────────
+30 SETTEMBRE 2023 · PATRIMONIO € 58.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 65 · interesse degli sponsor 35 · popolarità 12 · considerazione della stampa 36 · prestigio sportivo 30 · affidabilità 62
+
+Sul tavolo:
+  · Sostituzione in Categoria avanzata a Varano
+    Sostituzione · costo nessuno · rischio BASSO
+    Un pilota di Meridian Race Team è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso Marco Ruga è a 65/100. Nessun costo richiesto.
+  · Test privato a Pergusa con Apex Competition
+    Test con costo coperto · costo € 2.700 · rischio BASSO
+    La fiducia dei team è salita a 65/100: Apex Competition apre le porte del proprio programma di test e copre il 70% del costo.
+  · Gara Categoria avanzata su invito a Imola
+    Gara su invito · costo € 22.000 · rischio MEDIO
+    Apex Competition ha una vettura libera per una gara e cerca un pilota pagante: l'occasione esiste, il conto è del pilota.
+  · Sedile Categoria avanzata con Orion Motorsport, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 76.800 · rischio NON SOSTENIBILE
+    Orion Motorsport è disposta a coprire il 52% della stagione: la fiducia dei team è a 65/100 e il prestigio sportivo a 30/100.
+  · Gara open a Cremona
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Cremona apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Sostituzione in Categoria avanzata a Varano»
+    Patrimonio attuale     € 58.000
+    Costo dell'opportunità € 0
+    Guadagno possibile     € 11.000  (massimo € 44.000, minimo € 0)
+    Saldo nel caso peggiore € 58.000
+    Rischio economico      BASSO — nessun costo d'ingresso
+
+  GARA a Imola: P4 su 12 · 12 punti · premio € 44.000 · trasferta € -18.000
+    → Reputazione: considerazione della stampa +4, fiducia dei team +3, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1, popolarità +1
+    → Scaduta senza risposta: «Gara open a Cremona» di Organizzazione locale
+
+──────────────────────────────────────────────────────────────────────────────
+07 OTTOBRE 2023 · PATRIMONIO € 84.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 67 · interesse degli sponsor 36 · popolarità 13 · considerazione della stampa 39 · prestigio sportivo 31 · affidabilità 63
+
+Sul tavolo:
+  · Test privato a Pergusa con Apex Competition
+    Test con costo coperto · costo € 2.700 · rischio BASSO
+    La fiducia dei team è salita a 65/100: Apex Competition apre le porte del proprio programma di test e copre il 70% del costo.
+  · Gara Categoria avanzata su invito a Imola
+    Gara su invito · costo € 22.000 · rischio MEDIO
+    Apex Competition ha una vettura libera per una gara e cerca un pilota pagante: l'occasione esiste, il conto è del pilota.
+  · Sedile Categoria avanzata con Orion Motorsport, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 76.800 · rischio PROIBITIVO
+    Orion Motorsport è disposta a coprire il 52% della stagione: la fiducia dei team è a 65/100 e il prestigio sportivo a 30/100.
+  · Sedile Categoria avanzata con Delta Corse, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 75.200 · rischio ALTO
+    Delta Corse è disposta a coprire il 53% della stagione: la fiducia dei team è a 67/100 e il prestigio sportivo a 31/100.
+  · Sostituzione in Categoria avanzata a Franciacorta
+    Sostituzione · costo nessuno · rischio BASSO
+    Un pilota di Apex Competition è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso Marco Ruga è a 67/100. Nessun costo richiesto.
+  · Test privato a Binetto con Orion Motorsport
+    Test con costo coperto · costo € 2.700 · rischio BASSO
+    La fiducia dei team è salita a 67/100: Orion Motorsport apre le porte del proprio programma di test e copre il 70% del costo.
+
+RIFIUTATA: Sedile Categoria avanzata con Orion Motorsport, stagione parzialmente finanziata — proibitivo
+    → Orion Motorsport registra il rifiuto: fiducia dei team -3
+
+RIFIUTATA: Sedile Categoria avanzata con Delta Corse, stagione parzialmente finanziata — alto
+    → Delta Corse registra il rifiuto: fiducia dei team -3
+
+DECISIONE: accetta «Sostituzione in Categoria avanzata a Franciacorta»
+    Patrimonio attuale     € 84.000
+    Costo dell'opportunità € 0
+    Guadagno possibile     € 11.000  (massimo € 44.000, minimo € 0)
+    Saldo nel caso peggiore € 84.000
+    Rischio economico      BASSO — nessun costo d'ingresso
+
+  GARA a Misano: P6 su 12 · 8 punti · premio € 31.500 · trasferta € -18.000
+    → Reputazione: fiducia dei team +3, considerazione della stampa +2, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1
+    → Scaduta senza risposta: «Test privato a Pergusa con Apex Competition» di Apex Competition
+    → Scaduta senza risposta: «Gara Categoria avanzata su invito a Imola» di Apex Competition
+
+──────────────────────────────────────────────────────────────────────────────
+14 OTTOBRE 2023 · PATRIMONIO € 97.500
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 63 · interesse degli sponsor 37 · popolarità 13 · considerazione della stampa 40 · prestigio sportivo 32 · affidabilità 64
+
+Sul tavolo:
+  · Test privato a Binetto con Orion Motorsport
+    Test con costo coperto · costo € 2.700 · rischio BASSO
+    La fiducia dei team è salita a 67/100: Orion Motorsport apre le porte del proprio programma di test e copre il 70% del costo.
+  · Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 78.400 · rischio ALTO
+    Meridian Race Team è disposta a coprire il 51% della stagione: la fiducia dei team è a 63/100 e il prestigio sportivo a 32/100.
+  · Sostituzione in Categoria avanzata a Misano
+    Sostituzione · costo nessuno · rischio BASSO
+    Un pilota di Northline Racing è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso Marco Ruga è a 63/100. Nessun costo richiesto.
+  · Test privato a Imola con Bianchi Motorsport
+    Test con costo coperto · costo € 2.700 · rischio BASSO
+    La fiducia dei team è salita a 63/100: Bianchi Motorsport apre le porte del proprio programma di test e copre il 70% del costo.
+  · Gara Categoria avanzata su invito a Varano
+    Gara su invito · costo € 22.000 · rischio BASSO
+    Apex Competition ha una vettura libera per una gara e cerca un pilota pagante: l'occasione esiste, il conto è del pilota.
+  · Gara open a Pergusa
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Pergusa apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata»
+    Patrimonio attuale     € 97.500
+    Costo dell'opportunità € 78.400
+    Guadagno possibile     € 88.000  (massimo € 208.000, minimo € 0)
+    Saldo nel caso peggiore € 19.100
+    Rischio economico      ALTO — impegna il 80% del patrimonio
+    → Pagati € 78.400 per «Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata»
+    → Meridian Race Team ha coperto il 51% del costo (€ 81.600)
+    → Meridian Race Team: Meridian Race Team finanzierebbe interamente la stagione successiva se riuscirai a arrivare entro la posizione 3 entro il 10 giugno 2024
+    → contratto con Meridian Race Team in Categoria avanzata
+
+  GARA · round 1 a Adria: P5 su 16 · 11 punti · premio € 38.500 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +6, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1, popolarità +1
+    → Scaduta senza risposta: «Test privato a Binetto con Orion Motorsport» di Orion Motorsport
+    → Scaduta senza risposta: «Sostituzione in Categoria avanzata a Misano» di Northline Racing
+    → Scaduta senza risposta: «Test privato a Imola con Bianchi Motorsport» di Bianchi Motorsport
+    → Scaduta senza risposta: «Gara Categoria avanzata su invito a Varano» di Apex Competition
+    → Scaduta senza risposta: «Gara open a Pergusa» di Organizzazione locale
+
+  GARA · round 2 a Misano: P5 su 16 · 11 punti · premio € 38.500 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +6, interesse degli sponsor +2, affidabilità +2, prestigio sportivo +1, popolarità +1
+
+  GARA · round 3 a Cremona: P2 su 16 · 20 punti · premio € 69.000 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, prestigio sportivo +7, considerazione della stampa +7, popolarità +5, interesse degli sponsor +5, affidabilità +2
+    → Promessa mantenuta da Orion Motorsport: stagione successiva interamente coperta
+    → Promessa mantenuta da Meridian Race Team: stagione successiva interamente coperta
+    ★ Orion Motorsport mantiene: stagione successiva interamente coperta
+    ★ Meridian Race Team mantiene: stagione successiva interamente coperta
+
+  GARA · round 4 a Monza: P1 su 16 · 25 punti · premio € 96.000 · trasferta € -18.000
+    → Reputazione: prestigio sportivo +11, fiducia dei team +8, considerazione della stampa +7, popolarità +7, interesse degli sponsor +7, affidabilità +2
+
+──────────────────────────────────────────────────────────────────────────────
+03 FEBBRAIO 2024 · PATRIMONIO € 189.100
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 78 · interesse degli sponsor 48 · popolarità 25 · considerazione della stampa 56 · prestigio sportivo 47 · affidabilità 68
+
+Sul tavolo:
+  · Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata
+    Sedile parzialmente finanziato · costo € 65.600 · rischio MEDIO
+    Meridian Race Team è disposta a coprire il 59% della stagione: la fiducia dei team è a 78/100 e il prestigio sportivo a 47/100.
+  · Sostituzione in Categoria avanzata a Magione
+    Sostituzione · costo nessuno · rischio BASSO
+    Un pilota di Northline Racing è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso Marco Ruga è a 78/100. Nessun costo richiesto.
+  · Test privato a Franciacorta con Orion Motorsport
+    Test con costo coperto · costo nessuno · rischio BASSO
+    Dopo il P1 ottenuto a Monza con il cielo sereno, Orion Motorsport ha manifestato interesse e propone un test privato. Il team coprirà il 100% della spesa.
+  · Gara Categoria avanzata su invito a Vallelunga
+    Gara su invito · costo € 22.000 · rischio BASSO
+    La stampa ha iniziato a citare Marco Ruga (56/100 di considerazione): Orion Motorsport offre un sedile per una gara singola.
+  · Vertex Tools vuole sostituire Novara Logistica
+    Proposta di sponsorizzazione · costo nessuno · rischio BASSO
+    Dopo il P1 di Monza, Vertex Tools ha chiesto un contatto: cerca visibilità in questa categoria.
+  · Gara open a Mugello
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Mugello apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata»
+    Patrimonio attuale     € 189.100
+    Costo dell'opportunità € 65.600
+    Guadagno possibile     € 88.000  (massimo € 208.000, minimo € 0)
+    Saldo nel caso peggiore € 123.500
+    Rischio economico      MEDIO — impegna il 35% del patrimonio, con margine residuo
+    → Pagati € 65.600 per «Sedile Categoria avanzata con Meridian Race Team, stagione parzialmente finanziata»
+    → Meridian Race Team ha coperto il 59% del costo (€ 94.400)
+    → Meridian Race Team: Meridian Race Team finanzierebbe interamente la stagione successiva se riuscirai a arrivare entro la posizione 3 entro il 30 settembre 2024
+    → contratto con Meridian Race Team in Categoria avanzata
+
+  GARA · round 1 a Binetto: P2 su 16 · 20 punti · premio € 69.000 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, prestigio sportivo +7, considerazione della stampa +7, popolarità +5, interesse degli sponsor +5, affidabilità +2
+    → Promessa mantenuta da Meridian Race Team: stagione successiva interamente coperta
+    → Scaduta senza risposta: «Sostituzione in Categoria avanzata a Magione» di Northline Racing
+    → Scaduta senza risposta: «Test privato a Franciacorta con Orion Motorsport» di Orion Motorsport
+    → Scaduta senza risposta: «Gara Categoria avanzata su invito a Vallelunga» di Orion Motorsport
+    → Scaduta senza risposta: «Vertex Tools vuole sostituire Novara Logistica» di Vertex Tools
+    → Scaduta senza risposta: «Gara open a Mugello» di Organizzazione locale
+    ★ Meridian Race Team mantiene: stagione successiva interamente coperta
+
+  GARA · round 2 a Franciacorta: P3 su 16 · 16 punti · premio € 55.500 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +7, prestigio sportivo +6, popolarità +5, interesse degli sponsor +5, affidabilità +2
+
+  GARA · round 3 a Pergusa: P2 su 16 · 20 punti · premio € 69.000 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, prestigio sportivo +7, considerazione della stampa +7, popolarità +5, interesse degli sponsor +5, affidabilità +2
+
+  GARA · round 4 a Magione: P1 su 16 · 25 punti · premio € 96.000 · trasferta € -18.000
+    → Reputazione: prestigio sportivo +11, fiducia dei team +8, considerazione della stampa +7, popolarità +7, interesse degli sponsor +7, affidabilità +2
+
+──────────────────────────────────────────────────────────────────────────────
+25 MAGGIO 2024 · PATRIMONIO € 341.000
+──────────────────────────────────────────────────────────────────────────────
+Reputazione: fiducia dei team 90 · interesse degli sponsor 61 · popolarità 42 · considerazione della stampa 71 · prestigio sportivo 65 · affidabilità 72
+
+Sul tavolo:
+  · Contratto Categoria avanzata con Meridian Race Team
+    Contratto professionistico · costo nessuno · rischio BASSO
+    Con 2 vittorie e un prestigio sportivo di 65/100, Meridian Race Team offre un sedile pagato: nessun contributo richiesto al pilota.
+  · Sostituzione in Categoria avanzata a Mugello
+    Sostituzione · costo nessuno · rischio BASSO
+    Un pilota di Northline Racing è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso Marco Ruga è a 90/100. Nessun costo richiesto.
+  · Test privato a Misano con Bianchi Motorsport
+    Test con costo coperto · costo nessuno · rischio BASSO
+    Dopo il P1 ottenuto a Magione con il cielo sereno, Bianchi Motorsport ha manifestato interesse e propone un test privato. Il team coprirà il 100% della spesa.
+  · Gara Categoria avanzata su invito a Binetto
+    Gara su invito · costo € 22.000 · rischio BASSO
+    La stampa ha iniziato a citare Marco Ruga (71/100 di considerazione): Delta Corse offre un sedile per una gara singola.
+  · Meridian Engineering vuole sostituire Novara Logistica
+    Proposta di sponsorizzazione · costo nessuno · rischio BASSO
+    Dopo il P1 di Magione, Meridian Engineering ha chiesto un contatto: cerca visibilità in questa categoria.
+  · Gara open a Varano
+    Gara di categoria minore · costo € 2.500 · rischio BASSO
+    Il circuito di Varano apre una gara open: costa poco e serve a tenere il ritmo fra due impegni più importanti.
+
+DECISIONE: accetta «Contratto Categoria avanzata con Meridian Race Team»
+    Patrimonio attuale     € 341.000
+    Costo dell'opportunità € 0
+    Guadagno possibile     € 108.000  (massimo € 157.000, minimo € 20.000)
+    Saldo nel caso peggiore € 361.000
+    Rischio economico      BASSO — nessun costo d'ingresso
+    → Contratto con stipendio di € 157.000
+    → contratto con Meridian Race Team in Categoria avanzata
+
+  GARA · round 1 a Binetto: P3 su 16 · 16 punti · premio € 55.500 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, considerazione della stampa +7, prestigio sportivo +6, popolarità +5, interesse degli sponsor +5, affidabilità +2
+    → Scaduta senza risposta: «Sostituzione in Categoria avanzata a Mugello» di Northline Racing
+    → Scaduta senza risposta: «Test privato a Misano con Bianchi Motorsport» di Bianchi Motorsport
+    → Scaduta senza risposta: «Gara Categoria avanzata su invito a Binetto» di Delta Corse
+    → Scaduta senza risposta: «Meridian Engineering vuole sostituire Novara Logistica» di Meridian Engineering
+    → Scaduta senza risposta: «Gara open a Varano» di Organizzazione locale
+
+  GARA · round 2 a Varano: P2 su 16 · 20 punti · premio € 69.000 · trasferta € -18.000
+    → Reputazione: fiducia dei team +8, prestigio sportivo +7, considerazione della stampa +7, popolarità +5, interesse degli sponsor +5, affidabilità +2
+
+  GARA · round 3 a Magione: P1 su 16 · 25 punti · premio € 96.000 · trasferta € -18.000
+    → Reputazione: prestigio sportivo +11, fiducia dei team +8, considerazione della stampa +7, popolarità +7, interesse degli sponsor +7, affidabilità +2
+
+──────────────────────────────────────────────────────────────────────────────
+BILANCIO FINALE
+──────────────────────────────────────────────────────────────────────────────
+Marco Ruga · 20 agosto 2024 · categoria Categoria avanzata
+Gare 25 · vittorie 3 · podi 9
+Patrimonio € 507.500 — AMPIO — le categorie superiori sono economicamente accessibili
+Quote d'iscrizione pagate € 200.600 · premi € 929.500 · sponsor € 28.600
+Reputazione: fiducia dei team 96 · interesse degli sponsor 70 · popolarità 52 · considerazione della stampa 80 · prestigio sportivo 76 · affidabilità 75
+Sponsor: Novara Logistica · team: Meridian Race Team
+Promesse mantenute 3 · scadute 1 · occasioni scadute senza risposta 34
+
+NOTA: i piazzamenti di questa simulazione sono input finti al posto di Assetto Corsa.
+Servono a mostrare le reazioni dei motori, non sono una carriera giocata.

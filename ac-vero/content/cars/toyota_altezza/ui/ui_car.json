@@ -1,0 +1,12 @@
+{
+  "name": "iDS 2022 Toyota Altezza XE10",
+  "brand": "iDS",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "210 bhp",
+    "weight": "1330 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1999
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Trofeo Monomarca",
+  "brand": "Adriatica",
+  "class": "cup",
+  "tags": [
+    "cup"
+  ],
+  "specs": {
+    "power": "260 bhp",
+    "weight": "1180 kg"
+  },
+  "power": "260",
+  "mass": "1180 kg",
+  "year": 2021
+}

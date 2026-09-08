@@ -1,0 +1,12 @@
+{
+  "name": "Honda Civic SiR-II",
+  "brand": "Honda",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "170 bhp",
+    "weight": "1040 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1992
+}

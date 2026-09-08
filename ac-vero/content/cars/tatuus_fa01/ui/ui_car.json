@@ -1,0 +1,15 @@
+{
+  "name": "Tatuus FA01 FormulaMT09",
+  "brand": "Tatuus",
+  "class": "race",
+  "tags": [
+    "singleseater",
+    "formula"
+  ],
+  "specs": {
+    "bhp": "130 bhp",
+    "weight": "465 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2006
+}

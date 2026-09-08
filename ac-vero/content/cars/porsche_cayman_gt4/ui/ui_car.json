@@ -1,0 +1,14 @@
+{
+  "name": "Porsche 718 Cayman GT4",
+  "brand": "Porsche",
+  "class": "race",
+  "tags": [
+    "gt4"
+  ],
+  "specs": {
+    "bhp": "425 bhp",
+    "weight": "1320 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2016
+}

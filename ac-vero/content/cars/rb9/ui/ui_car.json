@@ -1,0 +1,14 @@
+{
+  "name": "RedBull RB9",
+  "brand": "RedBull",
+  "class": "race",
+  "tags": [
+    "formula"
+  ],
+  "specs": {
+    "bhp": "750 bhp",
+    "weight": "642 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2013
+}

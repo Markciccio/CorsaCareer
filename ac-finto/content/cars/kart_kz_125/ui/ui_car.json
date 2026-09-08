@@ -1,0 +1,15 @@
+{
+  "name": "Kart KZ 125 Cambio",
+  "brand": "Paddock",
+  "class": "kart",
+  "tags": [
+    "kart"
+  ],
+  "specs": {
+    "power": "38 bhp",
+    "weight": "172 kg"
+  },
+  "power": "38",
+  "mass": "172 kg",
+  "year": 2021
+}

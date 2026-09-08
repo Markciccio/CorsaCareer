@@ -1,0 +1,15 @@
+{
+  "name": "Kart OKJ 2T",
+  "brand": "Paddock",
+  "class": "kart",
+  "tags": [
+    "kart"
+  ],
+  "specs": {
+    "power": "23 bhp",
+    "weight": "158 kg"
+  },
+  "power": "23",
+  "mass": "158 kg",
+  "year": 2021
+}

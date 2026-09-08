@@ -1,0 +1,15 @@
+{
+  "name": "Formula Ingresso",
+  "brand": "Veloce",
+  "class": "formula 4",
+  "tags": [
+    "formula 4"
+  ],
+  "specs": {
+    "power": "180 bhp",
+    "weight": "570 kg"
+  },
+  "power": "180",
+  "mass": "570 kg",
+  "year": 2021
+}

@@ -1,0 +1,15 @@
+{
+  "name": "Kart Rental 4T",
+  "brand": "Paddock",
+  "class": "kart",
+  "tags": [
+    "kart"
+  ],
+  "specs": {
+    "power": "9 bhp",
+    "weight": "175 kg"
+  },
+  "power": "9",
+  "mass": "175 kg",
+  "year": 2021
+}

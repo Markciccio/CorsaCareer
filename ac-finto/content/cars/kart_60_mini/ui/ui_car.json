@@ -1,0 +1,15 @@
+{
+  "name": "Kart 60 Mini",
+  "brand": "Paddock",
+  "class": "kart",
+  "tags": [
+    "kart"
+  ],
+  "specs": {
+    "power": "14 bhp",
+    "weight": "165 kg"
+  },
+  "power": "14",
+  "mass": "165 kg",
+  "year": 2021
+}

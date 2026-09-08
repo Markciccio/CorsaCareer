@@ -1,0 +1,15 @@
+{
+  "name": "GT4 Serie",
+  "brand": "Meridian",
+  "class": "GT4",
+  "tags": [
+    "GT4"
+  ],
+  "specs": {
+    "power": "400 bhp",
+    "weight": "1320 kg"
+  },
+  "power": "400",
+  "mass": "1320 kg",
+  "year": 2021
+}

@@ -1,0 +1,18 @@
+{
+  "name": "Tatuus Formula 3",
+  "brand": "Tatuus",
+  "class": "race",
+  "tags": [
+    "rwd",
+    "sequential",
+    "race",
+    "singleseater",
+    "formula"
+  ],
+  "specs": {
+    "bhp": "270 bhp",
+    "weight": "650 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2009
+}

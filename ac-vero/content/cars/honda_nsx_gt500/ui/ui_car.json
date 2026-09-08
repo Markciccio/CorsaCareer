@@ -1,0 +1,12 @@
+{
+  "name": "Honda NSX GT500",
+  "brand": "Honda",
+  "class": "race",
+  "tags": [],
+  "specs": {
+    "bhp": "500 bhp",
+    "weight": "1100 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2010
+}

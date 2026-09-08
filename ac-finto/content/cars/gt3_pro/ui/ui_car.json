@@ -1,0 +1,15 @@
+{
+  "name": "GT3 Pro",
+  "brand": "Meridian",
+  "class": "GT3",
+  "tags": [
+    "GT3"
+  ],
+  "specs": {
+    "power": "550 bhp",
+    "weight": "1245 kg"
+  },
+  "power": "550",
+  "mass": "1245 kg",
+  "year": 2021
+}

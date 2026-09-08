@@ -1,0 +1,12 @@
+{
+  "name": "iDS 2022 Honda S2000",
+  "brand": "iDS",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "240 bhp",
+    "weight": "1250 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2001
+}

@@ -1,0 +1,14 @@
+{
+  "name": "Porsche 911 GT3 RS (992)",
+  "brand": "Porsche",
+  "class": "race",
+  "tags": [
+    "gt3"
+  ],
+  "specs": {
+    "bhp": "525 bhp",
+    "weight": "1450 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 2019
+}

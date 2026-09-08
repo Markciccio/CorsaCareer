@@ -1,0 +1,15 @@
+{
+  "name": "Formula Nazionale",
+  "brand": "Veloce",
+  "class": "formula 3",
+  "tags": [
+    "formula 3"
+  ],
+  "specs": {
+    "power": "240 bhp",
+    "weight": "620 kg"
+  },
+  "power": "240",
+  "mass": "620 kg",
+  "year": 2021
+}

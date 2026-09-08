@@ -1,0 +1,12 @@
+{
+  "name": "iDS 2022 Mazda Mx5",
+  "brand": "iDS",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "130 bhp",
+    "weight": "960 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1994
+}

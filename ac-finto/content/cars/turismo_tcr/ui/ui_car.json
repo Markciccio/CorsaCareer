@@ -1,0 +1,15 @@
+{
+  "name": "Turismo TCR",
+  "brand": "Adriatica",
+  "class": "TCR",
+  "tags": [
+    "TCR"
+  ],
+  "specs": {
+    "power": "340 bhp",
+    "weight": "1250 kg"
+  },
+  "power": "340",
+  "mass": "1250 kg",
+  "year": 2021
+}

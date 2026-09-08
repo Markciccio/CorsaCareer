@@ -1,0 +1,12 @@
+{
+  "name": "iDS 2022 Nissan 180sx",
+  "brand": "iDS",
+  "class": "street",
+  "tags": [],
+  "specs": {
+    "bhp": "205 bhp",
+    "weight": "1180 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1996
+}

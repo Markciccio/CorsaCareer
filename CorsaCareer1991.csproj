@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- Il layout è impaginato da contenitori: con PerMonitorV2 la finestra
+         resta corretta anche su schermi con scaling diverso da 100%. -->
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <ApplicationUseCompatibleTextRendering>false</ApplicationUseCompatibleTextRendering>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="tests\**" />
+    <EmbeddedResource Remove="tests\**" />
+    <None Remove="tests\**" />
+    <Compile Remove="publish\**" />
+    <None Remove="publish\**" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      Le illustrazioni non vengono piu' copiate nell'output.
+
+      Erano milleottocento megabyte duplicati in bin\Debug e altrettanti in
+      bin\Release: quasi quattro gigabyte di copie della stessa cartella. In
+      sviluppo il programma le legge direttamente dagli originali risalendo
+      dalla cartella dell'eseguibile (vedi AssetPaths), quindi la copia non
+      serve a niente.
+
+      Restano invece nella pubblicazione: un'installazione distribuita deve
+      portarsi dietro le proprie immagini, e li' la copia e' l'unica che c'e'.
+    -->
+    <None Update="assets\**" CopyToOutputDirectory="Never" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="soundtrack\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Update="narration\**" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

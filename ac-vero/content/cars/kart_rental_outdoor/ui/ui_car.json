@@ -1,0 +1,14 @@
+{
+  "name": "Rental Kart Outdoor",
+  "brand": "Rental",
+  "class": "race",
+  "tags": [
+    "kart"
+  ],
+  "specs": {
+    "bhp": "9 bhp",
+    "weight": "80 kg",
+    "topspeed": "200 km/h"
+  },
+  "year": 1998
+}
