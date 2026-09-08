@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// La scala dei campionati: dove si corre, e quanto in alto.

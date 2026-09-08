@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Provenienza di un risultato. Fino a qui esisteva una sola strada: il referto

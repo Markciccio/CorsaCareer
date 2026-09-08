@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Chi svolge un'attività: il pilota, o Haru Senda.

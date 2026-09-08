@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Quello che l'allenatore ti spiega prima che succeda.

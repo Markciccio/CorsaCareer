@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>I momenti della carriera che meritano una scena parlata.</summary>
 public enum SceneKind

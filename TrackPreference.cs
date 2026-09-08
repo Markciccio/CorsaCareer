@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Esito della ricerca di una sede: quale pista si usa, e se è quella richiesta.</summary>
 public sealed record TrackChoice(ContentTrackRecord? Track, bool Substituted, string Note)

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed class ContentCarRecord
 {

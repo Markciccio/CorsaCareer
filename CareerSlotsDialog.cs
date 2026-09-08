@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Text.Json;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed class CareerSlotsDialog : CareerDialog
 {

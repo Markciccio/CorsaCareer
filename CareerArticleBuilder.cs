@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed record BrowserPortalContent(string Title, string Standfirst, string ArticleHtml, string AudioText, string[] Headlines);
 

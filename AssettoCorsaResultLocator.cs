@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Individua il referto prodotto da una sessione reale di Assetto Corsa.

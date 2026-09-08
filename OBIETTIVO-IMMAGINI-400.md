@@ -1,6 +1,6 @@
 # OBIETTIVO OPERATIVO — LIBRERIA ILLUSTRATA CORSACAREER
 
-Porta la libreria visuale di CorsaCareer1991 ad almeno **400 PNG originali**, coerenti tra loro e realmente utilizzabili dall’app come tavole narrative, ritratti dei personaggi, immagini Home, dialoghi manga, articoli e scene di paddock.
+Porta la libreria visuale di CorsaCareer ad almeno **400 PNG originali**, coerenti tra loro e realmente utilizzabili dall’app come tavole narrative, ritratti dei personaggi, immagini Home, dialoghi manga, articoli e scene di paddock.
 
 ## Regole creative
 

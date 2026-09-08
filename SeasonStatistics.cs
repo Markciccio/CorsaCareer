@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Le statistiche di fine anno, quelle vere.

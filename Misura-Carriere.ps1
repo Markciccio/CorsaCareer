@@ -32,7 +32,7 @@ $env:DOTNET_ROOT = $sdk; $env:PATH = "$sdk;$env:PATH"
 $dotnet = Join-Path $sdk 'dotnet.exe'
 
 $env:CORSACAREER_FIXTURE = $Catalogo
-& $dotnet build (Join-Path $PSScriptRoot 'CorsaCareer1991.csproj') -c Debug -v q --nologo | Out-Null
+& $dotnet build (Join-Path $PSScriptRoot 'CorsaCareer.csproj') -c Debug -v q --nologo | Out-Null
 if ($LASTEXITCODE -ne 0) { throw 'Compilazione fallita.' }
 
 # Nomi diversi: le doti e tutti i motori derivano dal nome, quindi ogni pilota

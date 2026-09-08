@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed class NewsArticle
 {

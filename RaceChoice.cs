@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Cosa si decide davanti a una gara.</summary>
 public enum RaceDecision

@@ -1,7 +1,7 @@
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Riproduzione locale non automatica dei brani della carriera.</summary>
 public static class SoundtrackService

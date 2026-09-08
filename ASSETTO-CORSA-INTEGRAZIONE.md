@@ -49,7 +49,7 @@ richiede di riscrivere niente: basta che Content Manager venga trovato.
 
 ## 3. Primo avvio, in ordine
 
-1. Copia l'intera cartella `CorsaCareer1991` sul PC di gioco.
+1. Copia l'intera cartella `CorsaCareer` sul PC di gioco.
 2. Apri PowerShell nella cartella ed esegui:
 
 ```powershell

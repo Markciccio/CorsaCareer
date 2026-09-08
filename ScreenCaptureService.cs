@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class ScreenCaptureService
 {

@@ -1,6 +1,6 @@
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Simulazione del risultato: permette di far avanzare la carriera senza aprire

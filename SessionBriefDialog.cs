@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Il foglio del weekend: le condizioni della sessione, prima di scendere in

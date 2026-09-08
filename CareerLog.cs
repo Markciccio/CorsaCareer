@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Log su file della carriera.

@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Formatting helpers for user-facing labels. Internal content IDs never leak into the UI.</summary>
 public static class UiText

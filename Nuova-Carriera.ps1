@@ -8,7 +8,7 @@ Write-Host 'CorsaCareer - nuova carriera pulita' -ForegroundColor Cyan
 
 # Chiude solo i processi appartenenti all'app e ai suoi player audio. Assetto
 # Corsa/Content Manager e le altre applicazioni dell'utente non vengono toccati.
-Get-Process -Name 'CorsaCareer1991','ffplay' -ErrorAction SilentlyContinue |
+Get-Process -Name 'CorsaCareer','ffplay' -ErrorAction SilentlyContinue |
     Stop-Process -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
@@ -34,10 +34,10 @@ $sdkRoot = Find-DotnetSdk
 if (-not $sdkRoot) { throw 'SDK .NET non trovato: installare .NET SDK 9.' }
 $sdk = Join-Path $sdkRoot 'dotnet.exe'
 $env:DOTNET_ROOT = $sdkRoot; $env:PATH = "$sdkRoot;$env:PATH"
-& $sdk build (Join-Path $project 'CorsaCareer1991.csproj') -c Release -v q --nologo
+& $sdk build (Join-Path $project 'CorsaCareer.csproj') -c Release -v q --nologo
 if ($LASTEXITCODE -ne 0) { throw 'Compilazione fallita: l''app non viene avviata.' }
 
-$exe = Join-Path $project 'bin\Release\net9.0-windows\CorsaCareer1991.exe'
+$exe = Join-Path $project 'bin\Release\net9.0-windows\CorsaCareer.exe'
 if (-not (Test-Path -LiteralPath $exe)) { throw "Eseguibile non trovato: $exe" }
 
 $env:CORSACAREER_HOME = $fresh

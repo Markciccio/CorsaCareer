@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Una battuta nella scena anime: un personaggio, un'espressione, una voce.</summary>
 public sealed record AnimeDialogueLine(string Speaker, string Text, string PortraitFile, string Expression);

@@ -1,7 +1,7 @@
 using System.Globalization;
 using Microsoft.Win32;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class NarrationVoiceCatalog
 {

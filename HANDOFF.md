@@ -54,7 +54,7 @@ senza privilegi di amministratore e senza modificare il PATH di sistema.
 $env:DOTNET_ROOT="$env:LOCALAPPDATA\Microsoft\dotnet"
 $env:PATH="$env:DOTNET_ROOT;$env:PATH"
 
-dotnet build CorsaCareer1991.csproj -c Release
+dotnet build CorsaCareer.csproj -c Release
 dotnet run --project tests\ParserCheck\ParserCheck.csproj -c Release
 ```
 
@@ -279,7 +279,7 @@ chiave, che restano fuori dall'app.
 
 ## Nota sulla cartella consegnata
 
-La cartella di progetto è `CorsaCareer1991`. Per codex servono solo i file `.cs`,
+La cartella di progetto è `CorsaCareer`. Per codex servono solo i file `.cs`,
 i `.csproj`, i `.md` e `assets/`. Il resto è rigenerabile ed è escluso da
 `.gitignore`:
 

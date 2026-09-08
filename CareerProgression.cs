@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Che cosa succede alla fine di una stagione.</summary>
 public enum SeasonVerdict

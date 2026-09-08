@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>La definizione di una selezione: i dati, non il testo.</summary>
 public sealed record SelectionDefinition(

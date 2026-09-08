@@ -21,7 +21,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AssemblyName>CareerSim</AssemblyName>
-    <StartupObject>CorsaCareer1991.CareerSimEntry</StartupObject>
+    <StartupObject>CorsaCareer.CareerSimEntry</StartupObject>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>

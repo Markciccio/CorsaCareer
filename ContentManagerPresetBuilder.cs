@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Traduce un <see cref="SessionPlan"/> nel formato Quick Drive letto da Content

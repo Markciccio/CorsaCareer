@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Regolamento punti di un campionato. Prima esisteva un solo sistema cablato

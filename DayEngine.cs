@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Che cosa è successo svolgendo un'attività.</summary>
 public sealed class DayReport

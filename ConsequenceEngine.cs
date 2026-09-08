@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Una conseguenza applicata allo stato, con la sua motivazione.</summary>
 public sealed record Consequence(string Kind, string Text, int Amount = 0);

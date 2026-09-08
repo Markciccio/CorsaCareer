@@ -2,9 +2,9 @@ $ErrorActionPreference = 'Stop'
 
 # Installer locale e reversibile: non modifica Assetto Corsa e non scarica nulla.
 $packageRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-$exePath = Join-Path $packageRoot 'CorsaCareer1991.exe'
+$exePath = Join-Path $packageRoot 'CorsaCareer.exe'
 if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
-    throw "CorsaCareer1991.exe non trovato nella cartella del pacchetto: $packageRoot"
+    throw "CorsaCareer.exe non trovato nella cartella del pacchetto: $packageRoot"
 }
 
 $saveRoot = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Assetto Corsa\CorsaCareer'

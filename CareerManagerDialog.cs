@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Text.Json;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Quello che il giocatore ha chiesto di fare alle sue carriere.</summary>
 public enum CareerManagerAction

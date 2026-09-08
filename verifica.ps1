@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Collaudo completo di CorsaCareer1991.
+# Collaudo completo di CorsaCareer.
 #
 # Un solo comando che verifica tutto, da eseguire dopo ogni modifica:
 #
@@ -103,9 +103,9 @@ function Fase {
 # Zero errori e zero avvisi in entrambe le configurazioni: il launcher desktop
 # usa Release, mentre lo sviluppo quotidiano usa Debug.
 Fase "Compilazione applicazione Debug + Release (0 errori, 0 avvisi)" {
-    $debugOut = dotnet build CorsaCareer1991.csproj -v q --nologo 2>&1
+    $debugOut = dotnet build CorsaCareer.csproj -v q --nologo 2>&1
     $debugExit = $LASTEXITCODE
-    $releaseOut = dotnet build CorsaCareer1991.csproj -c Release -v q --nologo 2>&1
+    $releaseOut = dotnet build CorsaCareer.csproj -c Release -v q --nologo 2>&1
     $releaseExit = $LASTEXITCODE
     $debugOut
     $releaseOut

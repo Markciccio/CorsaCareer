@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Deterministic fictional paddock identity for an AI driver observed in a real AC result.</summary>
 public static class AiDriverIdentity

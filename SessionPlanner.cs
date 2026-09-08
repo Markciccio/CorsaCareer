@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Profili scelti dal giocatore. Non alterano mai un risultato già ottenuto:

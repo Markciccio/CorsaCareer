@@ -1,7 +1,7 @@
 using System.Net.Http;
 using System.Security.Cryptography;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class ContentDownloadService
 {

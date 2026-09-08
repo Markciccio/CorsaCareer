@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class PhotoSource
 {

@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Apertura a tavole di un capitolo: testo scritto davanti al giocatore e immagini narrative in dissolvenza.</summary>
 public sealed class PhaseIntroDialog : CareerDialog

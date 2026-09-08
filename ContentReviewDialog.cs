@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed class ContentReviewDialog : CareerDialog
 {

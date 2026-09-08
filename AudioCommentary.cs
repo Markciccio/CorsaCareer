@@ -1,7 +1,7 @@
 using System.Text;
 using System.Globalization;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed record AudioScript(string Title, string Text, string SourceType);
 

@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Un'angolazione giornalistica: quanto è rilevante per questo evento e come si

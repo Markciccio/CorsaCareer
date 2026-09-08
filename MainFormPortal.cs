@@ -4,7 +4,7 @@ using System.Globalization;
 using System.Text.Json;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Portale della carriera: barra di testata, striscia dati, colonna azioni,

@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Un momento della gara che vale qualcosa oltre ai punti.</summary>
 public sealed record RaceHighlight(

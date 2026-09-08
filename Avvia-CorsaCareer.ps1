@@ -70,7 +70,7 @@ $env:DOTNET_NOLOGO = '1'
 $immagini = @(Get-ChildItem -LiteralPath (Join-Path $progetto 'assets') -Filter *.png -Recurse -File -ErrorAction SilentlyContinue).Count
 Write-Host "Compilazione $configurazione in corso ($immagini immagini in assets)..."
 
-$log = & $dotnet build (Join-Path $progetto 'CorsaCareer1991.csproj') -c $configurazione -v q --nologo 2>&1
+$log = & $dotnet build (Join-Path $progetto 'CorsaCareer.csproj') -c $configurazione -v q --nologo 2>&1
 if ($LASTEXITCODE -ne 0) {
     Write-Host "COMPILAZIONE FALLITA - l'applicazione non viene avviata." -ForegroundColor Red
     Write-Host ''
@@ -80,7 +80,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 
-$exe = Join-Path $progetto "bin\$configurazione\net9.0-windows\CorsaCareer1991.exe"
+$exe = Join-Path $progetto "bin\$configurazione\net9.0-windows\CorsaCareer.exe"
 if (-not (Test-Path -LiteralPath $exe)) {
     Write-Host "Eseguibile non trovato dopo la compilazione:" -ForegroundColor Red
     Write-Host "  $exe"

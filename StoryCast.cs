@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Un personaggio del racconto. Non possiede risultati o bonus segreti: serve

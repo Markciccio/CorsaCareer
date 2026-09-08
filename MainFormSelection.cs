@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// La selezione a più giornate dentro la carriera: apertura, lancio delle prove

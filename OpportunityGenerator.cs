@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Fotografia dello stato su cui il generatore decide cosa proporre.</summary>
 public sealed class OpportunityContext

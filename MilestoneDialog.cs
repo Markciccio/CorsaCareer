@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Il tono di un passaggio di carriera: decide colori e parole.</summary>
 public enum MilestoneTone

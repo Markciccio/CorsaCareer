@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed record RookieEvaluationResult(int Score, string Status);
 

@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Il tempo della carriera: cosa arriva e cosa c'e stato.

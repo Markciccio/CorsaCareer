@@ -4,7 +4,7 @@ using System.Text;
 using System.Net;
 using System.Text.Json;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class NarrationService
 {

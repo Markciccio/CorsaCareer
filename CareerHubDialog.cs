@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Regia unica della carriera. Non introduce dati nuovi: mette nello stesso

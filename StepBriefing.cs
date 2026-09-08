@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Il racconto del passo attuale: cosa sta succedendo adesso, detto a parole.

@@ -1,6 +1,6 @@
 using System.Globalization;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Una voce del diario: un fatto della carriera con la sua data.</summary>
 public sealed record DiaryEntry(

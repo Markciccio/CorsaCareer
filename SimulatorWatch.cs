@@ -1,6 +1,6 @@
 using System.Diagnostics;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public enum SimulatorVerdict
 {

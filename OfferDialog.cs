@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Contatto sponsor: l'interesse è una stima, non una promessa.</summary>
 public sealed class SponsorProspect

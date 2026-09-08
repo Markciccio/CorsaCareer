@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Costruisce le rassegne del Media Center senza dipendere dalla UI.

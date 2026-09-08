@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Tutti i fatti verificati disponibili per raccontare un evento. Il generatore

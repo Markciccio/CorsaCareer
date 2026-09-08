@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 using System.Globalization;
 using System.Security.Cryptography;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public sealed class CareerState
 {

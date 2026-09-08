@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Metadati leggibili per scegliere una tavola senza affidarsi al nome tecnico del file.</summary>
 public static class IllustrationCatalog

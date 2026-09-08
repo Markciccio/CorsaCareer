@@ -1,6 +1,6 @@
 using System.IO.Compression;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 public static class ContentPackageInstaller
 {

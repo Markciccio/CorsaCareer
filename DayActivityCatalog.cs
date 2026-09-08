@@ -1,4 +1,4 @@
-﻿namespace CorsaCareer1991;
+﻿namespace CorsaCareer;
 
 /// <summary>
 /// Le attività che si possono inserire in una giornata.

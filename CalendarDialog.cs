@@ -1,7 +1,7 @@
 using System.Drawing;
 using System.Windows.Forms;
 
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Archivio visuale: non un elenco tecnico, ma la cronologia leggibile della carriera.</summary>
 public sealed class CalendarDialog : CareerDialog

@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>La pagella finale di una selezione, con le voci separate.</summary>
 public sealed class SelectionReport

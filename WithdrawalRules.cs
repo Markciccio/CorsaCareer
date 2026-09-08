@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Come si è chiusa una sessione preparata da CorsaCareer ma non conclusa.</summary>
 public enum WithdrawalKind

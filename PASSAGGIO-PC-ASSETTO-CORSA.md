@@ -13,7 +13,7 @@ pagina, con i riferimenti ai file.
 
 ## 1. In una riga
 
-CorsaCareer1991 è un generatore di carriera (WinForms, .NET 9) che porta un
+CorsaCareer è un generatore di carriera (WinForms, .NET 9) che porta un
 pilota giapponese dal kart alle formule. **Tutta l'ossatura esiste già ed è
 parametrizzata**: scala di categorie, livelli di campionato, doti del pilota,
 economia, calendario, opportunità, narrativa. Sul PC di sviluppo le sessioni
@@ -33,9 +33,9 @@ Ci sono due strade, e la prima non richiede niente di installato.
 
 ### A. Scaricare la build pronta (consigliata)
 
-Dalla pagina **Releases** del repository scarica `CorsaCareer1991-v1.zip`
+Dalla pagina **Releases** del repository scarica `CorsaCareer-v1.zip`
 (circa 350 MB), scompattalo dove preferisci e fai doppio clic su
-`CorsaCareer1991.exe`.
+`CorsaCareer.exe`.
 
 È una build **autonoma**: contiene il runtime .NET, le illustrazioni, le musiche
 e la narrazione. **Non serve installare .NET.** Non tocca Assetto Corsa e non
@@ -60,8 +60,8 @@ cartella `assets` del progetto, senza copiarle: vedi `AssetPaths`.
 ```powershell
 $sdk = "$env:LOCALAPPDATA\Microsoft\dotnet"
 $env:DOTNET_ROOT = $sdk; $env:PATH = "$sdk;$env:PATH"
-& "$sdk\dotnet.exe" publish CorsaCareer1991.csproj -c Release -r win-x64 --self-contained true -o publish
-Compress-Archive -Path publish\* -DestinationPath CorsaCareer1991-v1.zip
+& "$sdk\dotnet.exe" publish CorsaCareer.csproj -c Release -r win-x64 --self-contained true -o publish
+Compress-Archive -Path publish\* -DestinationPath CorsaCareer-v1.zip
 ```
 
 La pubblicazione **ricopia le illustrazioni** dentro `publish`, al contrario
@@ -78,8 +78,8 @@ L'SDK .NET non è nel PATH sul PC di sviluppo. Su quello nuovo, verificalo:
 $sdk = "$env:LOCALAPPDATA\Microsoft\dotnet"   # oppure "$env:ProgramFiles\dotnet"
 $env:DOTNET_ROOT = $sdk
 $env:PATH = "$sdk;$env:PATH"
-& "$sdk\dotnet.exe" build CorsaCareer1991.csproj -c Debug
-& "$sdk\dotnet.exe" run  --project CorsaCareer1991.csproj
+& "$sdk\dotnet.exe" build CorsaCareer.csproj -c Debug
+& "$sdk\dotnet.exe" run  --project CorsaCareer.csproj
 ```
 
 Serve **.NET 9 SDK con il carico Windows Desktop** (`net9.0-windows`, WinForms).

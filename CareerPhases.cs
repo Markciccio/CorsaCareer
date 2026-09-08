@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>
 /// Una fase della carriera: il momento in cui cambia la posta in gioco.

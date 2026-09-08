@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Il mercato non passa da zero a contratto: ogni scuderia osserva il pilota nel tempo.</summary>
 public sealed class TeamInterest

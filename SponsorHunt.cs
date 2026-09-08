@@ -1,4 +1,4 @@
-namespace CorsaCareer1991;
+namespace CorsaCareer;
 
 /// <summary>Come il pilota si presenta a un possibile sponsor.</summary>
 public enum SponsorApproach
