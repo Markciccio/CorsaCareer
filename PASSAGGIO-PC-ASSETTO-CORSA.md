@@ -27,7 +27,50 @@ contenuti reali e tarare il livello IA sui referti veri.
 
 ---
 
-## 2. Compilare ed eseguire
+## 2. Portarlo su questo computer
+
+Ci sono due strade, e la prima non richiede niente di installato.
+
+### A. Scaricare la build pronta (consigliata)
+
+Dalla pagina **Releases** del repository scarica `CorsaCareer1991-v1.zip`
+(circa 350 MB), scompattalo dove preferisci e fai doppio clic su
+`CorsaCareer1991.exe`.
+
+È una build **autonoma**: contiene il runtime .NET, le illustrazioni, le musiche
+e la narrazione. **Non serve installare .NET.** Non tocca Assetto Corsa e non
+scarica niente: al primo avvio cerca i contenuti installati e crea la cartella
+dei salvataggi in `Documenti\Assetto Corsa\CorsaCareer`.
+
+Se preferisci un collegamento sul desktop, nella cartella c'è
+`CorsaCareer-Install.ps1`: clic destro → *Esegui con PowerShell*.
+
+### B. Clonare il repository (per lavorare al codice)
+
+```
+git clone <url del repository>
+```
+
+Servono **.NET 9 SDK con il carico Windows Desktop** e poi il paragrafo
+successivo. Da sviluppo il programma legge le illustrazioni direttamente dalla
+cartella `assets` del progetto, senza copiarle: vedi `AssetPaths`.
+
+### Rifare la build da distribuire
+
+```powershell
+$sdk = "$env:LOCALAPPDATA\Microsoft\dotnet"
+$env:DOTNET_ROOT = $sdk; $env:PATH = "$sdk;$env:PATH"
+& "$sdk\dotnet.exe" publish CorsaCareer1991.csproj -c Release -r win-x64 --self-contained true -o publish
+Compress-Archive -Path publish\* -DestinationPath CorsaCareer1991-v1.zip
+```
+
+La pubblicazione **ricopia le illustrazioni** dentro `publish`, al contrario
+della compilazione di sviluppo: un'installazione distribuita deve portarsi
+dietro le proprie immagini, e lì quella copia è l'unica che c'è.
+
+---
+
+## 2b. Compilare ed eseguire
 
 L'SDK .NET non è nel PATH sul PC di sviluppo. Su quello nuovo, verificalo:
 
