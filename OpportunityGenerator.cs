@@ -691,7 +691,11 @@ public static class OpportunityGenerator
     /// </summary>
     public static int RacesBeforeStepUp(int step) => step switch
     {
-        <= 1 => 6,
+        // Otto e non sei: il banco chiede almeno otto gare per dire che una
+        // categoria e' stata vissuta e non attraversata, e il primo gradino
+        // del kart e' proprio quello che non va saltato — e' li' che si impara
+        // a stare in pista.
+        <= 1 => 8,
         2 => 10,
         3 => 12,
         4 => 14,

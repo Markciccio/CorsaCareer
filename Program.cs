@@ -58,6 +58,41 @@ public sealed class CareerState
     /// </summary>
     public int RacesAtLastLevelUp { get; set; }
     public DateTime StoryDate { get; set; } = NarrativeCalendar.DefaultSeasonStart;
+
+    /// <summary>
+    /// L'anno di nascita del pilota. Zero nelle carriere salvate prima che
+    /// l'età esistesse: in quel caso viene ricavato dalla data d'inizio.
+    /// </summary>
+    public int BirthYear { get; set; }
+
+    /// <summary>
+    /// Il giorno in cui la carriera è cominciata. Serve a sapere da quanto si
+    /// corre, che è una cosa diversa da quante gare si sono fatte.
+    /// </summary>
+    public DateTime CareerStart { get; set; }
+
+    /// <summary>
+    /// I totali economici di tutta la carriera.
+    ///
+    /// Le voci PrizeMoney, SponsorMoney e simili si azzerano a ogni cambio di
+    /// stagione, perche' servono al bilancio dell'annata. Il risultato era che
+    /// il consuntivo di una carriera di trent'anni mostrava gli incassi degli
+    /// ultimi dodici mesi accanto a una cassa da milioni, e non tornava niente.
+    /// Questi invece non si azzerano mai: sono quello che il pilota ha
+    /// incassato e speso da quando ha cominciato.
+    /// </summary>
+    public long LifetimePrizeMoney { get; set; }
+    public long LifetimeSponsorMoney { get; set; }
+    public long LifetimeSalary { get; set; }
+    public long LifetimeRepairCosts { get; set; }
+    public long LifetimeLogisticsCosts { get; set; }
+
+    /// <summary>Vero se il pilota ha appeso il casco al chiodo.</summary>
+    public bool Retired { get; set; }
+
+    /// <summary>Il giorno del ritiro, e il motivo con cui è stato raccontato.</summary>
+    public DateTime RetiredOn { get; set; }
+    public string RetirementReason { get; set; } = "";
     // Ancora fissa del calendario di campionato: cambia solo al passaggio di
     // stagione, così le date dei round non si spostano dopo ogni gara.
     public DateTime SeasonStartDate { get; set; }
@@ -1119,12 +1154,10 @@ public sealed partial class MainForm : Form
             {
                 ApplyClassification(imported.Classification, imported.Track, imported.QualificationPosition); Record(imported, photo, archivedResultFile);
                 CompletePendingWeekend();
-                if (career.Round >= rounds.Count && career.SeasonArchive.Count > 0)
-                {
-                    using var seasonReport = new SeasonReportDialog(career, career.SeasonArchive[^1], NarrateCurrentStory, OpenMedia);
-                    seasonReport.ShowDialog(this);
-                }
-                else
+                // A stagione chiusa il bilancio lo ha gia' mostrato la
+                // chiusura stessa, insieme al verdetto: qui si aprirebbe due
+                // volte lo stesso dossier.
+                if (career.Round < rounds.Count || career.SeasonArchive.Count == 0)
                 {
                     using var report = new RaceReportDialog(career, imported, photo, NarrateCurrentStory, OpenMedia);
                     report.ShowDialog(this);
@@ -1468,6 +1501,10 @@ public sealed partial class MainForm : Form
     /// <summary>Genera il calendario della stagione corrente e lo archivia in agenda.</summary>
     private void GenerateSeasonSchedule(string reason)
     {
+        // Chi si e' ritirato non corre piu': niente calendari, niente offerte,
+        // niente stagioni nuove. Senza questo la carriera ripartiva da sola il
+        // giorno dopo il ritiro.
+        if (career.Retired) return;
         career.Schedule ??= new List<ScheduledEvent>();
         if (contentIndex.Tracks.Count == 0) return;
         if (career.SeasonStartDate == default) career.SeasonStartDate = career.StoryDate == default ? NarrativeCalendar.DefaultSeasonStart : career.StoryDate;
@@ -1524,10 +1561,38 @@ public sealed partial class MainForm : Form
         // «stagione 1» copriva tre anni di storia.
         if (giaCorsiQuestaStagione)
         {
-            CareerLog.Info("agenda",
-                $"{career.Championship}: la stagione {career.Season} e' gia' cominciata, il calendario nuovo parte dalla prossima.");
-            rounds = ChampionshipRoundsView();
-            return;
+            // Non basta rifiutarsi di generare: così il pilota resterebbe senza
+            // calendario per sempre, perché una stagione poteva chiudersi solo
+            // finendo una gara e gare in programma non ce n'erano più. Adesso
+            // la chiusura è un passo richiamabile, quindi si chiude davvero
+            // l'anno in corso — classifica, premio, verdetto, promozione o
+            // retrocessione — e il campionato nuovo comincia dall'anno dopo.
+            foreach (var rimasto in pianificati)
+                CareerScheduler.Close(career.Schedule, rimasto.Id, cancelled: true);
+
+            if (ChiudiStagioneSeCompleta())
+            {
+                career.Season++;
+                career.Round = 0; career.Points = 0; career.Standings.Clear();
+                career.SeasonStartDate = NarrativeCalendar.NextSeasonStart(
+                    career.SeasonStartDate == default ? career.StoryDate : career.SeasonStartDate,
+                    Math.Max(1, pianificati.Count));
+                CareerLog.Info("agenda",
+                    $"cambio di campionato: chiusa la stagione precedente, il nuovo calendario parte dalla stagione {career.Season}.");
+                // Si prosegue: il calendario della stagione nuova va generato
+                // adesso, con la categoria appena firmata.
+            }
+            else
+            {
+                // Non chiudibile — nessun round corso, o annata già archiviata.
+                // Si rimettono in programma i round annullati invece di
+                // lasciare l'agenda vuota.
+                foreach (var rimasto in pianificati) rimasto.Status = CareerScheduler.StatusPlanned;
+                CareerLog.Info("agenda",
+                    $"{career.Championship}: stagione {career.Season} non chiudibile, calendario invariato.");
+                rounds = ChampionshipRoundsView();
+                return;
+            }
         }
         // Un calendario non nasce nel passato.
         //
@@ -1615,7 +1680,10 @@ public sealed partial class MainForm : Form
         if (notti <= 0) return;
         // Il recupero ha un tetto: due settimane di pausa rimettono in sesto,
         // sei mesi non danno un vantaggio.
-        var recupero = Math.Min(notti, 21) * DayEngine.NightRecovery;
+        // E rallenta con gli anni: a quarant'anni un weekend si smaltisce in
+        // quasi il doppio del tempo che serviva a venti. È il modo in cui l'età
+        // si sente prima ancora che nel cronometro.
+        var recupero = (int)Math.Round(Math.Min(notti, 21) * DayEngine.NightRecovery * DriverAge.FattoreRecupero(EtaPilota()));
         var prima = career.Fatigue;
         career.Fatigue = Math.Clamp(career.Fatigue - recupero, 0, OffTrackActivities.MaxFatigue);
         if (career.Fatigue != prima)
@@ -1711,7 +1779,7 @@ public sealed partial class MainForm : Form
         // paddock: prima erano tre nomi hardcoded senza identità visiva.
         var rung = CareerLadder.Current(career, contentIndex.Cars);
         var identities = TeamLogoCatalog.Pick(rung, selected.Length,
-            Math.Abs(HashCode.Combine(career.Driver ?? "", career.Season)));
+            StableHash.Of(career.Driver ?? "", career.Season));
         var teammates = new[] { "Kenta Ogawa", "Sota Fujimoto", "Mei Kanzaki" };
         // Nel kart si corre pagando la singola gara; piu in alto si firma per
         // una stagione. E' la differenza fra comprarsi un weekend e avere un
@@ -1726,7 +1794,7 @@ public sealed partial class MainForm : Form
         // vedere da nessuno. Non esiste la squadra giusta: esiste quella giusta
         // per quello che ti serve adesso.
         var profili = TeamProfile.Assortimento(selected.Length,
-            HashCode.Combine(career.Driver ?? "", career.Season, rung.Step));
+            StableHash.Of(career.Driver ?? "", career.Season, rung.Step));
         for (var i = 0; i < selected.Length; i++)
         {
             var profilo = profili.Count > 0 ? profili[i % profili.Count] : TeamProfile.Neutro;
@@ -2537,6 +2605,16 @@ public sealed partial class MainForm : Form
     {
         if (CareerMessages.Unattended) return;
 
+        // Prima il bilancio dell'annata, poi che cosa comporta. Le statistiche
+        // di fine anno stavano solo sul ramo del referto reale: su un computer
+        // senza Assetto Corsa una stagione finiva senza che nessuno dicesse
+        // quante pole, quanti ritiri, come era andata col compagno di squadra.
+        if (career.SeasonArchive.Count > 0)
+        {
+            using var bilancio = new SeasonReportDialog(career, career.SeasonArchive[^1], NarrateCurrentStory, OpenMedia);
+            bilancio.ShowDialog(this);
+        }
+
         var gradino = CareerLadder.Current(career, contentIndex.Cars);
         var disciplina = gradino.Path switch
         {
@@ -2666,6 +2744,251 @@ public sealed partial class MainForm : Form
         using var scena = new AnimeDialogueDialog("CorsaCareer — due parole con Rei", battute);
         scena.ShowDialog(this);
         SaveCareer();
+    }
+
+    /// <summary>
+    /// <summary>
+    /// Chiude la stagione se i suoi round sono tutti corsi: classifica finale,
+    /// premio, verdetto, promozione o retrocessione, scena e archivio.
+    ///
+    /// Era un blocco di centotrenta righe dentro la registrazione di una gara,
+    /// e questo era il difetto: una stagione poteva finire soltanto come
+    /// effetto collaterale di una gara appena conclusa. Firmando per una
+    /// categoria diversa non c'era modo di chiudere quella in corso, quindi i
+    /// round nuovi finivano nella stessa stagione — al banco se ne sono viste
+    /// da ventotto gare corse fra kart e monoposto, con un titolo «regionale»
+    /// vinto cambiando vettura tre volte.
+    ///
+    /// Adesso è un passo che si può chiamare anche da fuori. Restituisce vero
+    /// se la stagione è stata davvero chiusa.
+    /// </summary>
+    private bool ChiudiStagioneSeCompleta()
+    {
+        var roundStagione = CareerScheduler.ChampionshipRounds(career.Schedule ?? [], career.Season);
+        var stagioneFinita = roundStagione.Count > 0
+            && roundStagione.All(x => !x.IsPlanned)
+            && !career.SeasonArchive.Any(x => x.Season == career.Season);
+        if (stagioneFinita)
+        {
+            if (career.SponsorObjectiveStatus == "In corso")
+            {
+                career.SponsorObjectiveStatus = "Non raggiunto";
+                var sponsorHeadline = $"A fine campionato {career.Driver} chiude con {career.SponsorQualifyingResults}/{SponsorRequiredResults()} risultati Top {career.SponsorTarget}: {career.Sponsor} valuterà il rinnovo.";
+                career.News.Add(sponsorHeadline);
+                career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SPONSOR_REVIEW", Headline = sponsorHeadline, Track = "Campionato", Importance = 65 });
+            }
+            var finalPosition = career.Standings.OrderByDescending(x => x.Points).ThenByDescending(x => x.Wins).Select((x, index) => new { x.Driver, Position = index + 1 }).FirstOrDefault(x => x.Driver == career.Driver)?.Position ?? 0;
+            // Il premio finale dipende dalla posizione in classifica e dalla
+            // categoria, non da una soglia di punti che ignora il calendario.
+            var award = EconomyEngine.SeasonAward(career.Tier, finalPosition, Math.Max(1, career.Standings.Count),
+                CareerLadder.Current(career, contentIndex.Cars).Step);
+            // Come per il premio di gara: a un pilota ingaggiato ne resta una
+            // quota, il resto è della squadra che ha pagato la stagione.
+            if (career.ContractActive && !career.IsClientDriver) award = (int)Math.Round(award * 0.30 / 100.0) * 100;
+            career.Cash += award; career.PrizeMoney += award;
+            // Il titolo: chiudere una stagione al primo posto.
+            //
+            // E il mondiale, quando quel titolo arriva sul gradino piu alto
+            // della strada scelta — Formula 1, hypercar, turismo mondiale.
+            // Prima non esisteva nessuno dei due: si saliva la scala e poi si
+            // correvano stagioni identiche senza un traguardo.
+            var titolo = finalPosition == 1;
+            var gradino = CareerLadder.Current(career, contentIndex.Cars);
+            var vetta = CareerLadder.SummitFor(gradino, contentIndex.Cars);
+            // Il mondiale è il titolo vinto in cima alla scala dei campionati,
+            // non semplicemente sulla vettura più veloce installata.
+            var mondiale = titolo && ChampionshipLadder.IsTop(career.ChampionshipLevel);
+
+            // Tre esiti, non due: primi tre si sale, in fondo si scende, in
+            // mezzo si resta.
+            //
+            // Prima la retrocessione non esisteva e una stagione andata male non
+            // costava niente: si restava dov'era all'infinito, e questo toglieva
+            // senso anche alla promozione. Il terzo esito e' quello che rende
+            // interessante il secondo.
+            var livelloPrima = ChampionshipLadder.Clamp(career.ChampionshipLevel);
+            var inClassifica = Math.Max(career.Standings?.Count ?? 0, 12);
+            var verdetto = CareerProgression.Verdetto(finalPosition, inClassifica, livelloPrima);
+            var livelloDopo = CareerProgression.LivelloDopo(livelloPrima, verdetto);
+            // Il campionato non può salire più in alto di quanto regga la
+            // categoria: per correre il mondiale serve prima la vettura da
+            // mondiale. È il legame che rende faticoso — e quindi sensato — il
+            // salto di categoria.
+            livelloDopo = Math.Min(livelloDopo, ChampionshipLadder.MaxLevelForStep(gradino.Step));
+            if (livelloDopo > livelloPrima)
+            {
+                career.ChampionshipLevel = livelloDopo;
+                career.RacesAtLastLevelUp = career.Races;
+                career.Championship = ChampionshipLadder.Name(livelloDopo);
+                var salita = $"{career.Driver} chiude P{finalPosition} e sale a «{ChampionshipLadder.Name(livelloDopo)}» (livello {livelloDopo} di {ChampionshipLadder.Levels}): {ChampionshipLadder.Scope(livelloDopo)}.";
+                career.News.Add(salita);
+                career.Events.Add(new CareerEventRecord
+                {
+                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_PROMOTION",
+                    Headline = salita, Track = career.Championship, Importance = 88
+                });
+                CareerLog.Info("carriera", $"promozione di campionato: livello {livelloPrima} → {livelloDopo}");
+            }
+            else if (livelloDopo < livelloPrima)
+            {
+                // Si retrocede. Per rientrare serve una prova: nessuno firma un
+                // pilota che arriva da una stagione cosi' senza rivederlo girare.
+                career.ChampionshipLevel = livelloDopo;
+                career.Championship = ChampionshipLadder.Name(livelloDopo);
+                career.CareerPhase = "Evaluation";
+                career.RookieEvaluationStatus = "Rientro da valutare dopo una stagione negativa";
+                career.ContractActive = false; career.ContractYears = 0;
+                career.Offers?.Clear();
+                var discesa = CareerProgression.Racconto(verdetto, finalPosition, livelloPrima, livelloDopo);
+                career.News.Add($"{career.Driver}: {discesa}");
+                career.Events.Add(new CareerEventRecord
+                {
+                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_RELEGATION",
+                    Headline = $"{career.Driver} retrocede a «{ChampionshipLadder.Name(livelloDopo)}»: {discesa}",
+                    Track = career.Championship, Importance = 90
+                });
+                ProgrammaProvaDiRientro();
+                CareerLog.Info("carriera", $"retrocessione: livello {livelloPrima} → {livelloDopo}, prova di rientro programmata");
+            }
+            else
+            {
+                var resta = $"{career.Driver} chiude P{finalPosition}: resta in «{ChampionshipLadder.Name(livelloPrima)}». {ChampionshipLadder.PromotionRule(livelloPrima)}";
+                career.News.Add(resta);
+                career.Events.Add(new CareerEventRecord
+                {
+                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_STAY",
+                    Headline = resta, Track = career.Championship, Importance = 62
+                });
+            }
+
+            // Le vittorie dell'annata, non quelle di sempre: qui finiva il
+            // totale di carriera, e l'archivio raccontava una stagione da
+            // ventidue vittorie in un campionato di diciotto gare.
+            var vittorieStagione = career.RaceHistory
+                .Count(x => x.Season == career.Season && !x.Dnf && x.Position == 1);
+            career.SeasonArchive.Add(new SeasonSummary { Season = career.Season, Championship = career.Championship, Tier = career.Tier, CompletedUtc = DateTime.UtcNow, Points = career.Points, Wins = vittorieStagione, FinalPosition = finalPosition, Award = award, TitleWon = titolo, WorldTitle = mondiale });
+            // La scena del verdetto: la notifica grande e poi gli amici. Viene
+            // dopo l'archiviazione perche' il bilancio deve poter leggere la
+            // stagione appena chiusa.
+            MostraEsitoStagione(verdetto, finalPosition, livelloPrima, livelloDopo, titolo, award);
+            // Fine stagione è il momento in cui un pilota decide se continuare:
+            // non lo si chiede dopo una gara storta, lo si chiede guardando
+            // l'anno appena finito.
+            ChiediSeRitirarsi();
+
+            if (mondiale)
+            {
+                var mondialeTitolo = $"{career.Driver} è campione del mondo. {career.Championship}, stagione {career.Season}: {career.Points} punti, {career.Wins} vittorie.";
+                career.Headline = mondialeTitolo; career.News.Add(mondialeTitolo);
+                career.Events.Add(new CareerEventRecord
+                {
+                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "WORLD_TITLE",
+                    Headline = mondialeTitolo, Track = career.Championship, Importance = 100
+                });
+                CareerLog.Info("carriera", $"MONDIALE VINTO: {career.Championship} stagione {career.Season}");
+            }
+            else if (titolo)
+            {
+                var titoloTesto = $"{career.Driver} vince il campionato {career.Championship} con {career.Points} punti e {career.Wins} vittorie.";
+                career.Headline = titoloTesto; career.News.Add(titoloTesto);
+                career.Events.Add(new CareerEventRecord
+                {
+                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_TITLE",
+                    Headline = titoloTesto, Track = career.Championship, Importance = 98
+                });
+                CareerLog.Info("carriera", $"titolo vinto: {career.Championship} stagione {career.Season}");
+            }
+            var seasonHeadline = $"Fine campionato: {career.Driver} chiude con {career.Points} punti{(finalPosition > 0 ? $" e la posizione P{finalPosition}" : "")}. Premio classifica € {award:N0}.";
+            career.Headline = seasonHeadline; career.News.Add(seasonHeadline);
+            career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SEASON_AWARD", Headline = seasonHeadline, Track = "Campionato", Importance = 90 });
+        }
+        return stagioneFinita;
+    }
+
+    /// A fine stagione, se è il caso, si chiede al pilota se smettere.
+    ///
+    /// La domanda non arriva per età e basta: arriva quando l'età si somma a
+    /// una ragione — un sedile che non c'è più, stagioni senza vittorie, o
+    /// semplicemente troppi anni per quel livello. La decisione resta del
+    /// giocatore: si può continuare a correre finché si vuole, ma da un certo
+    /// punto in poi si corre sapendo che si sta correndo di troppo.
+    /// </summary>
+    private void ChiediSeRitirarsi()
+    {
+        if (career.Retired) return;
+        var eta = EtaPilota();
+        var stagioni = career.SeasonArchive ?? [];
+        var senzaVittorie = 0;
+        foreach (var s in stagioni.OrderByDescending(x => x.Season))
+        {
+            if (s.Wins > 0) break;
+            senzaVittorie++;
+        }
+        var motivo = DriverAge.MotivoDelRitiro(
+            eta, senzaVittorie,
+            senzaSedile: !career.ContractActive && (career.Offers?.Count ?? 0) == 0,
+            alVertice: ChampionshipLadder.IsTop(career.ChampionshipLevel));
+        if (motivo == null) return;
+        // Senza nessuno a cui chiedere la carriera non puo' restare aperta per
+        // sempre: al banco si vedeva un pilota correre a quarantasei anni
+        // perche' la domanda non veniva mai posta. Se non c'e' un giocatore, la
+        // risposta la da' l'eta'.
+        if (CareerMessages.Unattended) { Ritirati(motivo); return; }
+
+        var risposta = CareerMessages.Ask(this,
+            $"{motivo}\n\n"
+            + $"In carriera: {career.Races} gare, {career.Wins} vittorie, "
+            + $"{stagioni.Count(x => x.TitleWon)} titoli in {stagioni.Count} stagioni.\n\n"
+            + "Vuoi smettere adesso?\n\n"
+            + "SÌ = appendi il casco al chiodo e chiudi la carriera\n"
+            + "NO = si continua, finché il corpo tiene",
+            "CorsaCareer — è ora di smettere?", MessageBoxButtons.YesNo, DialogResult.No);
+        if (risposta != DialogResult.Yes) return;
+
+        Ritirati(motivo);
+    }
+
+    /// <summary>
+    /// Travasa il bilancio dell'annata nei totali di carriera, prima che le
+    /// voci di stagione vengano azzerate. Va chiamato una volta sola per
+    /// stagione, subito prima dell'azzeramento.
+    /// </summary>
+    private void AccumulaTotaliDiCarriera()
+    {
+        career.LifetimePrizeMoney += career.PrizeMoney;
+        career.LifetimeSponsorMoney += career.SponsorMoney;
+        career.LifetimeSalary += career.SalaryPaid;
+        career.LifetimeRepairCosts += career.RepairCosts;
+        career.LifetimeLogisticsCosts += career.LogisticsCosts;
+    }
+
+    /// <summary>Chiude la carriera e mostra il bilancio di tutti gli anni.</summary>
+    private void Ritirati(string motivo)
+    {
+        career.Retired = true;
+        career.RetiredOn = career.StoryDate;
+        career.RetirementReason = motivo;
+        career.ContractActive = false;
+        career.Offers?.Clear();
+        (career.Schedule ?? []).RemoveAll(x => x.IsPlanned);
+
+        var bilancio = CareerEpilogue.Compute(career, contentIndex.Cars);
+        var titolo = $"{career.Driver} si ritira dalle corse a {bilancio.EtaAlRitiro} anni: "
+                     + $"{bilancio.Gare} gare, {bilancio.Vittorie} vittorie, {bilancio.Titoli} titoli.";
+        career.Headline = titolo;
+        career.News.Add(titolo);
+        career.Events.Add(new CareerEventRecord
+        {
+            DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CAREER_END",
+            Headline = titolo + " " + bilancio.Giudizio(), Track = "Fine della carriera", Importance = 100
+        });
+        CareerLog.Info("carriera", $"RITIRO: {bilancio.Gare} gare, {bilancio.Vittorie} vittorie, {bilancio.Mondiali} mondiali");
+        SaveCareer();
+
+        if (CareerMessages.Unattended) return;
+        using var epilogo = new CareerEpilogueDialog(bilancio, motivo, TavolaPerMomento("vittoria"));
+        epilogo.ShowDialog(this);
+        RefreshUi();
     }
 
     /// <summary>La scena della chiamata da un campionato superiore, con gli amici.</summary>
@@ -3051,6 +3374,10 @@ public sealed partial class MainForm : Form
 
     private void AdvanceSeason()
     {
+        // Chi si e' ritirato non corre piu': niente calendari, niente offerte,
+        // niente stagioni nuove. Senza questo la carriera ripartiva da sola il
+        // giorno dopo il ritiro.
+        if (career.Retired) return;
         if (awaitingResult) { CancelPendingWeekend(); return; }
         // Restano gare da correre in questa stagione? Allora non si avanza.
         //
@@ -3204,6 +3531,7 @@ public sealed partial class MainForm : Form
         // La pausa fra due stagioni permette un recupero reale della condizione.
         career.Fatigue = Math.Max(0, career.Fatigue - 40);
         AggiornaObiettivoDiContratto();
+        AccumulaTotaliDiCarriera();
         career.Round = 0; career.Points = 0; career.Standings.Clear(); career.SalaryPaid = 0; career.PrizeMoney = 0; career.SponsorMoney = 0; career.RepairCosts = 0; career.LogisticsCosts = 0; career.SponsorQualifyingResults = 0; career.SponsorObjectiveStatus = "In corso";
         career.ContractYears = Math.Max(0, career.ContractYears - 1); career.ContractActive = career.ContractYears > 0;
         if (!career.ContractActive)
@@ -4039,140 +4367,8 @@ public sealed partial class MainForm : Form
         // piloti cliente guardava IsClientDriver, che resta true anche dopo un
         // contratto vero — cosi la stagione non finiva mai per nessuno, e senza
         // stagioni concluse non esistono titoli ne mondiali.
-        var roundStagione = CareerScheduler.ChampionshipRounds(career.Schedule ?? [], career.Season);
-        var stagioneFinita = roundStagione.Count > 0
-            && roundStagione.All(x => !x.IsPlanned)
-            && !career.SeasonArchive.Any(x => x.Season == career.Season);
-        if (stagioneFinita)
-        {
-            if (career.SponsorObjectiveStatus == "In corso")
-            {
-                career.SponsorObjectiveStatus = "Non raggiunto";
-                var sponsorHeadline = $"A fine campionato {career.Driver} chiude con {career.SponsorQualifyingResults}/{SponsorRequiredResults()} risultati Top {career.SponsorTarget}: {career.Sponsor} valuterà il rinnovo.";
-                career.News.Add(sponsorHeadline);
-                career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SPONSOR_REVIEW", Headline = sponsorHeadline, Track = "Campionato", Importance = 65 });
-            }
-            var finalPosition = career.Standings.OrderByDescending(x => x.Points).ThenByDescending(x => x.Wins).Select((x, index) => new { x.Driver, Position = index + 1 }).FirstOrDefault(x => x.Driver == career.Driver)?.Position ?? 0;
-            // Il premio finale dipende dalla posizione in classifica e dalla
-            // categoria, non da una soglia di punti che ignora il calendario.
-            var award = EconomyEngine.SeasonAward(career.Tier, finalPosition, Math.Max(1, career.Standings.Count),
-                CareerLadder.Current(career, contentIndex.Cars).Step);
-            // Come per il premio di gara: a un pilota ingaggiato ne resta una
-            // quota, il resto è della squadra che ha pagato la stagione.
-            if (career.ContractActive && !career.IsClientDriver) award = (int)Math.Round(award * 0.30 / 100.0) * 100;
-            career.Cash += award; career.PrizeMoney += award;
-            // Il titolo: chiudere una stagione al primo posto.
-            //
-            // E il mondiale, quando quel titolo arriva sul gradino piu alto
-            // della strada scelta — Formula 1, hypercar, turismo mondiale.
-            // Prima non esisteva nessuno dei due: si saliva la scala e poi si
-            // correvano stagioni identiche senza un traguardo.
-            var titolo = finalPosition == 1;
-            var gradino = CareerLadder.Current(career, contentIndex.Cars);
-            var vetta = CareerLadder.SummitFor(gradino, contentIndex.Cars);
-            // Il mondiale è il titolo vinto in cima alla scala dei campionati,
-            // non semplicemente sulla vettura più veloce installata.
-            var mondiale = titolo && ChampionshipLadder.IsTop(career.ChampionshipLevel);
-
-            // Tre esiti, non due: primi tre si sale, in fondo si scende, in
-            // mezzo si resta.
-            //
-            // Prima la retrocessione non esisteva e una stagione andata male non
-            // costava niente: si restava dov'era all'infinito, e questo toglieva
-            // senso anche alla promozione. Il terzo esito e' quello che rende
-            // interessante il secondo.
-            var livelloPrima = ChampionshipLadder.Clamp(career.ChampionshipLevel);
-            var inClassifica = Math.Max(career.Standings?.Count ?? 0, 12);
-            var verdetto = CareerProgression.Verdetto(finalPosition, inClassifica, livelloPrima);
-            var livelloDopo = CareerProgression.LivelloDopo(livelloPrima, verdetto);
-            // Il campionato non può salire più in alto di quanto regga la
-            // categoria: per correre il mondiale serve prima la vettura da
-            // mondiale. È il legame che rende faticoso — e quindi sensato — il
-            // salto di categoria.
-            livelloDopo = Math.Min(livelloDopo, ChampionshipLadder.MaxLevelForStep(gradino.Step));
-            if (livelloDopo > livelloPrima)
-            {
-                career.ChampionshipLevel = livelloDopo;
-                career.RacesAtLastLevelUp = career.Races;
-                career.Championship = ChampionshipLadder.Name(livelloDopo);
-                var salita = $"{career.Driver} chiude P{finalPosition} e sale a «{ChampionshipLadder.Name(livelloDopo)}» (livello {livelloDopo} di {ChampionshipLadder.Levels}): {ChampionshipLadder.Scope(livelloDopo)}.";
-                career.News.Add(salita);
-                career.Events.Add(new CareerEventRecord
-                {
-                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_PROMOTION",
-                    Headline = salita, Track = career.Championship, Importance = 88
-                });
-                CareerLog.Info("carriera", $"promozione di campionato: livello {livelloPrima} → {livelloDopo}");
-            }
-            else if (livelloDopo < livelloPrima)
-            {
-                // Si retrocede. Per rientrare serve una prova: nessuno firma un
-                // pilota che arriva da una stagione cosi' senza rivederlo girare.
-                career.ChampionshipLevel = livelloDopo;
-                career.Championship = ChampionshipLadder.Name(livelloDopo);
-                career.CareerPhase = "Evaluation";
-                career.RookieEvaluationStatus = "Rientro da valutare dopo una stagione negativa";
-                career.ContractActive = false; career.ContractYears = 0;
-                career.Offers?.Clear();
-                var discesa = CareerProgression.Racconto(verdetto, finalPosition, livelloPrima, livelloDopo);
-                career.News.Add($"{career.Driver}: {discesa}");
-                career.Events.Add(new CareerEventRecord
-                {
-                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_RELEGATION",
-                    Headline = $"{career.Driver} retrocede a «{ChampionshipLadder.Name(livelloDopo)}»: {discesa}",
-                    Track = career.Championship, Importance = 90
-                });
-                ProgrammaProvaDiRientro();
-                CareerLog.Info("carriera", $"retrocessione: livello {livelloPrima} → {livelloDopo}, prova di rientro programmata");
-            }
-            else
-            {
-                var resta = $"{career.Driver} chiude P{finalPosition}: resta in «{ChampionshipLadder.Name(livelloPrima)}». {ChampionshipLadder.PromotionRule(livelloPrima)}";
-                career.News.Add(resta);
-                career.Events.Add(new CareerEventRecord
-                {
-                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_STAY",
-                    Headline = resta, Track = career.Championship, Importance = 62
-                });
-            }
-
-            // Le vittorie dell'annata, non quelle di sempre: qui finiva il
-            // totale di carriera, e l'archivio raccontava una stagione da
-            // ventidue vittorie in un campionato di diciotto gare.
-            var vittorieStagione = career.RaceHistory
-                .Count(x => x.Season == career.Season && !x.Dnf && x.Position == 1);
-            career.SeasonArchive.Add(new SeasonSummary { Season = career.Season, Championship = career.Championship, Tier = career.Tier, CompletedUtc = DateTime.UtcNow, Points = career.Points, Wins = vittorieStagione, FinalPosition = finalPosition, Award = award, TitleWon = titolo, WorldTitle = mondiale });
-            // La scena del verdetto: la notifica grande e poi gli amici. Viene
-            // dopo l'archiviazione perche' il bilancio deve poter leggere la
-            // stagione appena chiusa.
-            MostraEsitoStagione(verdetto, finalPosition, livelloPrima, livelloDopo, titolo, award);
-
-            if (mondiale)
-            {
-                var mondialeTitolo = $"{career.Driver} è campione del mondo. {career.Championship}, stagione {career.Season}: {career.Points} punti, {career.Wins} vittorie.";
-                career.Headline = mondialeTitolo; career.News.Add(mondialeTitolo);
-                career.Events.Add(new CareerEventRecord
-                {
-                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "WORLD_TITLE",
-                    Headline = mondialeTitolo, Track = career.Championship, Importance = 100
-                });
-                CareerLog.Info("carriera", $"MONDIALE VINTO: {career.Championship} stagione {career.Season}");
-            }
-            else if (titolo)
-            {
-                var titoloTesto = $"{career.Driver} vince il campionato {career.Championship} con {career.Points} punti e {career.Wins} vittorie.";
-                career.Headline = titoloTesto; career.News.Add(titoloTesto);
-                career.Events.Add(new CareerEventRecord
-                {
-                    DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_TITLE",
-                    Headline = titoloTesto, Track = career.Championship, Importance = 98
-                });
-                CareerLog.Info("carriera", $"titolo vinto: {career.Championship} stagione {career.Season}");
-            }
-            var seasonHeadline = $"Fine campionato: {career.Driver} chiude con {career.Points} punti{(finalPosition > 0 ? $" e la posizione P{finalPosition}" : "")}. Premio classifica € {award:N0}.";
-            career.Headline = seasonHeadline; career.News.Add(seasonHeadline);
-            career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SEASON_AWARD", Headline = seasonHeadline, Track = "Campionato", Importance = 90 });
-        }
+        // La stagione si chiude da sé quando i suoi round sono finiti.
+        ChiudiStagioneSeCompleta();
         // Conseguenze del risultato: reputazione su tutte le dimensioni, promesse
         // condizionali verificate, opportunita scadute, stato economico.
         var consequences = ConsequenceEngine.ApplyRaceResult(career, career.RaceHistory[^1], CarCompetitiveness(car));
@@ -4938,6 +5134,25 @@ public sealed partial class MainForm : Form
     /// Conta il gradino e non la singola vettura: passare dalla Formula Vee
     /// alla Tatuus FA01 non azzera la gavetta, sono la stessa categoria.
     /// </summary>
+    /// <summary>
+    /// L'età del pilota oggi, nel tempo della storia.
+    ///
+    /// Le carriere salvate prima che l'età esistesse non hanno un anno di
+    /// nascita: glielo si assegna una volta sola, all'indietro, in modo che un
+    /// pilota che ha già corso cinque stagioni non risulti sedicenne.
+    /// </summary>
+    private int EtaPilota()
+    {
+        if (career.CareerStart == default)
+            career.CareerStart = career.RaceHistory?.FirstOrDefault()?.StoryDate is { } prima && prima != default
+                ? prima
+                : career.StoryDate;
+        if (career.BirthYear <= 0)
+            career.BirthYear = career.CareerStart.Year - DriverAge.EtaIniziale;
+        var eta = career.StoryDate.Year - career.BirthYear;
+        return Math.Clamp(eta, 10, 80);
+    }
+
     private int RacesOnCurrentStep()
     {
         var passo = CareerLadder.Current(career, contentIndex.Cars).Step;
@@ -5021,6 +5236,10 @@ public sealed partial class MainForm : Form
     /// </summary>
     private void RefreshOpportunities(bool announce = true)
     {
+        // Chi si e' ritirato non corre piu': niente calendari, niente offerte,
+        // niente stagioni nuove. Senza questo la carriera ripartiva da sola il
+        // giorno dopo il ritiro.
+        if (career.Retired) return;
         career.Opportunities ??= new List<Opportunity>();
         if (contentIndex.Tracks.Count == 0) return;
         var generated = OpportunityGenerator.Generate(BuildOpportunityContext());

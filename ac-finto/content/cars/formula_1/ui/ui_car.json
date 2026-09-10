@@ -1,0 +1,15 @@
+{
+  "name": "Formula 1",
+  "brand": "Veloce",
+  "class": "formula 1",
+  "tags": [
+    "formula 1"
+  ],
+  "specs": {
+    "power": "1000 bhp",
+    "weight": "798 kg"
+  },
+  "power": "1000",
+  "mass": "798 kg",
+  "year": 2022
+}

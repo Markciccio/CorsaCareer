@@ -225,7 +225,7 @@ public sealed partial class MainForm
             Car = car,
             // Il gruppo di questo campionato, in questa stagione: gli stessi
             // avversari da un round all'altro.
-            RosterSeed = HashCode.Combine(career.Season, career.Championship ?? "", career.Car ?? ""),
+            RosterSeed = StableHash.Of(career.Season, career.Championship ?? "", career.Car ?? ""),
             PlayerName = string.IsNullOrWhiteSpace(career.Driver) ? "Pilota" : career.Driver,
             TeammateName = career.Teammate ?? "",
             FieldSize = fieldSize,
@@ -246,6 +246,7 @@ public sealed partial class MainForm
             Fatigue = career.Fatigue,
             Fitness = career.Fitness,
             RacesCompleted = career.Races,
+            Age = EtaPilota(),
             // L'esperienza che conta è quella maturata su questo tipo di
             // vettura: chi sale di categoria è di nuovo un esordiente rispetto
             // a chi ci corre da anni, ed è così che una carriera resta dura

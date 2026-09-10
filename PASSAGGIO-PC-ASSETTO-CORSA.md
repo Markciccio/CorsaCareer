@@ -417,15 +417,17 @@ Gare da correre su un gradino prima che arrivi un'offerta per quello sopra:
 
 | Gradino | Gare |
 |---|---|
-| 1 | 6 |
+| 1 | 8 |
 | 2 | 10 |
 | 3 | 12 |
 | 4 | 14 |
 | 5 | 16 |
 | 6+ | 18 |
 
-Sommate fanno circa 58 gare per arrivare in cima: quattro o cinque stagioni.
-È il parametro che decide **la lunghezza della carriera**.
+Sommate fanno circa 60 gare per arrivare in cima: sei stagioni al banco, dal
+kart del 2005 alla Formula 1 del 2011. È il parametro che decide **quanto ci si
+mette ad arrivare in cima** — non quanto dura la carriera, che ora la decide
+l'età (sotto).
 
 ### Promozione per conoscenza — `OpportunityGenerator`
 
@@ -440,6 +442,39 @@ vecchio capo del meccanico, il contatto della giornalista) richiede:
 
 Probabilità `clamp(4 + merito/4, 4, 25)` percento, dove il merito somma
 influencer, forma, liquidità e `podi × 3 + vittorie × 2`.
+
+### Età, declino e ritiro — `DriverAge.cs`
+
+Prima il pilota non invecchiava: arrivato in cima ripeteva la stessa stagione
+all'infinito, e al banco se ne contavano diciassette identiche di fila. Ora la
+carriera ha una forma.
+
+- `EtaIniziale = 16` — l'età con cui si comincia se il profilo non ne dichiara una
+- `Apice = 29` — il massimo delle proprie possibilità
+- `InizioDeclino = 34` — fino a qui il calo non si vede
+- `EtaLimite = 45` — oltre, a certi livelli non corre più nessuno
+
+`Passo(età)` entra in `RaceSimulator.PlayerSkill` sulla stessa scala del livello
+IA: fino a 29 una penalità che si chiude (max −3), da 34 mezzo punto l'anno,
+oltre i 40 il doppio. `FattoreRecupero(età)` rallenta il recupero della forma
+dopo i 34.
+
+`MotivoDelRitiro(...)` non guarda solo l'età: la somma a una ragione — nessun
+sedile a 40 anni, quattro stagioni senza vittorie a 38, o semplicemente 45 anni.
+Quando restituisce un motivo, a fine stagione il gioco **chiede** se smettere; la
+decisione resta del giocatore. Senza interfaccia (banco, automazione) la risposta
+la dà l'età e la carriera si chiude da sola.
+
+Il ritiro apre `CareerEpilogueDialog` con il bilancio di tutta la carriera
+(`CareerEpilogue.cs`), calcolato dallo storico: gare, vittorie, podi, pole,
+titoli, mondiali, gradino più alto toccato, e la frase con cui quella carriera
+verrà ricordata. Dopo il ritiro `RefreshOpportunities`, `GenerateSeasonSchedule`
+e `AdvanceSeason` non fanno più niente e il calendario non avanza.
+
+**Forma tipica al banco** (30-40 stagioni concesse, il pilota si ferma prima):
+salita dal kart alla Formula 1 in sei anni, titoli fra la terza e la quinta
+stagione, un lungo altopiano al vertice, calo visibile dalla ventesima, ritiro
+fra i 38 e i 42 anni con circa 350-410 gare.
 
 ### Doti del pilota — `DriverTalent.cs`
 
@@ -514,6 +549,22 @@ parametri non abbia rotto la forma della carriera, senza correre 60 gare a mano.
 - gavetta obbligatoria prima di ogni salto di categoria
 - regola dei gradini pieni: un buco nei contenuti non ferma più la carriera
 - nessuna retrocessione: un'offerta non può riportare indietro chi è già salito
+- **la carriera arriva in Formula 1 e finisce**: salita dal kart al gradino 7 in
+  sei stagioni, altopiano al vertice, declino con l'età, ritiro fra i 38 e i 42
+  anni ed epilogo con il bilancio di tutti gli anni (§10, «Età, declino e
+  ritiro»). Prima l'ultimo gradino ripeteva la stessa stagione all'infinito.
+- **il banco è ripetibile**: due esecuzioni identiche davano carriere diverse —
+  ventidue stagioni e ventotto vittorie in una, ventitré e ventitré nell'altra,
+  stesso pilota e stesso binario. La causa era `HashCode.Combine`, che in .NET
+  parte da un seme casuale a ogni avvio del processo, usato per il nome e il
+  profilo delle squadre (`Program.cs`) e per la griglia degli avversari
+  (`MainFormSimulation.RosterSeed`). Sostituito con `StableHash` (FNV-1a).
+  **Da tenere presente**: qualunque nuovo seme deve usare `StableHash.Of`, mai
+  `HashCode.Combine`, altrimenti il banco torna a non misurare niente.
+- **le statistiche di fine anno arrivano anche senza Assetto Corsa**: il dossier
+  `SeasonReportDialog` si apriva solo importando un referto reale, quindi su
+  questo computer non lo vedeva nessuno. Ora lo apre la chiusura di stagione,
+  che è comune ai due rami.
 
 **Corretto nel giro di debug sull'agenda** (utile saperlo perché tocca il calendario,
 che sull'altro PC decide quando si apre Content Manager):
@@ -534,15 +585,13 @@ Il collaudo su una carriera completa è passato da 49 problemi segnalati a 2.
 
 **Aperto, da fare qui:**
 1. **Calibrazione IA sui referti reali** (§8) — il lavoro principale.
-2. **Fine carriera al vertice**: arrivato al gradino 7 la carriera prosegue senza
-   una conclusione. Serve un finale — ritiro, titolo mondiale, fine del contratto.
-3. **Dominio in alto**: al banco un pilota forte in Formula 1 vince quasi tutto.
+2. **Dominio in alto**: al banco un pilota forte in Formula 1 vince quasi tutto.
    Con l'IA vera potrebbe non essere un problema; da rimisurare in pista prima di
    toccare i pesi.
-4. **Uscite di Haru dagli sponsor come minigioco RPG** — idea approvata, non
+3. **Uscite di Haru dagli sponsor come minigioco RPG** — idea approvata, non
    iniziata: arrivo in tempo alla visita, dialogo a scelte multiple, poi
    eventualmente una mappa dall'alto di una cittadina di provincia giapponese.
-5. **Scene scolastiche** con Nami e Nobu che promuovono il pilota, con effetto sui
+4. **Scene scolastiche** con Nami e Nobu che promuovono il pilota, con effetto sui
    parametri.
-6. **Venti dialoghi in stile Capeta** già scritti dall'utente, da integrare al
+5. **Venti dialoghi in stile Capeta** già scritti dall'utente, da integrare al
    posto di quelli attuali che si somigliano troppo.

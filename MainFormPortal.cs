@@ -1188,6 +1188,18 @@ public sealed partial class MainForm
     private void AvanzaNelCalendario(int giorni)
     {
         if (BlockIfPending("Far passare il tempo")) return;
+        // Dopo il ritiro il tempo non serve piu' a niente: senza questo si
+        // continuava a premere «vai a domani» sperando in una proposta che
+        // per definizione non arrivera'.
+        if (career.Retired)
+        {
+            CareerMessages.Show(this,
+                $"{career.Driver} si e' ritirato il {NarrativeCalendar.Format(career.RetiredOn)}.\n\n"
+                + career.RetirementReason
+                + "\n\nQuesta carriera e' chiusa. Dal centro carriere puoi cominciarne una nuova.",
+                "Carriera conclusa");
+            return;
+        }
         var prima = career.StoryDate.Date;
         var appuntamento = NextScheduled();
 

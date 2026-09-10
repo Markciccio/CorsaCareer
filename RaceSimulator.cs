@@ -136,6 +136,13 @@ public static class RaceSimulator
         /// <summary>Vero se la sessione si corre sul bagnato: fa contare la dote di pioggia.</summary>
         public bool Wet { get; set; }
         public int RacesCompleted { get; set; }
+
+        /// <summary>
+        /// L'età del pilota. Zero nelle carriere che non la dichiarano, e in
+        /// quel caso non incide su niente: una carriera vecchia non deve
+        /// cambiare risultati solo perché il programma è cambiato.
+        /// </summary>
+        public int Age { get; set; }
         public bool IsTest { get; set; }
         /// <summary>Seme: rende l'esito riproducibile.</summary>
         public long Seed { get; set; }
@@ -193,6 +200,18 @@ public static class RaceSimulator
         // dal kart al vertice — vale dodici punti, cioè quasi tutto il
         // dislivello della scala.
         skill += Math.Min(14.0, Math.Sqrt(Math.Max(0, input.RacesCompleted)) * 1.5);
+
+        // L'età: la parte della carriera che la maturazione da sola non può
+        // raccontare.
+        //
+        // Le gare nelle gambe si accumulano e non si perdono più, quindi senza
+        // l'età un pilota diventava più forte all'infinito e una carriera
+        // arrivata in cima ripeteva la stessa stagione per vent'anni. Il
+        // mestiere continua a crescere; il fisico no. Da giovane manca il
+        // mestiere, dopo i trentaquattro comincia a mancare il resto, e a un
+        // certo punto le due curve si incrociano — è lì che finisce una
+        // carriera, e adesso si vede.
+        skill += DriverAge.Passo(input.Age);
         // L'esperienza è soprattutto quella maturata NELLA categoria in cui si
         // corre: chi sale è quasi un esordiente rispetto a chi ci vive da anni.
         // Ma non riparte da zero — saper correre resta — e senza questa quota

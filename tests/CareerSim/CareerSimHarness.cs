@@ -105,6 +105,10 @@ public sealed partial class MainForm
 
         while (career.StoryDate < limite)
         {
+            // Una carriera finisce: quando il pilota appende il casco al chiodo
+            // il banco si ferma li', altrimenti misurerebbe stagioni che nella
+            // realta' nessuno correrebbe.
+            if (career.Retired) break;
             if (career.StoryDate != ultimaData) { decisioni = 0; ultimaData = career.StoryDate; }
             if (++decisioni > MaxDecisioniPerGiorno)
             {
@@ -532,8 +536,17 @@ public sealed partial class MainForm
         // che vince porta premi e sponsor, ed e' giusto che abbia piu' mezzi di
         // uno che arriva sempre decimo — quello che non deve succedere e' che
         // il denaro diventi cosi' tanto da rendere ogni scelta indifferente.
+        //
+        // Il valore di una stagione dipende da dove la si corre: questo tetto
+        // era tarato su carriere di poche annate e in kart, e a forza di
+        // allungarle finiva per bocciare l'unica cosa che invece e' vera —
+        // che ventiquattro stagioni in Formula 1 con un mondiale in bacheca
+        // lasciano dei soldi. Il termine per stagione cresce quindi con la
+        // categoria raggiunta: in kart una stagione vale poco piu' delle
+        // spese, in cima vale un ingaggio.
+        var valoreStagione = 60_000 + gradino.Step * 90_000;
         var tetto = gradino.Step * 250_000
-                    + Math.Max(0, career.Season - 1) * 120_000
+                    + Math.Max(0, career.Season - 1) * valoreStagione
                     + career.Wins * 20_000;
         if (career.Cash > tetto)
             problemi.Add($"cassa € {career.Cash:N0} in categoria {gradino.Step}: oltre il verosimile (€ {tetto:N0}).");
@@ -579,10 +592,15 @@ public sealed partial class MainForm
         simLog.WriteLine($"  campionato          {career.Championship} (livello {career.ChampionshipLevel})");
         simLog.WriteLine($"  squadra             {career.Team} · auto {UiText.Car(career.Car)}");
         simLog.WriteLine($"  cassa               € {career.Cash:N0}");
-        simLog.WriteLine($"    premi gara        € {career.PrizeMoney:N0}");
-        simLog.WriteLine($"    sponsor           € {career.SponsorMoney:N0}");
-        simLog.WriteLine($"    stipendi          € {career.SalaryPaid:N0}");
-        simLog.WriteLine($"    quote pagate      € {career.EntryFeesPaid:N0}  ·  riparazioni € {career.RepairCosts:N0}  ·  trasferte € {career.LogisticsCosts:N0}");
+        // Tutti i totali sono di carriera: le voci di stagione si azzerano a
+        // ogni annata, e mostrarle accanto alla cassa faceva sembrare che i
+        // soldi arrivassero dal nulla.
+        simLog.WriteLine($"    premi gara        € {career.LifetimePrizeMoney + career.PrizeMoney:N0}");
+        simLog.WriteLine($"    sponsor           € {career.LifetimeSponsorMoney + career.SponsorMoney:N0}");
+        simLog.WriteLine($"    stipendi          € {career.LifetimeSalary + career.SalaryPaid:N0}");
+        simLog.WriteLine($"    quote pagate      € {career.EntryFeesPaid:N0}  ·  riparazioni € {career.LifetimeRepairCosts + career.RepairCosts:N0}  ·  trasferte € {career.LifetimeLogisticsCosts + career.LogisticsCosts:N0}");
+        if (career.Retired)
+            simLog.WriteLine($"  RITIRO              {career.RetiredOn:d MMM yyyy} — {career.RetirementReason}");
         simLog.WriteLine($"  reputazione {career.Reputation} · forma {career.Fitness} · seguito {career.Fanbase}");
         simLog.WriteLine("");
 
@@ -617,8 +635,14 @@ public sealed partial class MainForm
 
         var arrivato = gradino.Step >= 5;
         var pulita = simAnomalie.Count == 0 && implausibili.Count == 0;
+        // Il traguardo va detto per quello che e': la frase era cablata sulla
+        // formula nazionale, di quando la carriera non arrivava piu' in su, e
+        // continuava a dirlo anche per una che chiude in Formula 1.
+        var traguardo = career.Retired
+            ? $"dal kart a {gradino.Name.ToLowerInvariant()}, fino al ritiro a {career.RetiredOn.Year - career.BirthYear} anni"
+            : $"dal kart a {gradino.Name.ToLowerInvariant()}";
         simLog.WriteLine(arrivato && pulita
-            ? "ESITO: carriera plausibile — dal kart alla formula nazionale, senza incoerenze."
+            ? $"ESITO: carriera plausibile — {traguardo}, senza incoerenze."
             : !arrivato
                 ? $"ESITO: si ferma alla categoria {gradino.Step} ({gradino.Name})."
                 : $"ESITO: arriva in fondo ma non è ancora verosimile: {simAnomalie.Count} incoerenze, {implausibili.Count} controlli non superati.");
