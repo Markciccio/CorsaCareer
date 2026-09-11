@@ -367,8 +367,22 @@ public static class IllustrationCatalog
         var tags = new List<string> { "manga", "tavola-narrativa", "carriera" };
         void Tag(string token, string tag) { if (stem.Contains(token, StringComparison.Ordinal) && !tags.Contains(tag)) tags.Add(tag); }
         Tag("character", "ritratto-personaggio"); Tag("portrait", "ritratto-personaggio");
-        Tag("kart", "kart"); Tag("rookie", "rookie"); Tag("formula", "formula-minore");
-        Tag("touring", "turismo"); Tag("gt", "gt"); Tag("endurance", "endurance");
+        Tag("kart", "kart"); Tag("rookie", "rookie");
+        // Le tre altezze della formula sono categorie diverse, e vanno
+        // riconosciute PRIMA del generico: un file chiamato
+        // «campionato-formula-vertice» finiva etichettato formula-minore —
+        // cioe' la tavola della Formula 1 compariva sopra una Formula 4, e
+        // quella della Formula 1 restava introvabile.
+        var altaOVertice = stem.Contains("formula-alta", StringComparison.Ordinal)
+                           || stem.Contains("formula-vertice", StringComparison.Ordinal);
+        Tag("formula-alta", "formula-alta");
+        Tag("formula-vertice", "formula-vertice");
+        Tag("formula1", "formula-vertice"); Tag("formula-1", "formula-vertice");
+        Tag("formula2", "formula-alta"); Tag("formula-2", "formula-alta");
+        Tag("formula3", "formula-alta"); Tag("formula-3", "formula-alta");
+        if (!altaOVertice) Tag("formula", "formula-minore");
+        Tag("touring", "turismo"); Tag("turismo", "turismo");
+        Tag("gt", "gt"); Tag("endurance", "endurance");
         Tag("test", "test"); Tag("garage", "officina"); Tag("pit", "pitstop"); Tag("grid", "griglia");
         Tag("rival", "rivale"); Tag("sponsor", "sponsor"); Tag("contract", "contratto");
         Tag("victory", "vittoria"); Tag("podium", "podio"); Tag("champion", "campionato");
@@ -386,6 +400,11 @@ public static class IllustrationCatalog
         Tag("rivale", "rivale"); Tag("duello", "duello"); Tag("sorpasso", "sorpasso");
         Tag("incidente", "incidente"); Tag("danneg", "danno"); Tag("foratura", "guasto");
         Tag("delusione", "sconfitta"); Tag("mancato", "sconfitta"); Tag("stanco", "fatica");
+        // I momenti nominati direttamente nel nome del file. Mancavano, e le
+        // tavole disegnate apposta per un momento non venivano mai trovate
+        // proprio per quel momento.
+        Tag("sconfitta", "sconfitta"); Tag("scuola", "scuola"); Tag("classe", "scuola");
+        Tag("officina", "officina"); Tag("vertice", "formula-vertice");
         Tag("contratto", "contratto"); Tag("accordo", "contratto"); Tag("firma", "contratto");
         Tag("rifiuto", "rifiuto"); Tag("respint", "rifiuto"); Tag("proposta", "trattativa");
         Tag("trattativa", "trattativa"); Tag("visita", "trattativa"); Tag("incontro", "trattativa");

@@ -215,3 +215,110 @@ passaggio ai tile non tocca la logica. Ma è un tipo di asset diverso da tutti
 gli altri, e la mappa così com'è non è un difetto — è solo meno bella del
 resto. **Da fare per ultimo, se avanza tempo.**
 
+
+
+---
+
+# Stato al 11 settembre 2026 — dopo la consegna di Codex
+
+Arrivati **50 file**. Non tutti utilizzabili: vale la pena leggere come e'
+andata, perche' la prossima consegna puo' evitare gli stessi tre inciampi.
+
+**Cosa e' stato tenuto: 27 file.** Convertiti in JPEG come tutto il resto della
+cartella (erano PNG da 3 MB l'uno: 138 MB diventati 15).
+
+**Cosa e' stato ripristinato: 23 file.** Codex ha ridisegnato tavole che
+esistevano gia' e funzionavano, sovrascrivendole con soggetti diversi e in un
+caso sbagliati: `attivita-palestra` era un pilota che si scalda in palestra fra
+i bilancieri ed e' diventata un ragazzo in camera sua davanti alle bollette —
+che e' la scena della cassa vuota, non dell'allenamento. Le vecchie sono state
+rimesse da git. **Non ridisegnare file gia' presenti** senza che siano stati
+chiesti.
+
+**Cosa e' stato rinominato: 7 file.** Le sette tavole `scuola-*` non mostrano
+la scuola: sono paddock, tende, gare sotto la pioggia. Codex ha letto «scuola»
+come scuola di pilotaggio. Sono belle e utili, quindi sono diventate
+`paddock-<disciplina>` e restano in rotazione come tavole di categoria — ma il
+momento «scuola» resta scoperto.
+
+**Il catalogo non le trovava.** Il classificatore non conosceva le parole
+`scuola`, `sconfitta`, `formula-alta` e `formula-vertice`: un file chiamato
+`campionato-formula-vertice` finiva etichettato *formula-minore*, cioe' la
+tavola della Formula 1 sarebbe comparsa sopra una Formula 4. Corretto.
+
+Risultato: combinazioni scoperte da **21 a 9**, e i due personaggi hanno il
+loro ritratto — ottimi, e coerenti con lo stile della cartella.
+
+## Cosa resta da disegnare
+
+### 1. Le sette scene scolastiche (priorita' alta)
+
+Sono il momento nuovo e sono ancora a zero. **Ambientazione: dentro la
+scuola** — aula giapponese con i banchi, corridoio con gli armadietti,
+cortile, tetto dell'edificio. Il pilota in **divisa scolastica**, non in tuta.
+Sae e Tooru con lui.
+
+| File | Cosa mostra |
+|---|---|
+| `scuola-kart.jpg` | aula, lunedi' mattina: il pilota assonnato al banco, Sae che lo sveglia |
+| `scuola-formula-minore.jpg` | cortile all'intervallo, si parla della gara di domenica |
+| `scuola-formula-alta.jpg` | corridoio: i compagni lo riconoscono, lui e' a disagio |
+| `scuola-formula-vertice.jpg` | l'aula vuota: ormai ci torna di rado |
+| `scuola-gt.jpg` | tetto della scuola, Sae e il pilota mangiano il bento |
+| `scuola-endurance.jpg` | biblioteca o aula studio, Tooru che rifa' i conti |
+| `scuola-turismo.jpg` | uscita di scuola, cancello, biciclette |
+
+### 2. Due campionati (priorita' alta)
+
+| File | Cosa mostra |
+|---|---|
+| `campionato-endurance.jpg` | fine di un campionato endurance: la squadra al muretto che conta i punti, l'alba dopo l'ultima gara |
+| `campionato-turismo.jpg` | fine di un campionato turismo: premiazione, classifica, vetture nel parco chiuso |
+
+### 3. Il pilota non ha una faccia (priorita' alta)
+
+Quando e' il pilota a parlare in una scena della giornata, il gioco ripiegava
+sul ritratto di Genji: il protagonista parlava con la faccia del suo meccanico.
+Adesso il codice usa prima il ritratto importato dal giocatore, e in mancanza
+cerca questi due:
+
+| File | Cosa mostra |
+|---|---|
+| `character-pilota.jpg` | ritratto neutro del protagonista, mezzo busto, tuta slacciata, sfondo paddock sfocato. **Volto di tre quarti o in parte in ombra**: deve valere per qualunque nome scelga il giocatore |
+| `character-pilota-casco.jpg` | stesso soggetto col casco in mano, visiera che copre parte del viso |
+
+1152 x 1152 come gli altri ritratti.
+
+### 4. Sae e Tooru in divisa (priorita' media)
+
+I ritratti consegnati sono ottimi ma hanno lo sfondo del circuito: Sae in tuta
+al kartodromo, Tooru in giacca a vento nel paddock. Nelle scene scolastiche il
+dialogo e' in aula, e il contrasto si vede.
+
+| File | Cosa mostra |
+|---|---|
+| `character-sae-kurihara-scuola.jpg` | in divisa scolastica, aula sullo sfondo |
+| `character-tooru-inagaki-scuola.jpg` | in divisa, quaderno in mano, corridoio |
+
+### 5. La cittadina — resta opzionale
+
+Tileset 32x32 da ~24 caselle piu' spritesheet del personaggio (4 direzioni x 3
+fotogrammi). La mappa disegnata a codice funziona: e' solo meno bella del
+resto.
+
+## Tre regole per la prossima consegna
+
+1. **JPEG, qualita' 85-90.** Non PNG: cinquanta PNG da soli pesavano 138 MB
+   contro i 15 degli stessi file in JPEG, e la cartella e' gia' a 250 MB.
+2. **Non toccare i file che esistono gia'.** Se un nome e' occupato, il file
+   c'e' e funziona: aggiungere, non sostituire.
+3. **Il nome decide dove finisce la tavola.** Il motore ricava i tag dal nome
+   del file, quindi `sconfitta-gt.jpg` funziona e `gt-brutta-giornata.jpg` no.
+   E il soggetto deve corrispondere al nome: una tavola chiamata `scuola-kart`
+   deve mostrare una scuola.
+
+Il collaudo dice sempre che cosa manca:
+
+```powershell
+dotnet run --project tests/CareerSim/CareerSim.csproj -c Debug -- --contenuti
+```

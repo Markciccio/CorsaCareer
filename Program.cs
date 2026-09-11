@@ -5112,7 +5112,7 @@ public sealed partial class MainForm : Form
         if (!SceneArtwork.Exists(artwork))
             artwork = report.Activity.Actor == DayActor.Agent
                 ? "character-haru-senda.png"
-                : "character-genji-arakawa.png";
+                : RitrattoDelPilota();
 
         var lines = new List<AnimeDialogueLine>
         {
@@ -5136,6 +5136,27 @@ public sealed partial class MainForm : Form
             else if (career.Races > 0)
                 RaccontaMomento(MomentoDiCarriera.ScuolaDopoLaGara, "scuola-lunedi");
         }
+    }
+
+    /// <summary>
+    /// La faccia del pilota quando e' lui a parlare.
+    ///
+    /// Finora non ne aveva una: quando il pilota diceva qualcosa in una scena
+    /// della giornata, la finestra ripiegava sul ritratto di Genji — cioe' il
+    /// protagonista parlava con la faccia del suo meccanico, e nessuno se ne
+    /// era accorto perche' la scena funzionava lo stesso.
+    ///
+    /// Il ritratto importato dal giocatore (<c>AvatarPath</c>) esisteva gia' ed
+    /// era completamente inutilizzato. Viene prima di tutto; poi un ritratto
+    /// generico se c'e'; e solo alla fine il ripiego di prima.
+    /// </summary>
+    private string RitrattoDelPilota()
+    {
+        if (!string.IsNullOrWhiteSpace(career.AvatarPath) && File.Exists(career.AvatarPath))
+            return career.AvatarPath;
+        foreach (var candidato in new[] { "character-pilota.png", "character-pilota-casco.png" })
+            if (AssetPaths.Exists(candidato)) return candidato;
+        return "character-genji-arakawa.png";
     }
 
     private void OpenActivities()
