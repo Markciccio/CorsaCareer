@@ -87,6 +87,17 @@ public sealed class CareerState
     public long LifetimeRepairCosts { get; set; }
     public long LifetimeLogisticsCosts { get; set; }
 
+    /// <summary>
+    /// Le prime volte: il primo test, la prima gara, la prima vittoria, il
+    /// primo contratto.
+    ///
+    /// La classe esisteva gia' e non la usava nessuno: era stata scritta e mai
+    /// collegata, quindi la prima vittoria di una carriera passava esattamente
+    /// come la quindicesima. Adesso il registro vive nel salvataggio ed e' cio'
+    /// che permette di raccontare un momento una volta sola.
+    /// </summary>
+    public CareerFirsts Firsts { get; set; } = new();
+
     /// <summary>Vero se il pilota ha appeso il casco al chiodo.</summary>
     public bool Retired { get; set; }
 
@@ -1873,6 +1884,9 @@ public sealed partial class MainForm : Form
         using var presentazione = new CastIntroDialog(career.Driver ?? "pilota");
         presentazione.ShowDialog(this);
         CareerLog.Info("fase", $"presentata la compagnia: {CastDirector.Compagnia.Count} personaggi");
+        // Conosciute le persone, la prima scena: il kart rimesso insieme e
+        // nessuno che ci creda. E' l'inizio da cui tutto il resto si misura.
+        RaccontaMomento(MomentoDiCarriera.PrimoGiorno, "primo-giorno");
     }
     private void EditProfile()
     {
@@ -2871,6 +2885,10 @@ public sealed partial class MainForm : Form
             // dopo l'archiviazione perche' il bilancio deve poter leggere la
             // stagione appena chiusa.
             MostraEsitoStagione(verdetto, finalPosition, livelloPrima, livelloDopo, titolo, award);
+            // Le scene scritte dei due esiti che contano davvero. Vengono dopo
+            // la notifica grande: prima il fatto, poi le persone.
+            if (titolo) RaccontaMomento(MomentoDiCarriera.TitoloVinto, $"titolo-s{career.Season:00}");
+            else if (verdetto == SeasonVerdict.Retrocesso) RaccontaMomento(MomentoDiCarriera.Retrocessione, $"giu-s{career.Season:00}");
             // Fine stagione è il momento in cui un pilota decide se continuare:
             // non lo si chiede dopo una gara storta, lo si chiede guardando
             // l'anno appena finito.
@@ -2989,6 +3007,73 @@ public sealed partial class MainForm : Form
         using var epilogo = new CareerEpilogueDialog(bilancio, motivo, TavolaPerMomento("vittoria"));
         epilogo.ShowDialog(this);
         RefreshUi();
+    }
+
+    /// <summary>
+    /// Racconta un momento della carriera, una volta sola.
+    ///
+    /// Le scene scritte esistevano ma non le apriva nessuno, come il registro
+    /// delle prime volte e come il regista del cast: tre sistemi scritti e mai
+    /// collegati fra loro. Questo e' il filo che li unisce — il registro dice
+    /// se il momento e' gia' successo, il catalogo fornisce le battute, il
+    /// regista sceglie chi le dice.
+    /// </summary>
+    private void RaccontaMomento(MomentoDiCarriera momento, string chiave = "")
+    {
+        if (CareerMessages.Unattended || !Visible || IsDisposed) return;
+
+        career.Firsts ??= new CareerFirsts();
+        // Una chiave vuota significa «si puo' ripetere»: l'apertura di stagione
+        // succede ogni anno, la prima vittoria una volta sola.
+        if (!string.IsNullOrEmpty(chiave))
+        {
+            if (career.Firsts.Has(chiave)) return;
+            career.Firsts.Register(chiave, career.StoryDate,
+                career.RaceHistory?.LastOrDefault()?.Track ?? "", career.Tier ?? "", career.Season);
+        }
+
+        var fatti = CapetaScenes.Leggi(career, contentIndex.Cars, career.Schedule ?? []);
+        var battute = CapetaScenes.Scena(momento, fatti);
+        if (battute.Count == 0) return;
+
+        using var scena = new AnimeDialogueDialog(CapetaScenes.Titolo(momento), battute);
+        scena.ShowDialog(this);
+        RefreshUi();
+    }
+
+    /// <summary>
+    /// Dopo una gara: se e' appena successa una prima volta, la si racconta.
+    ///
+    /// Una scena sola per gara, sempre la piu' importante fra quelle appena
+    /// avvenute. Mostrarne tre di fila dopo la stessa domenica trasformerebbe
+    /// un momento in una coda di finestre.
+    /// </summary>
+    private void ControllaPrimeVolte(int posizione, bool ritiro)
+    {
+        career.Firsts ??= new CareerFirsts();
+
+        if (!ritiro && posizione == 1 && !career.Firsts.Has(CareerFirsts.Win))
+        { RaccontaMomento(MomentoDiCarriera.PrimaVittoria, CareerFirsts.Win); return; }
+
+        if (!ritiro && posizione is > 0 and <= 3 && !career.Firsts.Has(CareerFirsts.Podium))
+        { RaccontaMomento(MomentoDiCarriera.PrimoPodio, CareerFirsts.Podium); return; }
+
+        if (ritiro && !career.Firsts.Has(CareerFirsts.Dnf))
+        { RaccontaMomento(MomentoDiCarriera.PrimaBattuta, CareerFirsts.Dnf); return; }
+
+        if (!career.Firsts.Has(CareerFirsts.Race))
+        { RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race); return; }
+
+        // Niente prime volte: restano i momenti del campionato, che si possono
+        // ripetere ma non nella stessa stagione.
+        var rimaste = (career.Schedule ?? []).Count(x => x.Season == career.Season && x.IsPlanned);
+        var corse = (career.Schedule ?? []).Count(x => x.Season == career.Season && !x.IsPlanned);
+        if (rimaste == 1)
+            RaccontaMomento(MomentoDiCarriera.UltimaGara, $"ultima-s{career.Season:00}");
+        else if (rimaste > 0 && corse > 0 && Math.Abs(corse - rimaste) <= 1)
+            RaccontaMomento(MomentoDiCarriera.MetaStagione, $"meta-s{career.Season:00}");
+        else if (career.Firsts.Has(CareerFirsts.Win) && posizione == 1 && !ritiro)
+            RaccontaMomento(MomentoDiCarriera.Rivalita, $"rivale-s{career.Season:00}");
     }
 
     /// <summary>La scena della chiamata da un campionato superiore, con gli amici.</summary>
@@ -3127,6 +3212,36 @@ public sealed partial class MainForm : Form
             CareerLadder.Current(career, contentIndex.Cars),
             gareDaScegliere, calendario);
         dialog.ShowDialog(this);
+        DopoLaFirma();
+    }
+
+    /// <summary>
+    /// Le due scene che seguono una firma: la prima volta in assoluto, e
+    /// l'apertura del campionato che quella firma ha aperto.
+    ///
+    /// Sta in un metodo suo perche' i sedili si firmano da due strade diverse
+    /// — il sedile cliente e il contratto vero — e la scena deve arrivare da
+    /// entrambe.
+    /// </summary>
+    private void DopoLaFirma()
+    {
+        career.Firsts ??= new CareerFirsts();
+        if (!career.Firsts.Has(CareerFirsts.Contract))
+        {
+            RaccontaMomento(MomentoDiCarriera.PrimaFirma, CareerFirsts.Contract);
+            return;
+        }
+        // Una volta per stagione: si apre un campionato all'anno.
+        RaccontaMomento(MomentoDiCarriera.AperturaStagione, $"apertura-s{career.Season:00}");
+
+        // E se questa firma ha portato al gradino piu' alto che i contenuti
+        // installati permettono, e' il momento che tutta la carriera aspettava.
+        var gradino = CareerLadder.Current(career, contentIndex.Cars).Step;
+        var vetta = CareerLadder.PopulatedSteps(contentIndex.Cars).LastOrDefault();
+        if (vetta > 0 && gradino >= vetta)
+            RaccontaMomento(MomentoDiCarriera.ArrivoAlVertice, "vertice");
+        else if (gradino > 1)
+            RaccontaMomento(MomentoDiCarriera.CambioCategoria, $"categoria-{gradino}");
     }
 
     private void AnnounceContractSigned(TeamOffer offer, string category)
@@ -3929,6 +4044,8 @@ public sealed partial class MainForm : Form
         StoryCastService.Remember(career, StoryCastService.Manager, $"Ha ricevuto il dossier del test a {imported.Track}: ora deve trasformare i dati in un'opportunità.", imported.BestLapMilliseconds > 0 ? 1 : -1);
         var headline = imported.BestLapMilliseconds > 0 ? $"Test a {imported.Track}: {career.Driver} segna {FormatLap(imported.BestLapMilliseconds)}." : $"Test a {imported.Track}: sessione reale archiviata senza miglior giro disponibile.";
         career.Headline = headline; career.News.Add(headline); career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "TRACK_TEST", Headline = headline, Track = imported.Track, Importance = 45, PhotoPath = photoPath, PhotoView = string.IsNullOrWhiteSpace(photoPath) ? "" : PhotoSource.View(photoPath) }); SaveCareer(); if (Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") != "1") RefreshUi();
+        // Il primo giro cronometrato della vita si racconta una volta sola.
+        RaccontaMomento(MomentoDiCarriera.PrimoTest, CareerFirsts.Test);
         if (career.CareerPhase.Equals("Evaluation", StringComparison.OrdinalIgnoreCase))
         {
             // Nella valutazione il servizio racconta il verdetto, non due volte
@@ -4443,6 +4560,10 @@ public sealed partial class MainForm : Form
             ChapterOneDialog.ShowRaceReactions(career, ultimaGara, this, contentIndex.Cars, contentIndex.Tracks, career.Schedule ?? []);
             // Come sopra: il portale torna al proprio tema quando la scena finisce.
             RefreshUi();
+            // E se questa domenica e' stata una prima volta, la si racconta:
+            // viene dopo le reazioni perche' e' il momento piu' grande dei due
+            // e chiudere su quello lascia la sensazione giusta.
+            ControllaPrimeVolte(ultimaGara.Dnf ? 0 : ultimaGara.Position, ultimaGara.Dnf);
         }
 
         // Il giornale racconta anche le gare, non solo le prove.
@@ -4901,9 +5022,11 @@ public sealed partial class MainForm : Form
     /// </summary>
     private bool PlaySponsorScene(SponsorVisit visit, SponsorReply reply)
     {
+        // La trattativa e' gia' stata giocata: qui si vede solo come e' finita.
+        // Ripetere il discorso d'apertura di Haru farebbe sembrare che la
+        // conversazione appena avuta non sia mai avvenuta.
         var lines = new List<AnimeDialogueLine>
         {
-            new("Haru Senda", visit.Pitch, "character-haru-senda.png", "deciso"),
             // L'interlocutore non ha un ritratto proprio: il fruttivendolo e
             // l'assicuratore non sono il meccanico. Si mostra il luogo della
             // trattativa, e se quella tavola non c'è ancora si ripiega
@@ -4920,6 +5043,18 @@ public sealed partial class MainForm : Form
         };
         using var scene = new AnimeDialogueDialog($"CorsaCareer — {visit.Target}", lines);
         scene.ShowDialog(this);
+
+        // Le scene scritte del denaro: il primo sponsor della carriera e il
+        // primo no si raccontano una volta sola, perche' la prima volta che
+        // qualcuno crede in te — o non ci crede — non e' come la decima.
+        if (reply.Accepted) RaccontaMomento(MomentoDiCarriera.PrimoSponsor, CareerFirsts.Sponsor);
+        else RaccontaMomento(MomentoDiCarriera.SponsorRifiutato, "primo-no");
+
+        // E se dopo tutto questo la cassa non copre nemmeno un'iscrizione, la
+        // cosa va detta da chi tiene i conti, non lasciata a un numero rosso.
+        if (career.Cash < CareerFinances.SurvivalFloor)
+            RaccontaMomento(MomentoDiCarriera.CassaVuota, $"cassa-s{career.Season:00}");
+
         return reply.Accepted;
     }
 
@@ -4963,6 +5098,18 @@ public sealed partial class MainForm : Form
 
         using var scene = new AnimeDialogueDialog($"CorsaCareer — {report.Activity.Name}", lines);
         scene.ShowDialog(this);
+
+        // Le scene scritte della scuola. La prima volta che ci si va dopo aver
+        // corso, Monami e Nobu hanno qualcosa da dire; e quando il seguito
+        // comincia a farsi sentire, la scuola se ne accorge prima del paddock.
+        if (DayActivityCatalog.AScuola(report.Activity.Id))
+        {
+            var seguito = (career.ReputationProfile ?? new ReputationProfile()).PublicPopularity;
+            if (seguito >= 30 && career.Races > 0)
+                RaccontaMomento(MomentoDiCarriera.ScuolaSiParlaDiTe, "scuola-fama");
+            else if (career.Races > 0)
+                RaccontaMomento(MomentoDiCarriera.ScuolaDopoLaGara, "scuola-lunedi");
+        }
     }
 
     private void OpenActivities()

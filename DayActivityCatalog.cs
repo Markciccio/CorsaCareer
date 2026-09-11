@@ -14,6 +14,21 @@
 /// </summary>
 public static class DayActivityCatalog
 {
+    /// <summary>
+    /// Le attivita' che si svolgono a scuola, elencate una volta sola.
+    ///
+    /// Serve perche' esisteva gia' «scuola-kart», che e' una giornata al
+    /// kartodromo e non ha niente a che vedere con la classe: cercare le
+    /// attivita' scolastiche per prefisso faceva scattare la scena di Monami e
+    /// Nobu dopo un pomeriggio passato al circuito.
+    /// </summary>
+    public static readonly IReadOnlyList<string> Scolastiche =
+        ["scuola", "scuola-monami", "scuola-nobu", "scuola-volantini"];
+
+    /// <summary>Vero se questa attivita' si svolge a scuola.</summary>
+    public static bool AScuola(string id) =>
+        Scolastiche.Contains(id, StringComparer.OrdinalIgnoreCase);
+
     // ------------------------------------------------------------- il pilota
 
     public static IReadOnlyList<DayActivity> ForDriver() =>
@@ -328,6 +343,86 @@ public static class DayActivityCatalog
                 {
                     Line = "Quattro ore in officina a dare una mano. Pochi soldi, ma sono soldi.",
                     Effects = [new(DayEffectKind.Money, 70), new(DayEffectKind.Fatigue, 14)]
+                }
+            ]
+        },
+
+        // --------------------------------------------------------- la scuola
+        //
+        // Il pilota ha sedici anni: la scuola c'e', e finora non esisteva.
+        // Non e' un dettaglio di colore — e' il posto dove la carriera viene
+        // vista da fuori, dove due persone che non c'entrano niente col
+        // paddock ti dicono come stai andando. E ha effetti veri: andarci
+        // riposa la testa, saltarla per allenarsi ha un prezzo.
+        new()
+        {
+            Id = "scuola", Name = "Scuola", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 4,
+            Promise = "Una mattinata normale, in classe con Monami e Nobu. Non allena niente, ma stacca la testa dalle gare.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Quattro ore di lezione e un panino nel cortile. Per mezza giornata non hai pensato ai tempi.",
+                    Effects = [new(DayEffectKind.Fatigue, -8)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "scuola-monami", Name = "Allenarti con Monami", Actor = DayActor.Driver, Focus = DayFocus.Fisico, Hours = 2,
+            Promise = "Due ore di preparazione con la tua compagna di classe, che corre nella tua stessa categoria. Vi spingete a vicenda.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Monami non molla mai un esercizio a meta'. Finisci distrutto e piu' forte di ieri.",
+                    Weight = 7, Effects = [new(DayEffectKind.Fitness, 8), new(DayEffectKind.Fatigue, 12)]
+                },
+                new()
+                {
+                    Line = "Finisce in una gara di resistenza fra voi due. Nessuno dei due si e' fermato, e domani lo pagate entrambi.",
+                    Weight = 3, Effects = [new(DayEffectKind.Fitness, 11), new(DayEffectKind.Fatigue, 20)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "scuola-nobu", Name = "Fare i conti con Nobu", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 2,
+            Promise = "Due ore sul quaderno di Nobu a rimettere in ordine le spese. Non porta soldi: fa vedere dove se ne vanno.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Nobu ha ritrovato due iscrizioni pagate due volte e si e' fatto restituire la differenza.",
+                    Weight = 4, Effects = [new(DayEffectKind.Money, 90)]
+                },
+                new()
+                {
+                    Line = "Nessun errore nei conti. «Almeno adesso sai esattamente quanto ti manca», dice, e non e' un complimento.",
+                    Weight = 6, Effects = [new(DayEffectKind.SportingReputation, 1)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "scuola-volantini", Name = "Volantini a scuola con Nobu", Actor = DayActor.Driver, Focus = DayFocus.Immagine, Hours = 2,
+            Promise = "Nobu ha stampato dei volantini e Monami li distribuisce in cortile. Fa parlare di te dentro la scuola, e a volte fuori.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Li hanno presi in pochi e due sono finiti nel cestino davanti a te. Nobu fa finta di niente.",
+                    Weight = 4, IsSetback = true, Effects = [new(DayEffectKind.Popularity, 1)]
+                },
+                new()
+                {
+                    Line = "Mezza scuola sa che domenica corri. In tre hanno chiesto se possono venire a vedere.",
+                    Weight = 5, Effects = [new(DayEffectKind.Popularity, 5)]
+                },
+                new()
+                {
+                    Line = "Un professore ha appeso il volantino in sala insegnanti. Suo cognato ha un'officina.",
+                    Weight = 1, Effects = [new(DayEffectKind.Popularity, 7), new(DayEffectKind.SportingReputation, 2)]
                 }
             ]
         }

@@ -20,6 +20,16 @@ internal static class CareerSimEntry
         Environment.SetEnvironmentVariable("CORSACAREER_UI_AUTOMATION", "1");
         ApplicationConfiguration.Initialize();
 
+        // Il collaudo dei contenuti non simula niente: controlla le scene, le
+        // piante della citta' e le trattative. Sta qui perche' e' l'unico
+        // progetto di prova rimasto nel repository.
+        if (args.Any(x => x.Equals("--contenuti", StringComparison.OrdinalIgnoreCase)))
+        {
+            var problemi = ContenutiCheck.Esegui(Console.Out);
+            Console.Out.Flush();
+            return problemi;
+        }
+
         var stagioni = ArgInt(args, "--stagioni", 8);
         var pilota = ArgText(args, "--pilota", "Sim");
         Environment.SetEnvironmentVariable("CORSACAREER_DEMO_DRIVER", pilota);

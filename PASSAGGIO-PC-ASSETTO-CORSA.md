@@ -476,6 +476,79 @@ salita dal kart alla Formula 1 in sei anni, titoli fra la terza e la quinta
 stagione, un lungo altopiano al vertice, calo visibile dalla ventesima, ritiro
 fra i 38 e i 42 anni con circa 350-410 gare.
 
+### Le scene scritte — `CapetaScenes.cs`
+
+Venti momenti della carriera hanno una scena scritta a mano nel registro
+chiesto dall'utente: conversazioni fra persone che si conoscono, con dentro i
+dati veri (squadra, punti, gare rimaste, distacco), non frasi da telecronaca.
+
+`CapetaScenes.Leggi(career, vetture, agenda)` raccoglie **solo fatti veri** in
+un record `Fatti`; ogni frase che dipende da un dato che può mancare — la
+classifica, lo sponsor, l'età — è dentro un controllo. Nessun numero è
+inventato: è la regola che l'utente ha posto e vale anche qui.
+
+I momenti e dove scattano:
+
+| Momento | Dove | Ripetibile |
+|---|---|---|
+| PrimoGiorno | dopo `CastIntroDialog` | no |
+| PrimoTest | `RecordTest` | no |
+| PrimaGara / PrimoPodio / PrimaVittoria / PrimaBattuta | dopo le reazioni di gara, via `ControllaPrimeVolte` | no |
+| PrimaFirma | `AnnounceSeatSigned` → `DopoLaFirma` | no |
+| AperturaStagione | `DopoLaFirma` | una per stagione |
+| MetaStagione / UltimaGara / Rivalita | `ControllaPrimeVolte` | una per stagione |
+| TitoloVinto / Retrocessione | chiusura di stagione | una per stagione |
+| CambioCategoria | `DopoLaFirma` | una per gradino |
+| ArrivoAlVertice | `DopoLaFirma`, al gradino più alto popolato | no |
+| PrimoSponsor / SponsorRifiutato / CassaVuota | `PlaySponsorScene` | no / no / una per stagione |
+| ScuolaDopoLaGara / ScuolaSiParlaDiTe | attività «scuola\*» | no |
+
+**Nota per chi lavora qui**: `CareerFirsts`, `CastDirector.Assegna` e
+`SceneKind` erano stati scritti in una sessione precedente e **non li chiamava
+nessuno** — codice completo e mai collegato. Adesso `CareerFirsts` vive nel
+salvataggio (`CareerState.Firsts`) ed è quello che impedisce di raccontare due
+volte la stessa prima volta. Prima di aggiungere un sistema nuovo, conviene
+controllare che quello che sembra esserci sia davvero agganciato.
+
+### La scuola — `DayActivityCatalog`
+
+Quattro attività nuove per il pilota, che ha sedici anni e una scuola:
+`scuola` (riposa la testa), `scuola-monami` (preparazione insieme alla
+compagna di classe che corre nella stessa categoria), `scuola-nobu` (rimettere
+in ordine i conti) e `scuola-volantini` (farsi conoscere dentro la scuola).
+Monami Todo e Nobu Yagi sono nel cast (`CastDirector`) ma **non hanno un
+ritratto proprio**: esistono solo dentro le tavole di gruppo, quindi
+`Ritratto()` restituisce stringa vuota e la scena mostra il luogo. Se un
+giorno arrivano i ritratti, basta aggiungere i file e riempire il dizionario.
+
+### Il minigioco degli sponsor — `TownMap`, `TownWalkDialog`, `SponsorNegotiation`
+
+Una visita a uno sponsor era un pulsante e un tiro di dado. Adesso è due cose.
+
+**La strada** (`TownMap.cs`, `TownWalkDialog.cs`). Una cittadina di provincia
+di 40×28 caselle generata da un seme stabile — stessa visita, stessa città —
+con isolati, un canale con due soli ponti, un passaggio a livello che si apre
+e si chiude, e il verde. Si cammina con le frecce o WASD; il tempo concesso è
+il percorso minimo (`DistanzaMinima()`, una BFS) più il 25%. Arrivare puntuali
+vale +6 sulla probabilità, arrivare tardi fino a −30. **Si può saltare**: chi
+non ha voglia di camminare manda Haru da solo e non viene penalizzato, perde
+solo il vantaggio. Tutto è disegnato con GDI+, senza asset: non c'erano
+tileset né sprite nella cartella `assets`.
+
+**Il tavolo** (`SponsorNegotiation.cs`, `SponsorNegotiationDialog.cs`). Tre
+domande, tre risposte possibili ciascuna. Non esiste la risposta giusta in
+assoluto: esiste quella giusta per il `SponsorTemperamento` che hai davanti —
+`Intenditore`, `Commerciante`, `DiPaese`, `Duro` — dedotto dal mestiere, e
+dichiarato prima di cominciare. Le doti di Haru modulano l'effetto di ogni
+risposta. L'intera trattativa sposta al massimo `InfluenzaMassima = 34` punti
+percentuali: cambia le probabilità, non le sostituisce, quindi chi non ha
+risultati non convince comunque un assicuratore.
+
+Il tiro finale resta legato a giornata e visita, non alla probabilità: si può
+rigiocare la trattativa e migliorare le proprie possibilità — è giusto, si è
+parlato diversamente — ma non ripescare un tiro fortunato lasciando tutto
+uguale.
+
 ### Doti del pilota — `DriverTalent.cs`
 
 Sei tratti derivati dal nome (deterministici): velocità pura, costanza, bagnato,
@@ -502,6 +575,28 @@ Assetto Corsa.
 
 ## 11. Il banco di misura
 
+### `--contenuti`: il collaudo di scene, citta' e trattative
+
+```powershell
+dotnet run --project tests\CareerSim\CareerSim.csproj -c Debug -- --contenuti
+```
+
+Non simula niente e finisce in due secondi. Controlla che le venti scene
+producano battute vere su due carriere agli antipodi — una appena cominciata,
+senza classifica ne' sponsor, che e' il caso in cui una frase puo' citare un
+dato che non esiste — che cento piante della citta' siano tutte attraversabili
+e ripetibili, che per ognuno dei quattro tipi di interlocutore giocare bene
+la trattativa convenga davvero senza mai produrre una certezza, e che nessuna
+attivita' della giornata sia malformata.
+
+**Serve perche' il banco della carriera non tocca i contenuti**: `CareerSim`
+sceglie le attivita' per identificativo e non guarda mai il catalogo intero,
+quindi aggiungere quattro attivita' scolastiche non ha cambiato di una virgola
+il resoconto — verificato, identico riga per riga. E' il comportamento giusto,
+ma senza questo secondo collaudo le cose nuove resterebbero senza verifica.
+
+
+
 `Misura-Carriere.ps1` esegue N carriere complete senza aprire finestre e stampa,
 per ognuna: doti, archetipo, fasi con gare/vittorie/podi/posizione media/livello
 IA/durata, cambi di vettura, e le medie del campione.
@@ -512,7 +607,14 @@ IA/durata, cambi di vettura, e le medie del campione.
 .\Misura-Carriere.ps1 -Catalogo ac-finto
 ```
 
-Sotto sta `tests\DebugRun`, che pilota `MainForm` fuori schermo con
+**Attenzione**: dei progetti di prova descritti qui sotto **e' rimasto solo
+`tests\CareerSim`**. Le fonti di `DebugRun`, `ParserCheck`, `PercorsoCheck`,
+`SignCheck`, `UiAdvance`, `UiRender` e `UiWalkthrough` non sono piu' sul disco
+e non erano mai state committate: ne restano solo le cartelle `bin` e `obj`.
+Sono andate perse nella pulizia della cartella da 5 GB. Quanto segue descrive
+com'erano, e va riscritto se serve.
+
+Sotto stava `tests\DebugRun`, che pilota `MainForm` fuori schermo con
 `CORSACAREER_UI_AUTOMATION=1` e attraversa i pulsanti veri (`ContinueStory`,
 `LaunchWeekend`, `AdvanceSeason`, …), non le funzioni interne. Ogni carriera ha
 un limite di 500 passi; se lo raggiunge lo dichiara, così una carriera bloccata
@@ -588,10 +690,9 @@ Il collaudo su una carriera completa è passato da 49 problemi segnalati a 2.
 2. **Dominio in alto**: al banco un pilota forte in Formula 1 vince quasi tutto.
    Con l'IA vera potrebbe non essere un problema; da rimisurare in pista prima di
    toccare i pesi.
-3. **Uscite di Haru dagli sponsor come minigioco RPG** — idea approvata, non
-   iniziata: arrivo in tempo alla visita, dialogo a scelte multiple, poi
-   eventualmente una mappa dall'alto di una cittadina di provincia giapponese.
-4. **Scene scolastiche** con Nami e Nobu che promuovono il pilota, con effetto sui
-   parametri.
-5. **Venti dialoghi in stile Capeta** già scritti dall'utente, da integrare al
-   posto di quelli attuali che si somigliano troppo.
+3. **La cittadina è disegnata a codice, non illustrata.** Funziona ed è
+   leggibile, ma è geometria colorata in mezzo a un gioco fatto di tavole
+   disegnate. Se arrivano un tileset e uno sprite del personaggio a quattro
+   direzioni, `TownWalkDialog` si adatta senza cambiare la logica: tutto il
+   disegno sta in `DisegnaCella` e `DisegnaPersona`.
+4. **Monami e Nobu non hanno un ritratto.** Le loro scene mostrano il luogo.

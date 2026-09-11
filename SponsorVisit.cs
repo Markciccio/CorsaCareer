@@ -147,25 +147,43 @@ public static class SponsorVisits
     /// Come va la visita. Deterministico rispetto alla giornata: ricaricare non
     /// permette di riprovare finché non esce il sì.
     /// </summary>
-    public static SponsorReply Resolve(SponsorVisit visit, CareerState career)
+    public static SponsorReply Resolve(SponsorVisit visit, CareerState career) =>
+        Resolve(visit, career, visit.Chance);
+
+    /// <summary>
+    /// Come va la visita, con la probabilita' che la trattativa ha prodotto.
+    ///
+    /// Il tiro resta legato alla giornata e alla visita, non alla probabilita':
+    /// cosi' rigiocare la trattativa cambia le proprie possibilita' — ed e'
+    /// giusto, perche' si e' parlato diversamente — ma non permette di
+    /// ripescare un tiro fortunato lasciando tutto uguale.
+    /// </summary>
+    public static SponsorReply Resolve(SponsorVisit visit, CareerState career, int probabilita)
     {
         var seed = Hash($"{career.Driver}|{career.StoryDate:yyyyMMdd}|{visit.Id}|esito");
         var roll = (int)(DriverDay.Unit(seed) * 100);
-        var accepted = roll < visit.Chance;
+        var accepted = roll < probabilita;
+
+        // Convincere qualcuno oltre le proprie possibilita' non fa apparire
+        // soldi che non ha: una trattativa condotta bene sblocca il si', non
+        // aumenta l'assegno. Chi ha stravinto pero' strappa qualcosa in piu'.
+        var amount = accepted
+            ? visit.Amount + (probabilita > visit.Chance + 20 ? visit.Amount / 10 : 0)
+            : 0;
 
         return new SponsorReply
         {
             Accepted = accepted,
-            Amount = accepted ? visit.Amount : 0,
+            Amount = amount,
             Line = accepted ? AcceptLine(visit) : RefuseLine(visit),
             Reason = accepted
-                ? $"Probabilità {visit.Chance}%: è andata."
-                : $"Probabilità {visit.Chance}%: non è bastata."
+                ? $"Probabilità {probabilita}%: è andata."
+                : $"Probabilità {probabilita}%: non è bastata."
         };
     }
 
     private static string AcceptLine(SponsorVisit visit) =>
-        $"«Va bene. Metto € {visit.Amount:N0}. Però l'adesivo lo voglio dove si vede.»";
+        $"«Va bene. Facciamo € {visit.Amount:N0}. Però l'adesivo lo voglio dove si vede.»";
 
     private static string RefuseLine(SponsorVisit visit) =>
         $"«Il ragazzo mi piace, ma quest'anno con {visit.Trade} non ci sono margini. Mi dispiace davvero.»";

@@ -190,7 +190,19 @@ public sealed class SponsorDayDialog : CareerDialog
             return;
         }
 
-        var reply = SponsorVisits.Resolve(visit, career);
+        // 1. La strada. Il negozio sta da qualche parte in città e bisogna
+        //    arrivarci: si può accompagnare Haru — e allora il tempo lo si
+        //    gestisce — oppure lasciarlo andare da solo, che non è una
+        //    penalità, è solo rinunciare al vantaggio di essere puntuali.
+        var viaggio = Cammina(visit);
+        if (viaggio == null) return;   // ha cambiato idea prima di uscire
+
+        // 2. Il tavolo. Tre domande, e come si risponde sposta le probabilità.
+        using var trattativa = new SponsorNegotiationDialog(visit, career, viaggio.Modificatore);
+        trattativa.ShowDialog(this);
+        var probabilita = trattativa.ProbabilitaFinale;
+
+        var reply = SponsorVisits.Resolve(visit, career, probabilita);
 
         // Le ore si consumano comunque: anche una trattativa fallita è un
         // pomeriggio speso.
@@ -212,6 +224,49 @@ public sealed class SponsorDayDialog : CareerDialog
 
         playScene(visit, reply);
         Refresh_();
+    }
+
+    /// <summary>
+    /// Il tragitto fino al negozio.
+    ///
+    /// Si può giocare o saltare. Saltarlo non punisce — Haru ci va lo stesso e
+    /// arriva in orario normale — ma accompagnarlo e arrivare puntuali dà un
+    /// piccolo vantaggio al tavolo, come lo darebbe nella realtà. Chi non ha
+    /// voglia di camminare non deve sentirsi costretto a farlo ogni volta.
+    /// </summary>
+    private TownWalkResult? Cammina(SponsorVisit visit)
+    {
+        var risposta = CareerMessages.Ask(this,
+            $"{visit.Target} vi aspetta.\n\n"
+            + "Il negozio è dall'altra parte della città e non avete la macchina.\n\n"
+            + "SÌ = ci accompagni tu, a piedi. Se arrivate puntuali partite avvantaggiati.\n"
+            + "NO = ci va Haru da solo, e arriva quando arriva.",
+            "CorsaCareer — ci andiamo?", MessageBoxButtons.YesNoCancel, DialogResult.Yes);
+
+        if (risposta == DialogResult.Cancel) return null;
+        if (risposta != DialogResult.Yes) return new TownWalkResult(true, 0, 0);
+
+        var mappa = TownMap.Genera(
+            StableHash.Of(career.Driver ?? "", career.StoryDate.ToString("yyyyMMdd"), visit.Id),
+            visit.Target);
+
+        // Il tempo concesso è il percorso migliore più un quarto: si può
+        // sbagliare una svolta, non si può girare a vuoto.
+        var minimo = Math.Max(12, mappa.DistanzaMinima());
+        var concessi = (int)Math.Round(minimo * 1.25);
+
+        using var passeggiata = new TownWalkDialog(mappa, "Haru", concessi);
+        passeggiata.ShowDialog(this);
+
+        if (!passeggiata.Esito.Arrivato)
+        {
+            CareerMessages.Show(this,
+                $"Avete rinunciato prima di arrivare da {visit.Target}.\n\n"
+                + "Le ore non si consumano: potete riprovare oggi stesso.",
+                "CorsaCareer — tornati indietro");
+            return null;
+        }
+        return passeggiata.Esito;
     }
 
     private static Label Line(string text, Font font, Color color, int width, int above, int below)

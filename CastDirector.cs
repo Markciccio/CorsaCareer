@@ -30,7 +30,13 @@ public enum SceneKind
     /// <summary>Immagine pubblica: seguito, stampa, social.</summary>
     Immagine,
     /// <summary>Tecnica: assetto, dati, come si guida quella macchina.</summary>
-    Tecnica
+    Tecnica,
+    /// <summary>Scuola: la vita che continua fuori dal circuito.</summary>
+    Scuola,
+    /// <summary>L'inizio di tutto: il kart rimesso insieme, la prima volta in pista.</summary>
+    Origine,
+    /// <summary>La cassa vuota, le iscrizioni che non si pagano.</summary>
+    Crisi
 }
 
 /// <summary>Un personaggio, con il suo carattere e la sua funzione nel racconto.</summary>
@@ -71,6 +77,8 @@ public static class CastDirector
     public const string Noa = "noa-minazuki";
     public const string Miki = "miki-arisawa";
     public const string Minoru = "minoru-nakahara";
+    public const string Monami = "monami-todo";
+    public const string Nobu = "nobu-yagi";
 
     public static readonly IReadOnlyList<CastMember> Compagnia =
     [
@@ -182,7 +190,27 @@ public static class CastDirector
             "character-minoru-nakahara.png",
             new Dictionary<string, string> { ["neutro"] = "character-minoru-nakahara.png" },
             [SceneKind.AperturaCampionato, SceneKind.Retrocessione, SceneKind.ChiamataDaSopra],
-            Peso: 40)
+            Peso: 40),
+
+        // I due compagni di scuola. Non hanno un ritratto proprio: esistono
+        // solo dentro le tavole di gruppo, e il regista lo sa — Ritratto()
+        // restituisce vuoto e la scena mostra il luogo invece della faccia.
+        // Meglio cosi' che prestargli il volto di qualcun altro.
+        new(Monami, "Monami Todo", "compagna di classe, corre anche lei",
+            "Corre nella tua stessa categoria e non te lo fa pesare mai. E' l'unica che capisce davvero cosa vuol dire arrivare a scuola dopo una gara persa.",
+            "Diretta e pratica, senza retorica. Ti parla da pilota a pilota, e quando ti consola lo fa dicendoti una cosa vera.",
+            "",
+            new Dictionary<string, string>(),
+            [SceneKind.Scuola, SceneKind.Battuta, SceneKind.Vittoria, SceneKind.Origine],
+            Peso: 55),
+
+        new(Nobu, "Nobu Yagi", "compagno di classe, tiene i conti",
+            "Non guida e non gli interessa guidare: gli interessa che tu possa farlo. E' quello che ha capito prima di tutti che senza soldi non si corre.",
+            "Concreto fino alla brutalita' sui numeri, imbarazzato su tutto il resto. Dice le cifre esatte e poi si scusa.",
+            "",
+            new Dictionary<string, string>(),
+            [SceneKind.Scuola, SceneKind.Denaro, SceneKind.Crisi, SceneKind.Origine],
+            Peso: 50)
     ];
 
     public static CastMember ById(string id) =>
@@ -242,6 +270,14 @@ public static class CastDirector
         // non come apertura.
         (Riku, _) => 10,
         (Minoru, _) => 20,
+
+        // A scuola comandano loro: e' il loro mondo, non quello del paddock.
+        (Monami, SceneKind.Scuola) => 100,
+        (Nobu, SceneKind.Scuola) => 90,
+        (Nobu, SceneKind.Crisi) => 95,
+        (Nobu, SceneKind.Denaro) => 70,
+        (Monami, _) => 35,
+        (Nobu, _) => 30,
         _ => 50
     };
 
