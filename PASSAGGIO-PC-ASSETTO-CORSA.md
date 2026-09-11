@@ -513,10 +513,10 @@ controllare che quello che sembra esserci sia davvero agganciato.
 ### La scuola — `DayActivityCatalog`
 
 Quattro attività nuove per il pilota, che ha sedici anni e una scuola:
-`scuola` (riposa la testa), `scuola-monami` (preparazione insieme alla
-compagna di classe che corre nella stessa categoria), `scuola-nobu` (rimettere
+`scuola` (riposa la testa), `scuola-sae` (preparazione insieme alla
+compagna di classe che corre nella stessa categoria), `scuola-tooru` (rimettere
 in ordine i conti) e `scuola-volantini` (farsi conoscere dentro la scuola).
-Monami Todo e Nobu Yagi sono nel cast (`CastDirector`) ma **non hanno un
+Sae Todo e Tooru Yagi sono nel cast (`CastDirector`) ma **non hanno un
 ritratto proprio**: esistono solo dentro le tavole di gruppo, quindi
 `Ritratto()` restituisce stringa vuota e la scena mostra il luogo. Se un
 giorno arrivano i ritratti, basta aggiungere i file e riempire il dizionario.
@@ -574,6 +574,23 @@ Assetto Corsa.
 ---
 
 ## 11. Il banco di misura
+
+### `--anteprime`: vedere le schermate senza aprirle
+
+```powershell
+dotnet run --project tests\CareerSim\CareerSim.csproj -c Debug -- --anteprime C:\temp\anteprime
+```
+
+Apre 27 finestre fuori dallo schermo, le disegna su bitmap e le salva come
+PNG. Ricostruisce quello che faceva `tests/UiRender`, le cui fonti sono andate
+perse. Serve perche' in WinForms i difetti veri non sono di logica ma di
+impaginazione, e nessun collaudo che non guardi i pixel li trova.
+
+Ha gia' pagato: la mappa della citta' restava rannicchiata in alto a sinistra
+con meta' schermo nero (la classe base massimizza ogni finestra e la pianta
+aveva la casella fissa a 22 pixel), e le tre risposte della trattativa erano
+larghe 850 pixel su uno schermo da 1936. Nessuna delle due cose si poteva
+vedere dal codice.
 
 ### `--contenuti`: il collaudo di scene, citta' e trattative
 
@@ -695,4 +712,4 @@ Il collaudo su una carriera completa è passato da 49 problemi segnalati a 2.
    disegnate. Se arrivano un tileset e uno sprite del personaggio a quattro
    direzioni, `TownWalkDialog` si adatta senza cambiare la logica: tutto il
    disegno sta in `DisegnaCella` e `DisegnaPersona`.
-4. **Monami e Nobu non hanno un ritratto.** Le loro scene mostrano il luogo.
+4. **Sae e Tooru non hanno un ritratto.** Le loro scene mostrano il luogo.

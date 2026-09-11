@@ -30,6 +30,19 @@ internal static class CareerSimEntry
             return problemi;
         }
 
+        // Le anteprime: apre le schermate fuori campo e le salva come PNG.
+        // E' l'unico modo di accorgersi di un testo troncato senza che ci sia
+        // una persona davanti allo schermo.
+        if (args.Any(x => x.Equals("--anteprime", StringComparison.OrdinalIgnoreCase)))
+        {
+            var dove = ArgText(args, "--anteprime", "");
+            if (string.IsNullOrWhiteSpace(dove) || dove.StartsWith("--"))
+                dove = Path.Combine(Path.GetTempPath(), "CorsaCareerAnteprime");
+            var esitoAnteprime = Anteprime.Esegui(dove, Console.Out);
+            Console.Out.Flush();
+            return esitoAnteprime;
+        }
+
         var stagioni = ArgInt(args, "--stagioni", 8);
         var pilota = ArgText(args, "--pilota", "Sim");
         Environment.SetEnvironmentVariable("CORSACAREER_DEMO_DRIVER", pilota);

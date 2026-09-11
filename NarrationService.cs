@@ -230,7 +230,7 @@ public static class NarrationService
         {
             0 => "manga-kart-scrapyard-four-stroke-generator-first-test.png",
             1 => "manga-kart-first-rain-test-repaired-chassis.png",
-            _ => "manga-kart-first-team-choice-rei-nobu-genji-paddock.png"
+            _ => "manga-kart-first-team-choice-rei-tooru-genji-paddock.png"
         };
         var selected = AssetPaths.File(file);
         if (File.Exists(selected)) return selected;

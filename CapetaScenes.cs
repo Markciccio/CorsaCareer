@@ -445,7 +445,7 @@ public static class CapetaScenes
 
     private static List<AnimeDialogueLine> CassaVuota(Fatti f) =>
     [
-        CastDirector.Battuta(CastDirector.Nobu,
+        CastDirector.Battuta(CastDirector.Tooru,
             $"«Ho rifatto i conti tre volte. In cassa ci sono € {f.Cassa:N0}. "
             + "L'iscrizione della prossima non la copriamo. Scusa se te lo dico così, non sono capace di girarci intorno.»"),
         CastDirector.Battuta(CastDirector.Haru,
@@ -465,7 +465,7 @@ public static class CapetaScenes
             CastDirector.Battuta(CastDirector.Haru,
                 $"«HANNO DETTO DI SÌ! {chi} ha detto di sì! "
                 + "Ho l'adesivo in mano, guarda, ce l'ho proprio qui in mano.»", "sollevato"),
-            CastDirector.Battuta(CastDirector.Nobu,
+            CastDirector.Battuta(CastDirector.Tooru,
                 $"«In cassa adesso ci sono € {f.Cassa:N0}. Lo dico perché è la prima volta da quando abbiamo cominciato "
                 + "che il numero sale invece di scendere. Volevo solo dirlo ad alta voce.»"),
             CastDirector.Battuta(CastDirector.Genji,
@@ -483,7 +483,7 @@ public static class CapetaScenes
             $"«Gli porti quello che hai: {f.Gare} gare, {f.Podi} podi, livello di seguito {f.Seguito} su 100. "
             + "Oggi non basta. Fra sei mesi, con gli stessi numeri più alti, la stessa persona ti dice di sì. "
             + "Non è un rifiuto: è un rinvio.»", "rifiuto"),
-        CastDirector.Battuta(CastDirector.Nobu,
+        CastDirector.Battuta(CastDirector.Tooru,
             "«Io intanto ho fatto la lista di chi non abbiamo ancora provato. Sono undici. "
             + "Cominciamo dai tre più vicini così non spendiamo in treno.»")
     ];
@@ -510,14 +510,14 @@ public static class CapetaScenes
     {
         var righe = new List<AnimeDialogueLine>
         {
-            CastDirector.Battuta(CastDirector.Monami,
+            CastDirector.Battuta(CastDirector.Sae,
                 $"«Ti sei addormentato a matematica. Ti ho coperto io, ma il professore ha visto tutto.» "
                 + "Poi si siede sul banco davanti al tuo. «Allora? Com'è andata domenica?»")
         };
-        righe.Add(CastDirector.Battuta(CastDirector.Nobu,
+        righe.Add(CastDirector.Battuta(CastDirector.Tooru,
             $"«Io lo so com'è andata, ho guardato i risultati. {f.Gare} gare in carriera, {f.Podi} podi. "
             + "E prima che me lo chiedi: no, non ho fatto i compiti nemmeno io.»"));
-        righe.Add(CastDirector.Battuta(CastDirector.Monami,
+        righe.Add(CastDirector.Battuta(CastDirector.Sae,
             "«Comunque lunedì è sempre così. Corri, torni, e il mondo qui dentro non si è accorto di niente. "
             + "All'inizio mi faceva rabbia. Adesso mi piace: è l'unico posto dove nessuno mi chiede dei tempi.»"));
         return righe;
@@ -527,12 +527,12 @@ public static class CapetaScenes
     {
         var righe = new List<AnimeDialogueLine>
         {
-            CastDirector.Battuta(CastDirector.Nobu,
+            CastDirector.Battuta(CastDirector.Tooru,
                 $"«C'è una cosa che devi sapere. In terza B parlano di te.» "
                 + $"«Livello di seguito {f.Seguito} su 100, l'ho controllato. "
                 + "Non è tanto in assoluto, ma per uno di questa scuola è enorme.»")
         };
-        righe.Add(CastDirector.Battuta(CastDirector.Monami,
+        righe.Add(CastDirector.Battuta(CastDirector.Sae,
             "«E adesso comincia la parte fastidiosa: quelli che non ti hanno mai parlato "
             + "diventano tuoi amici, e quelli che ti erano amici si mettono in imbarazzo. "
             + "Dura un paio di mesi. Poi passa e restano quelli veri.»"));

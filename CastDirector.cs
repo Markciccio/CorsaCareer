@@ -77,8 +77,8 @@ public static class CastDirector
     public const string Noa = "noa-minazuki";
     public const string Miki = "miki-arisawa";
     public const string Minoru = "minoru-nakahara";
-    public const string Monami = "monami-todo";
-    public const string Nobu = "nobu-yagi";
+    public const string Sae = "sae-kurihara";
+    public const string Tooru = "tooru-inagaki";
 
     public static readonly IReadOnlyList<CastMember> Compagnia =
     [
@@ -196,19 +196,31 @@ public static class CastDirector
         // solo dentro le tavole di gruppo, e il regista lo sa — Ritratto()
         // restituisce vuoto e la scena mostra il luogo invece della faccia.
         // Meglio cosi' che prestargli il volto di qualcun altro.
-        new(Monami, "Monami Todo", "compagna di classe, corre anche lei",
+        // Sae e Tooru non hanno ancora un ritratto vero: finche' non arriva, si
+        // usa la tavola di gruppo in cui compaiono. Non e' un primo piano, ma
+        // e' loro — e soprattutto non e' il rettangolo nero che restava prima,
+        // che occupava meta' schermo e si notava piu' di qualunque disegno.
+        new(Sae, "Sae Kurihara", "compagna di classe, corre anche lei",
             "Corre nella tua stessa categoria e non te lo fa pesare mai. E' l'unica che capisce davvero cosa vuol dire arrivare a scuola dopo una gara persa.",
             "Diretta e pratica, senza retorica. Ti parla da pilota a pilota, e quando ti consola lo fa dicendoti una cosa vera.",
-            "",
-            new Dictionary<string, string>(),
+            "manga-sae-kart-local-victory-celebration.png",
+            new Dictionary<string, string>
+            {
+                ["felice"] = "manga-sae-kart-local-victory-celebration.png",
+                ["decisa"] = "manga-sae-formula4-suzuka-first-test-determined.png"
+            },
             [SceneKind.Scuola, SceneKind.Battuta, SceneKind.Vittoria, SceneKind.Origine],
             Peso: 55),
 
-        new(Nobu, "Nobu Yagi", "compagno di classe, tiene i conti",
+        new(Tooru, "Tooru Inagaki", "compagno di classe, tiene i conti",
             "Non guida e non gli interessa guidare: gli interessa che tu possa farlo. E' quello che ha capito prima di tutti che senza soldi non si corre.",
             "Concreto fino alla brutalita' sui numeri, imbarazzato su tutto il resto. Dice le cifre esatte e poi si scusa.",
-            "",
-            new Dictionary<string, string>(),
+            "manga-tooru-osaka-kart-sponsor-autoparts-negotiation.png",
+            new Dictionary<string, string>
+            {
+                ["trattativa"] = "manga-tooru-osaka-kart-sponsor-autoparts-negotiation.png",
+                ["deluso"] = "manga-tooru-sponsor-rejection-kart-budget-rain.png"
+            },
             [SceneKind.Scuola, SceneKind.Denaro, SceneKind.Crisi, SceneKind.Origine],
             Peso: 50)
     ];
@@ -272,12 +284,12 @@ public static class CastDirector
         (Minoru, _) => 20,
 
         // A scuola comandano loro: e' il loro mondo, non quello del paddock.
-        (Monami, SceneKind.Scuola) => 100,
-        (Nobu, SceneKind.Scuola) => 90,
-        (Nobu, SceneKind.Crisi) => 95,
-        (Nobu, SceneKind.Denaro) => 70,
-        (Monami, _) => 35,
-        (Nobu, _) => 30,
+        (Sae, SceneKind.Scuola) => 100,
+        (Tooru, SceneKind.Scuola) => 90,
+        (Tooru, SceneKind.Crisi) => 95,
+        (Tooru, SceneKind.Denaro) => 70,
+        (Sae, _) => 35,
+        (Tooru, _) => 30,
         _ => 50
     };
 

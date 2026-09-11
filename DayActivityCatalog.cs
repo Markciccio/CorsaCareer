@@ -19,11 +19,11 @@ public static class DayActivityCatalog
     ///
     /// Serve perche' esisteva gia' «scuola-kart», che e' una giornata al
     /// kartodromo e non ha niente a che vedere con la classe: cercare le
-    /// attivita' scolastiche per prefisso faceva scattare la scena di Monami e
-    /// Nobu dopo un pomeriggio passato al circuito.
+    /// attivita' scolastiche per prefisso faceva scattare la scena di Sae e
+    /// Tooru dopo un pomeriggio passato al circuito.
     /// </summary>
     public static readonly IReadOnlyList<string> Scolastiche =
-        ["scuola", "scuola-monami", "scuola-nobu", "scuola-volantini"];
+        ["scuola", "scuola-sae", "scuola-tooru", "scuola-volantini"];
 
     /// <summary>Vero se questa attivita' si svolge a scuola.</summary>
     public static bool AScuola(string id) =>
@@ -357,7 +357,7 @@ public static class DayActivityCatalog
         new()
         {
             Id = "scuola", Name = "Scuola", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 4,
-            Promise = "Una mattinata normale, in classe con Monami e Nobu. Non allena niente, ma stacca la testa dalle gare.",
+            Promise = "Una mattinata normale, in classe con Sae e Tooru. Non allena niente, ma stacca la testa dalle gare.",
             Outcomes =
             [
                 new()
@@ -369,13 +369,13 @@ public static class DayActivityCatalog
         },
         new()
         {
-            Id = "scuola-monami", Name = "Allenarti con Monami", Actor = DayActor.Driver, Focus = DayFocus.Fisico, Hours = 2,
+            Id = "scuola-sae", Name = "Allenarti con Sae", Actor = DayActor.Driver, Focus = DayFocus.Fisico, Hours = 2,
             Promise = "Due ore di preparazione con la tua compagna di classe, che corre nella tua stessa categoria. Vi spingete a vicenda.",
             Outcomes =
             [
                 new()
                 {
-                    Line = "Monami non molla mai un esercizio a meta'. Finisci distrutto e piu' forte di ieri.",
+                    Line = "Sae non molla mai un esercizio a meta'. Finisci distrutto e piu' forte di ieri.",
                     Weight = 7, Effects = [new(DayEffectKind.Fitness, 8), new(DayEffectKind.Fatigue, 12)]
                 },
                 new()
@@ -387,13 +387,13 @@ public static class DayActivityCatalog
         },
         new()
         {
-            Id = "scuola-nobu", Name = "Fare i conti con Nobu", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 2,
-            Promise = "Due ore sul quaderno di Nobu a rimettere in ordine le spese. Non porta soldi: fa vedere dove se ne vanno.",
+            Id = "scuola-tooru", Name = "Fare i conti con Tooru", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 2,
+            Promise = "Due ore sul quaderno di Tooru a rimettere in ordine le spese. Non porta soldi: fa vedere dove se ne vanno.",
             Outcomes =
             [
                 new()
                 {
-                    Line = "Nobu ha ritrovato due iscrizioni pagate due volte e si e' fatto restituire la differenza.",
+                    Line = "Tooru ha ritrovato due iscrizioni pagate due volte e si e' fatto restituire la differenza.",
                     Weight = 4, Effects = [new(DayEffectKind.Money, 90)]
                 },
                 new()
@@ -405,13 +405,13 @@ public static class DayActivityCatalog
         },
         new()
         {
-            Id = "scuola-volantini", Name = "Volantini a scuola con Nobu", Actor = DayActor.Driver, Focus = DayFocus.Immagine, Hours = 2,
-            Promise = "Nobu ha stampato dei volantini e Monami li distribuisce in cortile. Fa parlare di te dentro la scuola, e a volte fuori.",
+            Id = "scuola-volantini", Name = "Volantini a scuola con Tooru", Actor = DayActor.Driver, Focus = DayFocus.Immagine, Hours = 2,
+            Promise = "Tooru ha stampato dei volantini e Sae li distribuisce in cortile. Fa parlare di te dentro la scuola, e a volte fuori.",
             Outcomes =
             [
                 new()
                 {
-                    Line = "Li hanno presi in pochi e due sono finiti nel cestino davanti a te. Nobu fa finta di niente.",
+                    Line = "Li hanno presi in pochi e due sono finiti nel cestino davanti a te. Tooru fa finta di niente.",
                     Weight = 4, IsSetback = true, Effects = [new(DayEffectKind.Popularity, 1)]
                 },
                 new()

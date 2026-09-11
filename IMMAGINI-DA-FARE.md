@@ -127,3 +127,91 @@ Dopo aver aggiunto file e voci:
 
 Il collaudo controlla che ogni tavola dichiarata esista, che i percorsi puntino
 dentro `assets/`, e che nessuna categoria riceva l'illustrazione di un'altra.
+
+
+---
+
+# Richiesta del 11 settembre 2026 — misurata, non stimata
+
+Questo blocco nasce dal collaudo `--contenuti`, che conta davvero quali
+combinazioni di disciplina e momento hanno una tavola e quali no:
+
+```powershell
+dotnet run --project tests\CareerSim\CareerSim.csproj -c Debug -- --contenuti
+```
+
+Rieseguirlo dopo aver aggiunto le tavole dice quante ne restano.
+
+## 1. I due ritratti mancanti — PRIORITÀ ALTA (8 file)
+
+Sono l'unica cosa che si **vede** come un difetto: dove manca il ritratto la
+scena mostrava un rettangolo nero grande mezzo schermo. Adesso ripiega su una
+tavola di gruppo, che è meglio ma non è un primo piano come hanno tutti gli
+altri personaggi.
+
+**Sae Kurihara** — compagna di classe del pilota, sedici anni, corre nella sua
+stessa categoria. Diretta e pratica, non si commuove facilmente, tiene i
+capelli corti perché il casco. Non è un interesse amoroso: è una collega.
+
+| File | Espressione |
+|---|---|
+| `character-sae-kurihara.png` | neutra, sguardo dritto |
+| `character-sae-kurihara-felice.png` | contenta ma composta, mezzo sorriso |
+| `character-sae-kurihara-decisa.png` | concentrata prima di scendere in pista |
+| `character-sae-kurihara-preoccupata.png` | preoccupata per l'amico, non per sé |
+
+**Tooru Inagaki** — compagno di classe, non guida e non gli interessa: tiene i
+conti. Occhiali, quaderno sempre in mano, impacciato con le persone e
+implacabile con i numeri.
+
+| File | Espressione |
+|---|---|
+| `character-tooru-inagaki.png` | neutro, quaderno in mano |
+| `character-tooru-inagaki-sollevato.png` | sollievo dopo un sì |
+| `character-tooru-inagaki-deluso.png` | dopo un rifiuto, sguardo basso |
+| `character-tooru-inagaki-imbarazzato.png` | mentre dice una cifra che fa male |
+
+**Formato ritratti**: come gli altri `character-*` già presenti — **1152 × 1152**
+(oppure 1024 × 1536 verticale), mezzo busto, sfondo di contesto sfocato.
+
+## 2. Le combinazioni scoperte — 21 tavole
+
+Il collaudo le elenca per nome. Vanno taggate nel catalogo con **disciplina e
+momento**, altrimenti il motore non le trova: è quello il criterio, non il nome
+del file.
+
+- **`scuola` in ogni disciplina (7 tavole)** — è il momento nuovo e non ha
+  nemmeno una tavola: aula giapponese, cortile, corridoio, palestra della
+  scuola. Il pilota in divisa scolastica, con Sae e Tooru.
+- **`campionato` in formula-minore, formula-alta, formula-vertice, gt,
+  endurance, turismo (6 tavole)** — la fine di un campionato: classifica sul
+  muretto, squadra che conta i punti, premiazione.
+- **`sconfitta` in formula-alta, formula-vertice, gt, endurance, turismo
+  (5 tavole)** — la domenica storta in quella categoria.
+- **`formula-vertice`: vittoria, trattativa, officina (3 tavole)** — il gradino
+  più alto è quasi scoperto, e ora la carriera ci arriva davvero.
+
+Priorità fra queste: prima le sette di `scuola` (momento nuovo, zero
+copertura), poi le tre di `formula-vertice`.
+
+## 3. La cittadina — OPZIONALE, valutare se ne vale la pena
+
+La mappa del minigioco è **disegnata a codice** con GDI+ (`TownWalkDialog`):
+strade, isolati, canale, ponti, passaggio a livello, alberi, insegne. Funziona
+ed è leggibile, ma è geometria colorata in mezzo a un gioco fatto di tavole
+disegnate a mano.
+
+Per sostituirla servirebbero:
+
+- **1 tileset** PNG a griglia 32×32 con: strada dritta / incrocio / curva,
+  marciapiede, 4 varianti di edificio visto dall'alto, tetto, albero, prato,
+  acqua, ponte, binari, passaggio a livello aperto e chiuso, insegna negozio —
+  circa **24 caselle**.
+- **1 spritesheet** del personaggio visto dall'alto, 4 direzioni × 3 fotogrammi
+  = **12 pose**, 32×32 ciascuna.
+
+Tutto il disegno sta in due metodi (`DisegnaCella` e `DisegnaPersona`): il
+passaggio ai tile non tocca la logica. Ma è un tipo di asset diverso da tutti
+gli altri, e la mappa così com'è non è un difetto — è solo meno bella del
+resto. **Da fare per ultimo, se avanza tempo.**
+

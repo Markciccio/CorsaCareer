@@ -41,8 +41,24 @@ public sealed record TownWalkResult(bool Arrivato, int MinutiDiRitardo, int Minu
 /// </summary>
 public sealed class TownWalkDialog : CareerDialog
 {
-    private const int Cella = 22;
     private const int MinutiPerPasso = 1;
+    private const int AltezzaTestata = 96;
+
+    /// <summary>
+    /// La dimensione di una casella, ricavata dallo spazio disponibile.
+    ///
+    /// Era fissa a 22 pixel, e siccome <see cref="CareerDialog"/> massimizza
+    /// ogni finestra la citta' restava rannicchiata in alto a sinistra con
+    /// meta' schermo nero intorno. Adesso la pianta si prende lo spazio che
+    /// c'e' e sta al centro, su qualunque monitor.
+    /// </summary>
+    private int Cella => Math.Max(10, Math.Min(
+        (ClientSize.Width - 60) / TownMap.Larghezza,
+        (ClientSize.Height - AltezzaTestata - 60) / TownMap.Altezza));
+
+    private int OrigineX => (ClientSize.Width - TownMap.Larghezza * Cella) / 2;
+    private int OrigineY => AltezzaTestata
+        + Math.Max(12, (ClientSize.Height - AltezzaTestata - TownMap.Altezza * Cella) / 2);
 
     private readonly TownMap mappa;
     private readonly string chiVa;
@@ -68,10 +84,8 @@ public sealed class TownWalkDialog : CareerDialog
         BackColor = UiTheme.Background;
         ForeColor = UiTheme.TextPrimary;
         Font = UiTheme.Body;
-        ClientSize = new Size(TownMap.Larghezza * Cella + 40, TownMap.Altezza * Cella + 148);
-        StartPosition = FormStartPosition.CenterParent;
-        FormBorderStyle = FormBorderStyle.FixedDialog;
-        MaximizeBox = false; MinimizeBox = false;
+        // Niente dimensione fissa: la finestra la massimizza la classe base e
+        // la pianta si adatta da sola.
         KeyPreview = true;
         DoubleBuffered = true;
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint, true);
@@ -99,6 +113,32 @@ public sealed class TownWalkDialog : CareerDialog
         base.OnKeyUp(e);
         premuti.Remove(e.KeyCode);
         e.Handled = true;
+    }
+
+    /// <summary>
+    /// Se la finestra perde il fuoco il tempo si ferma.
+    ///
+    /// Senza questo il cronometro continuava a battere mentre il giocatore era
+    /// da un'altra parte: ci si assentava un minuto e si arrivava tardi
+    /// dall'incontro per un motivo che col gioco non c'entrava niente. E i
+    /// tasti tenuti premuti restavano nell'insieme, perche' il rilascio non
+    /// arriva piu' una volta perso il fuoco — il personaggio continuava a
+    /// camminare da solo contro un muro.
+    /// </summary>
+    protected override void OnDeactivate(EventArgs e)
+    {
+        base.OnDeactivate(e);
+        premuti.Clear();
+        if (!arrivato && !rinunciato) orologio.Stop();
+        Invalidate();
+    }
+
+    protected override void OnActivated(EventArgs e)
+    {
+        base.OnActivated(e);
+        premuti.Clear();
+        if (!arrivato && !rinunciato) orologio.Start();
+        Invalidate();
     }
 
     private void Rinuncia()
@@ -189,14 +229,21 @@ public sealed class TownWalkDialog : CareerDialog
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.Clear(UiTheme.Background);
 
-        var ox = 20;
-        var oy = 96;
+        var ox = OrigineX;
+        var oy = OrigineY;
+        var cella = Cella;
 
         DisegnaTestata(g);
 
+        // Una cornice attorno alla pianta: senza, su uno schermo grande la
+        // citta' galleggia in mezzo al nero senza un confine.
+        using (var cornice = new Pen(UiTheme.Border))
+            g.DrawRectangle(cornice, ox - 2, oy - 2,
+                TownMap.Larghezza * cella + 3, TownMap.Altezza * cella + 3);
+
         for (var x = 0; x < TownMap.Larghezza; x++)
             for (var y = 0; y < TownMap.Altezza; y++)
-                DisegnaCella(g, x, y, ox + x * Cella, oy + y * Cella);
+                DisegnaCella(g, x, y, ox + x * cella, oy + y * cella);
 
         DisegnaInsegne(g, ox, oy);
         DisegnaBussola(g, ox, oy);
@@ -239,7 +286,12 @@ public sealed class TownWalkDialog : CareerDialog
         var lt = g.MeasureString(etichettaTempo, etichetta).Width;
         g.DrawString(etichettaTempo, etichetta, piccolo, ClientSize.Width - lt - 22, 12);
 
-        if (!PassaggioAperto && mappa.RigaFerrovia >= 0)
+        if (!orologio.Enabled && !arrivato && !rinunciato)
+        {
+            using var pausa = new SolidBrush(UiTheme.Info);
+            g.DrawString("In pausa: il tempo riparte quando torni su questa finestra.", corpo, pausa, 20, 70);
+        }
+        else if (!PassaggioAperto && mappa.RigaFerrovia >= 0)
         {
             using var avviso = new SolidBrush(UiTheme.Warning);
             g.DrawString("Le sbarre sono abbassate: passa un treno.", corpo, avviso, 20, 70);
@@ -265,6 +317,10 @@ public sealed class TownWalkDialog : CareerDialog
         using var pennello = new SolidBrush(colore);
         g.FillRectangle(pennello, sx, sy, Cella, Cella);
 
+        // I dettagli sono proporzionali alla casella: erano in pixel fissi, e
+        // con la pianta che adesso si adatta allo schermo sarebbero rimasti
+        // minuscoli dentro caselle grandi il doppio.
+        var u = Cella / 22f;
         switch (tile)
         {
             case TownTile.Edificio:
@@ -272,18 +328,18 @@ public sealed class TownWalkDialog : CareerDialog
                 // leggere il blocco come una casa e non come un buco.
                 using (var finestra = new SolidBrush(Color.FromArgb(46, 50, 62)))
                 {
-                    g.FillRectangle(finestra, sx + 4, sy + 4, 5, 5);
-                    g.FillRectangle(finestra, sx + 13, sy + 4, 5, 5);
-                    g.FillRectangle(finestra, sx + 4, sy + 13, 5, 5);
-                    g.FillRectangle(finestra, sx + 13, sy + 13, 5, 5);
+                    var lato = 5 * u;
+                    g.FillRectangle(finestra, sx + 4 * u, sy + 4 * u, lato, lato);
+                    g.FillRectangle(finestra, sx + 13 * u, sy + 4 * u, lato, lato);
+                    g.FillRectangle(finestra, sx + 4 * u, sy + 13 * u, lato, lato);
+                    g.FillRectangle(finestra, sx + 13 * u, sy + 13 * u, lato, lato);
                 }
                 using (var bordo = new Pen(Color.FromArgb(20, 22, 28)))
                     g.DrawRectangle(bordo, sx, sy, Cella, Cella);
                 break;
 
             case TownTile.Strada:
-                // La riga di mezzeria solo dove la strada prosegue dritta.
-                using (var riga = new Pen(Color.FromArgb(120, 120, 110), 1.4f) { DashStyle = DashStyle.Dash })
+                using (var riga = new Pen(Color.FromArgb(120, 120, 110), 1.4f * u) { DashStyle = DashStyle.Dash })
                 {
                     if (mappa[x, y - 1] is TownTile.Strada && mappa[x, y + 1] is TownTile.Strada)
                         g.DrawLine(riga, sx + Cella / 2f, sy, sx + Cella / 2f, sy + Cella);
@@ -294,67 +350,69 @@ public sealed class TownWalkDialog : CareerDialog
 
             case TownTile.Parco:
                 using (var chioma = new SolidBrush(Color.FromArgb(56, 104, 68)))
-                    g.FillEllipse(chioma, sx + 3, sy + 3, Cella - 6, Cella - 6);
+                    g.FillEllipse(chioma, sx + 3 * u, sy + 3 * u, Cella - 6 * u, Cella - 6 * u);
                 using (var scuro = new SolidBrush(Color.FromArgb(44, 84, 56)))
-                    g.FillEllipse(scuro, sx + 7, sy + 7, Cella - 14, Cella - 14);
+                    g.FillEllipse(scuro, sx + 7 * u, sy + 7 * u, Cella - 14 * u, Cella - 14 * u);
                 break;
 
             case TownTile.Canale:
-                using (var onda = new Pen(Color.FromArgb(64, 108, 148), 1.2f))
+                using (var onda = new Pen(Color.FromArgb(64, 108, 148), 1.2f * u))
                 {
-                    g.DrawLine(onda, sx + 2, sy + 7, sx + Cella - 2, sy + 7);
-                    g.DrawLine(onda, sx + 2, sy + 15, sx + Cella - 2, sy + 15);
+                    g.DrawLine(onda, sx + 2 * u, sy + 7 * u, sx + Cella - 2 * u, sy + 7 * u);
+                    g.DrawLine(onda, sx + 2 * u, sy + 15 * u, sx + Cella - 2 * u, sy + 15 * u);
                 }
                 break;
 
             case TownTile.Ponte:
-                using (var asse = new Pen(Color.FromArgb(128, 112, 88), 1.2f))
-                    for (var i = 3; i < Cella; i += 5)
+                using (var asse = new Pen(Color.FromArgb(128, 112, 88), 1.2f * u))
+                    for (var i = 3f; i < Cella; i += 5 * u)
                         g.DrawLine(asse, sx + i, sy, sx + i, sy + Cella);
                 break;
 
             case TownTile.PassaggioALivello:
-                using (var rotaia = new Pen(Color.FromArgb(150, 150, 158), 1.6f))
+                using (var rotaia = new Pen(Color.FromArgb(150, 150, 158), 1.6f * u))
                 {
-                    g.DrawLine(rotaia, sx, sy + 8, sx + Cella, sy + 8);
-                    g.DrawLine(rotaia, sx, sy + 14, sx + Cella, sy + 14);
+                    g.DrawLine(rotaia, sx, sy + 8 * u, sx + Cella, sy + 8 * u);
+                    g.DrawLine(rotaia, sx, sy + 14 * u, sx + Cella, sy + 14 * u);
                 }
                 if (!PassaggioAperto)
-                    using (var sbarra = new Pen(Color.FromArgb(240, 200, 70), 2.4f))
+                    using (var sbarra = new Pen(Color.FromArgb(240, 200, 70), 2.4f * u))
                         g.DrawLine(sbarra, sx, sy + Cella / 2f, sx + Cella, sy + Cella / 2f);
                 break;
 
             case TownTile.Destinazione:
                 using (var tenda = new SolidBrush(Color.FromArgb(240, 220, 120)))
-                    g.FillRectangle(tenda, sx + 3, sy + 3, Cella - 6, 6);
+                    g.FillRectangle(tenda, sx + 3 * u, sy + 3 * u, Cella - 6 * u, 6 * u);
                 using (var porta = new SolidBrush(Color.FromArgb(60, 24, 30)))
-                    g.FillRectangle(porta, sx + 7, sy + 11, Cella - 14, Cella - 12);
+                    g.FillRectangle(porta, sx + 7 * u, sy + 11 * u, Cella - 14 * u, Cella - 12 * u);
                 break;
 
             case TownTile.Partenza:
-                using (var segno = new Pen(Color.FromArgb(120, 150, 200), 1.6f))
-                    g.DrawRectangle(segno, sx + 4, sy + 4, Cella - 9, Cella - 9);
+                using (var segno = new Pen(Color.FromArgb(120, 150, 200), 1.6f * u))
+                    g.DrawRectangle(segno, sx + 4 * u, sy + 4 * u, Cella - 9 * u, Cella - 9 * u);
                 break;
         }
     }
 
     private void DisegnaInsegne(Graphics g, int ox, int oy)
     {
-        using var carattere = new Font(UiTheme.FamilySemibold, 6.2F, FontStyle.Bold);
+        var u = Cella / 22f;
+        using var carattere = new Font(UiTheme.FamilySemibold, Math.Max(6f, 6.2F * u), FontStyle.Bold);
         using var inchiostro = new SolidBrush(Color.FromArgb(150, 158, 172));
-        foreach (var (cella, testo) in mappa.Insegne)
-            g.DrawString(testo, carattere, inchiostro, ox + cella.X * Cella - 4, oy + cella.Y * Cella + 6);
+        foreach (var (casella, testo) in mappa.Insegne)
+            g.DrawString(testo, carattere, inchiostro, ox + casella.X * Cella - 4, oy + casella.Y * Cella + 6);
 
         // L'insegna del posto dove si va, scritta grande: senza, la si cerca.
-        using var grande = new Font(UiTheme.FamilySemibold, 8.5F, FontStyle.Bold);
+        using var grande = new Font(UiTheme.FamilySemibold, Math.Max(8f, 8.5F * u), FontStyle.Bold);
         using var rosso = new SolidBrush(Color.FromArgb(250, 210, 220));
         var d = mappa.Destinazione;
         var etichetta = mappa.Insegna.ToUpperInvariant();
         var larghezza = g.MeasureString(etichetta, grande).Width;
         var lx = Math.Min(ox + d.X * Cella - larghezza / 2 + Cella / 2f, ox + TownMap.Larghezza * Cella - larghezza);
         using var fondo = new SolidBrush(Color.FromArgb(200, 120, 20, 34));
-        g.FillRectangle(fondo, lx - 4, oy + d.Y * Cella - 17, larghezza + 8, 15);
-        g.DrawString(etichetta, grande, rosso, lx, oy + d.Y * Cella - 16);
+        var altezzaEtichetta = grande.Height + 3;
+        g.FillRectangle(fondo, lx - 4, oy + d.Y * Cella - altezzaEtichetta - 2, larghezza + 8, altezzaEtichetta);
+        g.DrawString(etichetta, grande, rosso, lx, oy + d.Y * Cella - altezzaEtichetta - 1);
     }
 
     /// <summary>
@@ -371,7 +429,7 @@ public sealed class TownWalkDialog : CareerDialog
         var cx = (float)(ox + px * Cella);
         var cy = (float)(oy + py * Cella);
         var ang = Math.Atan2(dy, dx);
-        var r1 = 30f;
+        var r1 = Cella * 1.35f;
         var punta = new PointF(cx + (float)(Math.Cos(ang) * (r1 + 9)), cy + (float)(Math.Sin(ang) * (r1 + 9)));
         var b1 = new PointF(cx + (float)(Math.Cos(ang + 0.42) * r1), cy + (float)(Math.Sin(ang + 0.42) * r1));
         var b2 = new PointF(cx + (float)(Math.Cos(ang - 0.42) * r1), cy + (float)(Math.Sin(ang - 0.42) * r1));
@@ -383,33 +441,34 @@ public sealed class TownWalkDialog : CareerDialog
     {
         var cx = (float)(ox + px * Cella);
         var cy = (float)(oy + py * Cella);
+        var u = Cella / 22f;
 
         using var ombra = new SolidBrush(Color.FromArgb(90, 0, 0, 0));
-        g.FillEllipse(ombra, cx - 8, cy + 4, 16, 7);
+        g.FillEllipse(ombra, cx - 8*u, cy + 4*u, 16*u, 7*u);
 
         // Le gambe si alternano quando si cammina: due trattini bastano a far
         // sembrare che si stia andando da qualche parte.
         var oscilla = (passoAnim / 2) % 2 == 0 ? 1 : -1;
-        using var pantaloni = new Pen(Color.FromArgb(46, 58, 92), 3f);
-        g.DrawLine(pantaloni, cx - 3, cy + 2, cx - 3 - oscilla, cy + 8);
-        g.DrawLine(pantaloni, cx + 3, cy + 2, cx + 3 + oscilla, cy + 8);
+        using var pantaloni = new Pen(Color.FromArgb(46, 58, 92), 3f*u);
+        g.DrawLine(pantaloni, cx - 3*u, cy + 2*u, cx - (3+oscilla)*u, cy + 8*u);
+        g.DrawLine(pantaloni, cx + 3*u, cy + 2*u, cx + (3+oscilla)*u, cy + 8*u);
 
         using var giacca = new SolidBrush(Color.FromArgb(210, 66, 82));
-        g.FillRectangle(giacca, cx - 6, cy - 7, 12, 11);
+        g.FillRectangle(giacca, cx - 6*u, cy - 7*u, 12*u, 11*u);
 
         using var pelle = new SolidBrush(Color.FromArgb(238, 206, 178));
-        g.FillEllipse(pelle, cx - 6, cy - 17, 12, 12);
+        g.FillEllipse(pelle, cx - 6*u, cy - 17*u, 12*u, 12*u);
 
         using var capelli = new SolidBrush(Color.FromArgb(38, 32, 34));
         // I capelli seguono la direzione: se si va in su si vede la nuca.
-        if (dirY < 0) g.FillEllipse(capelli, cx - 6, cy - 17, 12, 11);
+        if (dirY < 0) g.FillEllipse(capelli, cx - 6*u, cy - 17*u, 12*u, 11*u);
         else
         {
-            g.FillPie(capelli, cx - 6, cy - 18, 12, 12, 180, 180);
+            g.FillPie(capelli, cx - 6*u, cy - 18*u, 12*u, 12*u, 180, 180);
             using var occhi = new SolidBrush(Color.FromArgb(30, 26, 28));
-            var scarto = dirX * 1.4f;
-            g.FillEllipse(occhi, cx - 3.4f + scarto, cy - 10, 2.1f, 2.6f);
-            g.FillEllipse(occhi, cx + 1.3f + scarto, cy - 10, 2.1f, 2.6f);
+            var scarto = dirX * 1.4f * u;
+            g.FillEllipse(occhi, cx - 3.4f*u + scarto, cy - 10*u, 2.1f*u, 2.6f*u);
+            g.FillEllipse(occhi, cx + 1.3f*u + scarto, cy - 10*u, 2.1f*u, 2.6f*u);
         }
     }
 

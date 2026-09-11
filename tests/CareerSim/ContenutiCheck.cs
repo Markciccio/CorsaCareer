@@ -33,6 +33,7 @@ internal static class ContenutiCheck
         problemi.AddRange(ControllaCitta(log));
         problemi.AddRange(ControllaTrattative(log));
         problemi.AddRange(ControllaAttivita(log));
+        ControllaTavole(log);
 
         log.WriteLine("");
         if (problemi.Count == 0)
@@ -210,6 +211,37 @@ internal static class ContenutiCheck
         log.WriteLine($"  giorno · {tutte.Count} attività, di cui {scuola.Count} a scuola");
 
         return problemi;
+    }
+
+    // -------------------------------------------------------- le tavole
+
+    /// <summary>
+    /// Quali momenti restano senza illustrazione.
+    ///
+    /// Non e' un errore — il gioco funziona lo stesso e ripiega — ma e'
+    /// l'elenco di cosa manca da disegnare, e averlo misurato invece che
+    /// indovinato e' l'unico modo di chiederlo con precisione.
+    /// </summary>
+    private static void ControllaTavole(TextWriter log)
+    {
+        string[] discipline = ["kart", "formula-minore", "formula-alta", "formula-vertice", "gt", "endurance", "turismo"];
+        string[] momenti = ["vittoria", "campionato", "sconfitta", "trattativa", "officina", "scuola"];
+
+        var mancanti = new List<string>();
+        foreach (var d in discipline)
+            foreach (var m in momenti)
+                if (IllustrationCatalog.QuanteCoprono(d, m) == 0)
+                    mancanti.Add($"{d} · {m}");
+
+        log.WriteLine($"  tavole · {discipline.Length * momenti.Length} combinazioni disciplina/momento, {mancanti.Count} senza illustrazione");
+        foreach (var riga in mancanti) log.WriteLine($"           manca: {riga}");
+
+        // E i personaggi senza un ritratto proprio.
+        var senzaVolto = CastDirector.Compagnia
+            .Where(x => !x.RitrattoBase.StartsWith("character-", StringComparison.OrdinalIgnoreCase))
+            .Select(x => x.Nome).ToList();
+        if (senzaVolto.Count > 0)
+            log.WriteLine($"  volti  · senza ritratto proprio: {string.Join(", ", senzaVolto)}");
     }
 
     // ------------------------------------------------------------ le carriere

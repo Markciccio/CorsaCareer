@@ -551,9 +551,9 @@ public sealed partial class MainForm
         else if (next?.Kind == ScheduledEventKind.ChampionshipRound)
             chosen.AddRange(["manga-rival-grid.png", "manga-touring-first-race-grid-rookie.png", "manga-07-teammate-duel.png"]);
         else if (career.Wins > 0)
-            chosen.AddRange(["manga-10-first-victory.png", "manga-monami-kart-local-victory-celebration.png", "manga-09-first-podium.png"]);
+            chosen.AddRange(["manga-10-first-victory.png", "manga-sae-kart-local-victory-celebration.png", "manga-09-first-podium.png"]);
         else if (CareerFinances.InTrouble(career.Cash))
-            chosen.AddRange(["manga-08-financial-crisis.png", "manga-nobu-sponsor-rejection-kart-budget-rain.png", "manga-night-garage.png"]);
+            chosen.AddRange(["manga-08-financial-crisis.png", "manga-tooru-sponsor-rejection-kart-budget-rain.png", "manga-night-garage.png"]);
         else
             chosen.AddRange(["manga-01-rookie-dawn.png", "manga-kart-scrapyard-four-stroke-generator-first-test.png", "manga-night-garage.png"]);
 

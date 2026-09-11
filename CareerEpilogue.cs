@@ -79,7 +79,13 @@ public sealed class CareerEpilogue
             Mondiali = stagioni.Count(x => x.WorldTitle),
             CategoriaMassima = nomeMassimo,
             GradinoMassimo = gradinoMassimo,
-            LivelloMassimo = stagioni.Count == 0 ? ChampionshipLadder.Clamp(career.ChampionshipLevel) : ChampionshipLadder.Clamp(career.ChampionshipLevel),
+            // Il livello piu' alto davvero raggiunto, non quello di adesso: chi
+            // finisce dopo una retrocessione ha comunque corso lassu'. Qui i due
+            // rami del ternario erano identici, quindi il campo diceva sempre e
+            // solo il livello corrente — l'intenzione era rimasta a meta'.
+            LivelloMassimo = Math.Max(
+                ChampionshipLadder.Clamp(career.ChampionshipLevel),
+                stagioni.Count == 0 ? 0 : stagioni.Max(x => ChampionshipLadder.Clamp(LivelloDi(x)))),
             GiriPercorsi = gare.Sum(x => Math.Max(0, x.Laps)),
             CategorieAttraversate = gare.Select(x => x.Car).Distinct(StringComparer.OrdinalIgnoreCase).Count(),
             PrimaVittoria = primaVittoria == null
@@ -89,6 +95,20 @@ public sealed class CareerEpilogue
                 ? ""
                 : $"{NarrativeEngine.Capitalize((ultima.Track ?? "").Replace('_', ' '))}, {NarrativeCalendar.Format(ultima.StoryDate)}"
         };
+    }
+
+    /// <summary>
+    /// Il livello di campionato di una stagione archiviata.
+    ///
+    /// L'archivio non lo registra come numero: conserva il nome del campionato,
+    /// che e' pero' sufficiente perche' i nomi li assegna la scala stessa.
+    /// </summary>
+    private static int LivelloDi(SeasonSummary stagione)
+    {
+        for (var livello = ChampionshipLadder.Levels; livello >= 1; livello--)
+            if (string.Equals(ChampionshipLadder.Name(livello), stagione.Championship, StringComparison.OrdinalIgnoreCase))
+                return livello;
+        return 0;
     }
 
     /// <summary>

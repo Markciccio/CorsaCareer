@@ -123,6 +123,16 @@ public sealed class SponsorNegotiationDialog : CareerDialog
         statoTesto.Text = $"Probabilità di chiudere: {p}%.  Di partenza era {probabilitaDiPartenza}%, e {viaggio}.";
     }
 
+    /// <summary>
+    /// La larghezza della colonna di lettura.
+    ///
+    /// La finestra viene massimizzata dalla classe base, e i pannelli erano a
+    /// larghezza fissa: su un monitor grande le tre risposte occupavano meno
+    /// di meta' schermo con un vuoto enorme a destra. Qui la colonna si prende
+    /// lo spazio ma non piu' di quanto se ne possa leggere comodamente.
+    /// </summary>
+    private int LarghezzaColonna => Math.Min(1560, Math.Max(700, ClientSize.Width - 160));
+
     private void MostraScambio()
     {
         corpo.Controls.Clear();
@@ -136,66 +146,110 @@ public sealed class SponsorNegotiationDialog : CareerDialog
 
         var scambio = scambi[indice];
 
-        var contenitore = new FlowLayoutPanel
+        // Le schede hanno un'altezza propria e non si stirano fino in fondo:
+        // riempite dell'intera colonna restavano mezze vuote, con il testo
+        // rannicchiato in alto e trecento pixel di niente sotto.
+        var colonna = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, AutoScroll = true, BackColor = UiTheme.Background
+            ColumnCount = 1, RowCount = 4, BackColor = UiTheme.Background
         };
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 78));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 260));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
-        contenitore.Controls.Add(new Label
+        colonna.Controls.Add(new Label
         {
-            Text = $"DOMANDA {indice + 1} DI {scambi.Count}",
-            Font = UiTheme.Kicker, ForeColor = UiTheme.TextMuted, AutoSize = true,
-            Margin = new Padding(0, 0, 0, 8)
-        });
+            Text = $"DOMANDA {indice + 1} DI {scambi.Count}", Dock = DockStyle.Fill,
+            Font = UiTheme.Kicker, ForeColor = UiTheme.TextMuted
+        }, 0, 0);
 
-        contenitore.Controls.Add(new Label
+        colonna.Controls.Add(new Label
         {
-            Text = scambio.Domanda,
-            Font = new Font(UiTheme.FamilySerif, 14F, FontStyle.Italic),
-            ForeColor = UiTheme.TextPrimary,
-            AutoSize = false, Width = 850, Height = 62,
-            Margin = new Padding(0, 0, 0, 14)
-        });
+            Text = scambio.Domanda, Dock = DockStyle.Fill,
+            Font = new Font(UiTheme.FamilySerif, 15F, FontStyle.Italic),
+            ForeColor = UiTheme.TextPrimary
+        }, 0, 1);
 
-        foreach (var mossa in scambio.Mosse)
-            contenitore.Controls.Add(Bottone(mossa));
+        // Le tre risposte affiancate invece che in pila: sono alternative fra
+        // loro, e una accanto all'altra si confrontano con un colpo d'occhio.
+        var scelte = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = scambio.Mosse.Count, RowCount = 1,
+            BackColor = UiTheme.Background
+        };
+        for (var i = 0; i < scambio.Mosse.Count; i++)
+            scelte.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / scambio.Mosse.Count));
+        for (var i = 0; i < scambio.Mosse.Count; i++)
+            scelte.Controls.Add(Bottone(scambio.Mosse[i]), i, 0);
+        colonna.Controls.Add(scelte, 0, 2);
+        colonna.Controls.Add(new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Background }, 0, 3);
 
-        corpo.Controls.Add(contenitore);
+        corpo.Controls.Add(Centrato(colonna));
+    }
+
+    /// <summary>
+    /// Tiene un contenuto al centro della finestra, con la larghezza della
+    /// colonna di lettura. Serve a tutte e due le schermate della trattativa.
+    /// </summary>
+    private Control Centrato(Control contenuto)
+    {
+        var centratore = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Background };
+        centratore.Controls.Add(contenuto);
+        void Centra()
+        {
+            contenuto.Width = LarghezzaColonna;
+            contenuto.Height = Math.Max(300, centratore.ClientSize.Height - 60);
+            contenuto.Left = Math.Max(0, (centratore.ClientSize.Width - contenuto.Width) / 2);
+            contenuto.Top = Math.Max(0, (centratore.ClientSize.Height - contenuto.Height) / 2);
+        }
+        centratore.Resize += (_, _) => Centra();
+        centratore.HandleCreated += (_, _) => Centra();
+        Centra();
+        return centratore;
     }
 
     private Control Bottone(SponsorMossa mossa)
     {
         var pannello = new Panel
         {
-            Width = 850, Height = 92, BackColor = UiTheme.Surface,
-            Margin = new Padding(0, 0, 0, 10), Cursor = Cursors.Hand,
-            Padding = new Padding(16, 10, 16, 10)
+            Dock = DockStyle.Fill, BackColor = UiTheme.Surface,
+            Margin = new Padding(0, 0, 14, 0), Cursor = Cursors.Hand,
+            Padding = new Padding(18, 14, 18, 14)
         };
 
         var titolo = new Label
         {
-            Text = mossa.Etichetta.ToUpperInvariant(), Dock = DockStyle.Top, Height = 20,
+            Text = mossa.Etichetta.ToUpperInvariant(), Dock = DockStyle.Top, Height = 24,
             Font = UiTheme.Kicker, ForeColor = UiTheme.Accent, BackColor = Color.Transparent
         };
         var testo = new Label
         {
             Text = mossa.Battuta, Dock = DockStyle.Fill,
-            Font = UiTheme.Prose, ForeColor = UiTheme.TextSecondary, BackColor = Color.Transparent
+            Font = new Font(UiTheme.FamilySerif, 11.5F), ForeColor = UiTheme.TextSecondary,
+            BackColor = Color.Transparent
+        };
+        var invito = new Label
+        {
+            Text = "SCEGLI QUESTA", Dock = DockStyle.Bottom, Height = 20,
+            Font = UiTheme.Kicker, ForeColor = UiTheme.TextMuted, BackColor = Color.Transparent,
+            TextAlign = ContentAlignment.MiddleRight
         };
 
         pannello.Controls.Add(testo);
+        pannello.Controls.Add(invito);
         pannello.Controls.Add(titolo);
 
         void Evidenzia(bool acceso)
         {
             pannello.BackColor = acceso ? UiTheme.SurfaceRaised : UiTheme.Surface;
             testo.ForeColor = acceso ? UiTheme.TextPrimary : UiTheme.TextSecondary;
+            invito.ForeColor = acceso ? UiTheme.Accent : UiTheme.TextMuted;
         }
 
         void Scegli(object? s, EventArgs e) => Applica(mossa);
 
-        foreach (Control c in new Control[] { pannello, titolo, testo })
+        foreach (Control c in new Control[] { pannello, titolo, testo, invito })
         {
             c.Click += Scegli;
             c.MouseEnter += (_, _) => Evidenzia(true);
@@ -217,41 +271,50 @@ public sealed class SponsorNegotiationDialog : CareerDialog
         // La reazione va mostrata prima della domanda successiva, altrimenti
         // il giocatore vede solo la barra muoversi e non sa perché.
         corpo.Controls.Clear();
-        var reazione = new FlowLayoutPanel
+
+        var colonna = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown,
-            WrapContents = false, BackColor = UiTheme.Background
+            ColumnCount = 1, RowCount = 6, BackColor = UiTheme.Background
         };
-        reazione.Controls.Add(new Label
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 74));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        colonna.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+
+        colonna.Controls.Add(new Label
         {
-            Text = "HAI RISPOSTO", Font = UiTheme.Kicker, ForeColor = UiTheme.TextMuted,
-            AutoSize = true, Margin = new Padding(0, 0, 0, 6)
-        });
-        reazione.Controls.Add(new Label
+            Text = "HAI RISPOSTO", Dock = DockStyle.Fill,
+            Font = UiTheme.Kicker, ForeColor = UiTheme.TextMuted
+        }, 0, 0);
+        colonna.Controls.Add(new Label
         {
-            Text = esito.Battuta, Font = UiTheme.Prose, ForeColor = UiTheme.TextSecondary,
-            AutoSize = false, Width = 850, Height = 54, Margin = new Padding(0, 0, 0, 16)
-        });
-        reazione.Controls.Add(new Label
+            Text = esito.Battuta, Dock = DockStyle.Fill,
+            Font = new Font(UiTheme.FamilySerif, 12F), ForeColor = UiTheme.TextSecondary
+        }, 0, 1);
+        colonna.Controls.Add(new Label
         {
             Text = esito.Delta > 0 ? "GLI È PIACIUTA" : esito.Delta < 0 ? "NON GLI È PIACIUTA" : "L'HA PRESA COM'È",
-            Font = UiTheme.Kicker,
-            ForeColor = esito.Delta > 0 ? UiTheme.Positive : esito.Delta < 0 ? UiTheme.Accent : UiTheme.TextMuted,
-            AutoSize = true, Margin = new Padding(0, 0, 0, 6)
-        });
-        reazione.Controls.Add(new Label
+            Dock = DockStyle.Fill, Font = UiTheme.Kicker,
+            ForeColor = esito.Delta > 0 ? UiTheme.Positive : esito.Delta < 0 ? UiTheme.Accent : UiTheme.TextMuted
+        }, 0, 2);
+        colonna.Controls.Add(new Label
         {
-            Text = esito.Reazione, Font = new Font(UiTheme.FamilySerif, 13F, FontStyle.Italic),
-            ForeColor = UiTheme.TextPrimary, AutoSize = false, Width = 850, Height = 58,
-            Margin = new Padding(0, 0, 0, 18)
-        });
+            Text = esito.Reazione, Dock = DockStyle.Fill,
+            Font = new Font(UiTheme.FamilySerif, 15F, FontStyle.Italic), ForeColor = UiTheme.TextPrimary
+        }, 0, 3);
+        colonna.Controls.Add(new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Background }, 0, 4);
 
         var avanti = UiTheme.PrimaryButton(indice + 1 >= scambi.Count ? "CHIUDIAMO" : "E POI?");
-        avanti.Width = 260;
+        avanti.Dock = DockStyle.Right;
+        avanti.Width = 280;
         avanti.Click += (_, _) => { indice++; MostraScambio(); };
-        reazione.Controls.Add(avanti);
+        var riga = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Background };
+        riga.Controls.Add(avanti);
+        colonna.Controls.Add(riga, 0, 5);
 
-        corpo.Controls.Add(reazione);
+        corpo.Controls.Add(Centrato(colonna));
         AcceptButton = avanti;
     }
 }

@@ -2685,7 +2685,17 @@ public sealed partial class MainForm : Form
             conseguenze, immagine, tono, pulsante);
         notifica.ShowDialog(this);
 
-        var battute = SeasonReactions.Build(career, verdetto, posizione, livelloPrima, livelloDopo, titolo);
+        // Quando esiste una scena scritta per questo esito, e' quella che si
+        // vede: prima si aprivano tutte e due — la scena generica e poi quella
+        // scritta — e il giocatore si trovava tre finestre di dialogo di fila
+        // sullo stesso fatto.
+        var fatti = CapetaScenes.Leggi(career, contentIndex.Cars, career.Schedule ?? []);
+        var scritta = titolo ? CapetaScenes.Scena(MomentoDiCarriera.TitoloVinto, fatti)
+            : verdetto == SeasonVerdict.Retrocesso ? CapetaScenes.Scena(MomentoDiCarriera.Retrocessione, fatti)
+            : [];
+        var battute = scritta.Count > 0
+            ? scritta
+            : SeasonReactions.Build(career, verdetto, posizione, livelloPrima, livelloDopo, titolo);
         if (battute.Count == 0) return;
         using var scena = new AnimeDialogueDialog($"CorsaCareer — fine stagione {career.Season}", battute);
         scena.ShowDialog(this);
@@ -2885,10 +2895,10 @@ public sealed partial class MainForm : Form
             // dopo l'archiviazione perche' il bilancio deve poter leggere la
             // stagione appena chiusa.
             MostraEsitoStagione(verdetto, finalPosition, livelloPrima, livelloDopo, titolo, award);
-            // Le scene scritte dei due esiti che contano davvero. Vengono dopo
-            // la notifica grande: prima il fatto, poi le persone.
-            if (titolo) RaccontaMomento(MomentoDiCarriera.TitoloVinto, $"titolo-s{career.Season:00}");
-            else if (verdetto == SeasonVerdict.Retrocesso) RaccontaMomento(MomentoDiCarriera.Retrocessione, $"giu-s{career.Season:00}");
+            // La scena scritta del titolo e della retrocessione la mostra
+            // MostraEsitoStagione al posto di quella generica: aprirla anche
+            // qui significherebbe raccontare due volte lo stesso momento.
+            stagioneAppenaChiusa = true;
             // Fine stagione è il momento in cui un pilota decide se continuare:
             // non lo si chiede dopo una gara storta, lo si chiede guardando
             // l'anno appena finito.
@@ -3048,6 +3058,17 @@ public sealed partial class MainForm : Form
     /// avvenute. Mostrarne tre di fila dopo la stessa domenica trasformerebbe
     /// un momento in una coda di finestre.
     /// </summary>
+    /// <summary>
+    /// Vero se la gara appena registrata ha anche chiuso la stagione.
+    ///
+    /// Serve a non impilare finestre: una chiusura di stagione ne apre gia'
+    /// quattro o cinque — il bilancio statistico, la notifica del verdetto, la
+    /// scena, la domanda sul ritiro — e aggiungerci sopra le reazioni di gara,
+    /// la scena della prima volta e l'articolo faceva otto finestre modali in
+    /// fila per un singolo pomeriggio.
+    /// </summary>
+    private bool stagioneAppenaChiusa;
+
     private void ControllaPrimeVolte(int posizione, bool ritiro)
     {
         career.Firsts ??= new CareerFirsts();
@@ -4332,6 +4353,9 @@ public sealed partial class MainForm : Form
     }
     private void RecordInternal(int position, string track, string car, int startingPosition, int qualificationPosition, string sessionName, int laps, int bestLapMilliseconds, int gapMilliseconds, int pitStops, double penaltySeconds, double damage, int teammatePosition, string teammateName, bool dnf, string photoPath, string resultFile, IReadOnlyList<ImportedDriverResult> classification)
     {
+        // Si riparte da zero a ogni gara: la bandiera dice se e' QUESTA gara ad
+        // aver chiuso la stagione, non se ne e' mai stata chiusa una.
+        stagioneAppenaChiusa = false;
         // La data narrativa del referto è il giorno del round: senza questo la
         // cronaca datava la gara al giorno in cui il diario si trovava per caso.
         var sessionPlanForRound = CurrentSessionPlan("race");
@@ -4555,7 +4579,9 @@ public sealed partial class MainForm : Form
         // ricompariva a caso, ed era proprio così. Ora si parla della gara
         // appena corsa, con i dati di quella gara.
         var ultimaGara = career.RaceHistory.LastOrDefault();
-        if (ultimaGara != null && !CareerMessages.Unattended && Visible && !IsDisposed)
+        // Se la stagione si e' appena chiusa, il racconto lo ha gia' fatto la
+        // chiusura: qui si tace e si lascia solo l'articolo.
+        if (ultimaGara != null && !stagioneAppenaChiusa && !CareerMessages.Unattended && Visible && !IsDisposed)
         {
             ChapterOneDialog.ShowRaceReactions(career, ultimaGara, this, contentIndex.Cars, contentIndex.Tracks, career.Schedule ?? []);
             // Come sopra: il portale torna al proprio tema quando la scena finisce.
@@ -5100,7 +5126,7 @@ public sealed partial class MainForm : Form
         scene.ShowDialog(this);
 
         // Le scene scritte della scuola. La prima volta che ci si va dopo aver
-        // corso, Monami e Nobu hanno qualcosa da dire; e quando il seguito
+        // corso, Sae e Tooru hanno qualcosa da dire; e quando il seguito
         // comincia a farsi sentire, la scuola se ne accorge prima del paddock.
         if (DayActivityCatalog.AScuola(report.Activity.Id))
         {
