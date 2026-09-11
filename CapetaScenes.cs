@@ -512,14 +512,14 @@ public static class CapetaScenes
         {
             CastDirector.Battuta(CastDirector.Sae,
                 $"«Ti sei addormentato a matematica. Ti ho coperto io, ma il professore ha visto tutto.» "
-                + "Poi si siede sul banco davanti al tuo. «Allora? Com'è andata domenica?»")
+                + "Poi si siede sul banco davanti al tuo. «Allora? Com'è andata domenica?»", "scuola")
         };
         righe.Add(CastDirector.Battuta(CastDirector.Tooru,
             $"«Io lo so com'è andata, ho guardato i risultati. {f.Gare} gare in carriera, {f.Podi} podi. "
-            + "E prima che me lo chiedi: no, non ho fatto i compiti nemmeno io.»"));
+            + "E prima che me lo chiedi: no, non ho fatto i compiti nemmeno io.»", "scuola"));
         righe.Add(CastDirector.Battuta(CastDirector.Sae,
             "«Comunque lunedì è sempre così. Corri, torni, e il mondo qui dentro non si è accorto di niente. "
-            + "All'inizio mi faceva rabbia. Adesso mi piace: è l'unico posto dove nessuno mi chiede dei tempi.»"));
+            + "All'inizio mi faceva rabbia. Adesso mi piace: è l'unico posto dove nessuno mi chiede dei tempi.»", "scuola"));
         return righe;
     }
 
@@ -530,12 +530,12 @@ public static class CapetaScenes
             CastDirector.Battuta(CastDirector.Tooru,
                 $"«C'è una cosa che devi sapere. In terza B parlano di te.» "
                 + $"«Livello di seguito {f.Seguito} su 100, l'ho controllato. "
-                + "Non è tanto in assoluto, ma per uno di questa scuola è enorme.»")
+                + "Non è tanto in assoluto, ma per uno di questa scuola è enorme.»", "scuola")
         };
         righe.Add(CastDirector.Battuta(CastDirector.Sae,
             "«E adesso comincia la parte fastidiosa: quelli che non ti hanno mai parlato "
             + "diventano tuoi amici, e quelli che ti erano amici si mettono in imbarazzo. "
-            + "Dura un paio di mesi. Poi passa e restano quelli veri.»"));
+            + "Dura un paio di mesi. Poi passa e restano quelli veri.»", "scuola"));
         if (f.Seguito >= 40)
             righe.Add(CastDirector.Battuta(CastDirector.Noa,
                 $"«Anche fuori dalla scuola, comunque. Con {f.Seguito} di seguito cominci a essere "

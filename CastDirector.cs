@@ -204,7 +204,10 @@ public static class CastDirector
             {
                 ["felice"] = "character-sae-kurihara-felice.png",
                 ["decisa"] = "character-sae-kurihara-decisa.png",
-                ["preoccupata"] = "character-sae-kurihara-preoccupata.png"
+                ["preoccupata"] = "character-sae-kurihara-preoccupata.png",
+                // In divisa: i ritratti in tuta al kartodromo stonavano nelle
+                // scene ambientate in aula.
+                ["scuola"] = "character-sae-kurihara-scuola.png"
             },
             [SceneKind.Scuola, SceneKind.Battuta, SceneKind.Vittoria, SceneKind.Origine],
             Peso: 55),
@@ -217,7 +220,8 @@ public static class CastDirector
             {
                 ["sollevato"] = "character-tooru-inagaki-sollevato.png",
                 ["deluso"] = "character-tooru-inagaki-deluso.png",
-                ["imbarazzato"] = "character-tooru-inagaki-imbarazzato.png"
+                ["imbarazzato"] = "character-tooru-inagaki-imbarazzato.png",
+                ["scuola"] = "character-tooru-inagaki-scuola.png"
             },
             [SceneKind.Scuola, SceneKind.Denaro, SceneKind.Crisi, SceneKind.Origine],
             Peso: 50)
