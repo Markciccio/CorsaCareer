@@ -43,6 +43,13 @@ internal static class CareerSimEntry
             return esitoAnteprime;
         }
 
+        // Il copione: la stessa simulazione, ma annotando ogni scena che il
+        // gioco avrebbe mostrato. Serve a vedere se la regia scatta al momento
+        // giusto e quante finestre si accodano — cose che il banco normale
+        // non puo' dire, perche' salta tutti i dialoghi.
+        var copione = args.Any(x => x.Equals("--copione", StringComparison.OrdinalIgnoreCase));
+        if (copione) SceneRecorder.Attivo = true;
+
         var stagioni = ArgInt(args, "--stagioni", 8);
         var pilota = ArgText(args, "--pilota", "Sim");
         Environment.SetEnvironmentVariable("CORSACAREER_DEMO_DRIVER", pilota);
@@ -66,8 +73,56 @@ internal static class CareerSimEntry
 
         using var portale = new MainForm();
         var esito = portale.RunCareerSimulation(stagioni, Console.Out);
+        if (copione) StampaCopione(Console.Out);
         Console.Out.Flush();
         return esito;
+    }
+
+    /// <summary>
+    /// La carriera letta come un copione: che cosa avrebbe visto il giocatore,
+    /// nell'ordine, e dove le finestre si accodano troppo.
+    /// </summary>
+    private static void StampaCopione(TextWriter log)
+    {
+        var scene = SceneRecorder.Scene;
+        log.WriteLine("");
+        log.WriteLine(new string('=', 78));
+        log.WriteLine($"COPIONE — {scene.Count} scene");
+        log.WriteLine("");
+
+        foreach (var s in scene)
+            log.WriteLine($"  {s.Quando:d MMM yyyy}  s{s.Stagione:00} g{s.Gara:000}  [{s.Tipo}] {s.Titolo}");
+
+        // Quali momenti scattano e quanti: se uno resta a zero, e' agganciato
+        // male e non lo scopriremmo mai giocando.
+        log.WriteLine("");
+        log.WriteLine("QUANTE VOLTE OGNI SCENA");
+        foreach (var gruppo in scene.GroupBy(x => x.Titolo).OrderByDescending(x => x.Count()))
+            log.WriteLine($"  {gruppo.Count(),3}x  {gruppo.Key}");
+
+        // I momenti scritti che non sono MAI scattati: e' la domanda vera.
+        var visti = scene.Select(x => x.Titolo).ToHashSet();
+        var mai = Enum.GetValues<MomentoDiCarriera>()
+            .Select(CapetaScenes.Titolo)
+            .Where(x => !visti.Contains(x))
+            .ToList();
+        log.WriteLine("");
+        log.WriteLine($"MOMENTI MAI SCATTATI ({mai.Count} su {Enum.GetValues<MomentoDiCarriera>().Length})");
+        foreach (var m in mai) log.WriteLine($"  · {m}");
+
+        // Le raffiche: piu' finestre di fila senza che il giocatore possa fare
+        // niente in mezzo. E' il difetto che abbiamo gia' dovuto correggere.
+        var raffiche = SceneRecorder.Raffiche()
+            .Where(x => x.Count > SceneRecorder.FinestreDiFilaAccettabili)
+            .ToList();
+        log.WriteLine("");
+        log.WriteLine($"RAFFICHE oltre {SceneRecorder.FinestreDiFilaAccettabili} finestre di fila: {raffiche.Count}");
+        foreach (var r in raffiche.Take(6))
+        {
+            log.WriteLine($"  {r[0].Quando:d MMM yyyy} — {r.Count} finestre:");
+            foreach (var s in r) log.WriteLine($"      [{s.Tipo}] {s.Titolo}");
+        }
+        log.WriteLine("");
     }
 
     private static int ArgInt(string[] args, string nome, int predefinito)
@@ -369,7 +424,19 @@ public sealed partial class MainForm
             if (scelta == null) break;
             var esito = DayEngine.Perform(career, giornata, scelta);
             if (esito.Refused) break;
+            // Le scene che seguono l'attivita': nel portale le apre la
+            // finestra della giornata, qui vanno richieste a mano.
+            DopoUnAttivita(esito);
         }
+
+        // Una visita vera a uno sponsor, ogni tanto.
+        //
+        // Il banco usava solo le attivita' generiche di Haru, che passano dal
+        // motore delle giornate: tutta la catena delle visite — le probabilita'
+        // calcolate sullo stato, la trattativa, l'esito, le scene del primo
+        // sponsor e del primo rifiuto — non veniva percorsa mai. E' la parte
+        // con cui il giocatore passa piu' tempo.
+        VisitaUnoSponsor(giornata);
 
         while (giornata.AgentHoursLeft > 0)
         {
@@ -384,6 +451,49 @@ public sealed partial class MainForm
         }
     }
 
+    /// <summary>
+    /// Manda Haru da uno sponsor, seguendo la stessa strada del portale.
+    ///
+    /// La trattativa la si gioca a schermo, quindi qui non si sceglie niente:
+    /// si applica il modificatore di una conversazione condotta in modo
+    /// neutro, cosi' l'esito dipende dallo stato del pilota come nel gioco.
+    /// Serve a percorrere la catena, non a misurare l'abilita' del giocatore.
+    /// </summary>
+    private void VisitaUnoSponsor(DayPlan giornata)
+    {
+        // Non tutti i giorni: Haru va a bussare quando serve, cioe' quando la
+        // cassa non copre comodamente le prossime iscrizioni, oppure ogni tanto
+        // per tenere vivi i contatti. Mandarlo ogni singolo giorno riempiva il
+        // copione di centinaia di visite e gonfiava la cassa oltre il vero.
+        var serveDenaro = career.Cash < CareerFinances.SurvivalFloor * 8;
+        var ognitanto = career.StoryDate.DayOfYear % 21 == 0;
+        if (!serveDenaro && !ognitanto) return;
+
+        var visite = SponsorVisits.ForDay(career);
+        var visita = visite.FirstOrDefault(x =>
+            x.Hours <= giornata.AgentHoursLeft &&
+            !giornata.Done.Contains(x.Id));
+        if (visita == null) return;
+
+        var esito = SponsorVisits.Resolve(visita, career, visita.Chance);
+        giornata.AgentHoursLeft -= visita.Hours;
+        giornata.Done.Add(visita.Id);
+
+        if (esito.Accepted)
+        {
+            career.Cash += esito.Amount;
+            career.SponsorMoney += esito.Amount;
+            var profilo = career.ReputationProfile ??= new ReputationProfile();
+            profilo.SponsorAppeal = Math.Clamp(profilo.SponsorAppeal + 2, 0, 100);
+            profilo.SyncLegacyFields(career);
+        }
+        SponsorVisits.Learn(career.Agent ??= new AgentSkills(), esito.Accepted);
+
+        Riga($"sponsor · {visita.Target} ({visita.Chance}%) · " +
+             (esito.Accepted ? $"sì, € {esito.Amount:N0}" : "no"));
+        PlaySponsorScene(visita, esito);
+    }
+
     private DayActivity? ScegliAttivitaPilota(List<DayActivity> catalogo, DayPlan giornata)
     {
         DayActivity? PerId(string id) => catalogo.FirstOrDefault(x => x.Id == id && x.Hours <= giornata.DriverHoursLeft && !giornata.Done.Contains(x.Id));
@@ -391,11 +501,21 @@ public sealed partial class MainForm
         // Stanchezza alta: qualunque altra cosa renderebbe meno.
         if (career.Fatigue >= 55) return PerId("riposo") ?? PerId("corsa");
         // La forma è la base: sotto una certa soglia si allena e basta.
-        if (career.Fitness < 70) return PerId("palestra") ?? PerId("corsa") ?? PerId("riposo");
+        // Allenarsi con Sae rende più della palestra da solo, ed è quello che
+        // farebbe davvero uno che ha una compagna di classe che corre.
+        if (career.Fitness < 70) return PerId("scuola-sae") ?? PerId("palestra") ?? PerId("corsa") ?? PerId("riposo");
+        // Con i conti in rosso si va a rimetterli in ordine prima di pensare
+        // al nome: è la priorità di chi rischia di non potersi iscrivere.
+        if (career.Cash < CareerFinances.SurvivalFloor * 3) return PerId("scuola-tooru") ?? PerId("lavoro") ?? PerId("social");
         // Con la forma a posto si lavora sul nome — è quello che apre le porte
         // quando la classifica da sola non basta.
+        // La scuola è l'ultima carta invece del riposo: il pilota ha sedici
+        // anni e una scuola, e il banco non ce lo mandava mai — quindi le due
+        // scene scolastiche non venivano mai messe alla prova, e nemmeno
+        // l'effetto delle loro attività sulla stanchezza.
         return PerId("social") ?? PerId("instagram-allenamento") ?? PerId("domande-follower")
-               ?? PerId("tifosi") ?? PerId("pr") ?? PerId("corsa") ?? PerId("riposo");
+               ?? PerId("scuola-volantini") ?? PerId("tifosi") ?? PerId("pr")
+               ?? PerId("scuola") ?? PerId("corsa") ?? PerId("riposo");
     }
 
     // ------------------------------------------------------------- resoconto

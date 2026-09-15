@@ -592,6 +592,41 @@ aveva la casella fissa a 22 pixel), e le tre risposte della trattativa erano
 larghe 850 pixel su uno schermo da 1936. Nessuna delle due cose si poteva
 vedere dal codice.
 
+### `--copione`: che cosa vede il giocatore, e in che ordine
+
+```powershell
+dotnet run --project tests\CareerSim\CareerSim.csproj -c Debug -- --stagioni 40 --pilota Akira --copione
+```
+
+Gira la carriera normalmente, ma invece di buttare via le scene — il banco non
+e' presidiato e salta ogni finestra — le **annota**. Alla fine stampa la
+carriera come un copione: quali momenti sono scattati, quando, quante volte,
+quali non sono scattati mai, e le «raffiche», cioe' le sequenze di piu' di
+quattro finestre di fila senza che il giocatore possa fare niente in mezzo.
+
+E' `SceneRecorder`, acceso solo dal banco. Ha trovato subito tre cose che
+nessun altro collaudo poteva vedere:
+
+- le scene della firma — apertura di stagione, cambio categoria, **arrivo al
+  vertice** — erano appese ad `AnnounceSeatSigned`, cioe' a una finestra di
+  riepilogo racchiusa in una guardia di automazione. Il momento piu' importante
+  della carriera dipendeva dal fatto che venisse aperta una finestra. Spostate
+  sulla firma vera;
+- `PlaySponsorScene` era **l'unica scena senza guardia** per l'esecuzione non
+  presidiata: appena il banco ha cominciato a percorrere davvero le visite, la
+  simulazione si e' fermata alla prima;
+- il pilota simulato **non andava mai a scuola**, perche' l'elenco delle
+  preferenze del banco e' precedente a quelle attivita'.
+
+Regola che ne discende: **una scena non deve dipendere da quale schermata sia
+aperta.** Se il racconto sta dentro un metodo che mostra una finestra, sparisce
+appena qualcuno non la apre.
+
+Stato all'ultima misura: 3 momenti su 20 non scattano in una carriera di 24
+stagioni — il primo giorno (sta nel percorso di presentazione dei personaggi,
+fuori dal banco), la retrocessione (quella carriera non e' mai retrocessa) e i
+conti in rosso (la cassa non e' mai scesa sotto la soglia). Zero raffiche.
+
 ### `--contenuti`: il collaudo di scene, citta' e trattative
 
 ```powershell

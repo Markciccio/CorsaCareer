@@ -2418,6 +2418,7 @@ public sealed partial class MainForm : Form
             // della firma, e senza di esso il sedile cliente — cioe' il primo
             // di tutta la carriera — non diceva assolutamente niente.
             AnnounceSeatSigned(offer, offerCategory, clientChoices);
+            DopoLaFirma();
             BriefingDiApertura();
             OpenClientRaceChoices();
             return;
@@ -2617,6 +2618,20 @@ public sealed partial class MainForm : Form
     private void MostraEsitoStagione(SeasonVerdict verdetto, int posizione,
         int livelloPrima, int livelloDopo, bool titolo, int premio)
     {
+        SceneRecorder.Registra(career, "fine stagione",
+            $"stagione {career.Season}: {verdetto}, P{posizione}, livello {livelloPrima}→{livelloDopo}" + (titolo ? ", TITOLO" : ""));
+
+        // La scena scritta dell'esito va annotata anche quando non si mostra:
+        // altrimenti il copione non sa dire se il titolo e la retrocessione
+        // hanno una scena, ed erano proprio due dei momenti che risultavano
+        // «mai scattati» solo perche' venivano costruiti dopo questa guardia.
+        if (titolo || verdetto == SeasonVerdict.Retrocesso)
+        {
+            var momentoEsito = titolo ? MomentoDiCarriera.TitoloVinto : MomentoDiCarriera.Retrocessione;
+            SceneRecorder.Registra(career, "scena", CapetaScenes.Titolo(momentoEsito),
+                CapetaScenes.Scena(momentoEsito, CapetaScenes.Leggi(career, contentIndex.Cars, career.Schedule ?? [])));
+        }
+
         if (CareerMessages.Unattended) return;
 
         // Prima il bilancio dell'annata, poi che cosa comporta. Le statistiche
@@ -2734,6 +2749,7 @@ public sealed partial class MainForm : Form
     /// </summary>
     private void BriefingDiApertura()
     {
+        SceneRecorder.Registra(career, "briefing", "apertura");
         if (CareerMessages.Unattended) return;
         career.BriefingFatti ??= [];
         if (career.BriefingFatti.Contains(CoachBriefing.DettoInizioCarriera)) return;
@@ -2752,6 +2768,7 @@ public sealed partial class MainForm : Form
     /// </summary>
     private void BriefingDopoLaGara()
     {
+        SceneRecorder.Registra(career, "briefing", "dopo la gara");
         if (CareerMessages.Unattended) return;
         career.BriefingFatti ??= [];
         var vittorieDiFila = career.RaceHistory.AsEnumerable().Reverse()
@@ -3013,6 +3030,8 @@ public sealed partial class MainForm : Form
         CareerLog.Info("carriera", $"RITIRO: {bilancio.Gare} gare, {bilancio.Vittorie} vittorie, {bilancio.Mondiali} mondiali");
         SaveCareer();
 
+        SceneRecorder.Registra(career, "EPILOGO",
+            $"{bilancio.Gare} gare, {bilancio.Vittorie} vittorie, {bilancio.Titoli} titoli — {bilancio.Giudizio()}");
         if (CareerMessages.Unattended) return;
         using var epilogo = new CareerEpilogueDialog(bilancio, motivo, TavolaPerMomento("vittoria"));
         epilogo.ShowDialog(this);
@@ -3030,7 +3049,11 @@ public sealed partial class MainForm : Form
     /// </summary>
     private void RaccontaMomento(MomentoDiCarriera momento, string chiave = "")
     {
-        if (CareerMessages.Unattended || !Visible || IsDisposed) return;
+        // Senza nessuno davanti allo schermo la scena non si mostra, ma si
+        // annota: e' l'unico modo di sapere se la regia scatta al momento
+        // giusto, visto che il banco salta ogni finestra.
+        var soloRegistrata = CareerMessages.Unattended || !Visible || IsDisposed;
+        if (soloRegistrata && !SceneRecorder.Attivo) return;
 
         career.Firsts ??= new CareerFirsts();
         // Una chiave vuota significa «si puo' ripetere»: l'apertura di stagione
@@ -3045,6 +3068,9 @@ public sealed partial class MainForm : Form
         var fatti = CapetaScenes.Leggi(career, contentIndex.Cars, career.Schedule ?? []);
         var battute = CapetaScenes.Scena(momento, fatti);
         if (battute.Count == 0) return;
+
+        SceneRecorder.Registra(career, "scena", CapetaScenes.Titolo(momento), battute);
+        if (soloRegistrata) return;
 
         using var scena = new AnimeDialogueDialog(CapetaScenes.Titolo(momento), battute);
         scena.ShowDialog(this);
@@ -3100,6 +3126,8 @@ public sealed partial class MainForm : Form
     /// <summary>La scena della chiamata da un campionato superiore, con gli amici.</summary>
     private void MostraChiamata(Opportunity opportunity, int livelloPrima)
     {
+        SceneRecorder.Registra(career, "CHIAMATA DA SOPRA",
+            $"{opportunity.ProposedBy}: {ChampionshipLadder.Name(livelloPrima)} → {career.Championship}");
         if (CareerMessages.Unattended) return;
         var motivo = CareerProgression.MotivoDellaChiamata(
             career.RaceHistory.AsEnumerable().Reverse().TakeWhile(x => !x.Dnf && x.Position == 1).Count(),
@@ -3225,6 +3253,7 @@ public sealed partial class MainForm : Form
 
     private void AnnounceSeatSigned(TeamOffer offer, string category, int gareDaScegliere)
     {
+        SceneRecorder.Registra(career, "firma", $"{offer.Team} · {category} · {UiText.Car(offer.Car)}");
         if (CareerMessages.Unattended) return;
         var calendario = CareerScheduler.ChampionshipRounds(career.Schedule, career.Season)
             .Where(x => x.IsPlanned).OrderBy(x => x.Date).ToList();
@@ -3233,7 +3262,6 @@ public sealed partial class MainForm : Form
             CareerLadder.Current(career, contentIndex.Cars),
             gareDaScegliere, calendario);
         dialog.ShowDialog(this);
-        DopoLaFirma();
     }
 
     /// <summary>
@@ -3243,6 +3271,14 @@ public sealed partial class MainForm : Form
     /// Sta in un metodo suo perche' i sedili si firmano da due strade diverse
     /// — il sedile cliente e il contratto vero — e la scena deve arrivare da
     /// entrambe.
+    ///
+    /// Va chiamato dalla FIRMA, non dall'annuncio. Prima stava dentro
+    /// <see cref="AnnounceSeatSigned"/>, che per i contratti veri e' racchiuso
+    /// in una guardia di automazione: il copione ha mostrato che con
+    /// CORSACAREER_UI_AUTOMATION acceso il cambio di categoria scattava due
+    /// volte su sei e l'arrivo al vertice mai — cioe' la scena piu' importante
+    /// della carriera dipendeva dal fatto che venisse aperta una finestra di
+    /// riepilogo.
     /// </summary>
     private void DopoLaFirma()
     {
@@ -3299,6 +3335,9 @@ public sealed partial class MainForm : Form
         lines.Add($"CASSA       € {career.Cash:N0}");
         lines.Add("");
         lines.Add("Da qui in poi ogni gara assegna punti e muove la classifica.");
+        // Le scene della firma prima della guardia di automazione: sono parte
+        // della carriera, non dell'interfaccia.
+        DopoLaFirma();
         // I collaudi UI invocano la firma direttamente per verificare che il
         // calendario venga realmente creato. Non devono restare bloccati da
         // finestre modali invisibili: nel gioco normale il riepilogo resta
@@ -4581,6 +4620,15 @@ public sealed partial class MainForm : Form
         var ultimaGara = career.RaceHistory.LastOrDefault();
         // Se la stagione si e' appena chiusa, il racconto lo ha gia' fatto la
         // chiusura: qui si tace e si lascia solo l'articolo.
+        if (ultimaGara != null && !stagioneAppenaChiusa && SceneRecorder.Attivo && CareerMessages.Unattended)
+        {
+            // Al banco la scena non si apre ma si annota, e si lascia comunque
+            // decidere alla regia quale prima volta sarebbe scattata.
+            SceneRecorder.Registra(career, "reazioni",
+                $"{UiText.Car(ultimaGara.Car)} a {ultimaGara.Track}: " +
+                (ultimaGara.Dnf ? "ritiro" : $"P{ultimaGara.Position}"));
+            ControllaPrimeVolte(ultimaGara.Dnf ? 0 : ultimaGara.Position, ultimaGara.Dnf);
+        }
         if (ultimaGara != null && !stagioneAppenaChiusa && !CareerMessages.Unattended && Visible && !IsDisposed)
         {
             ChapterOneDialog.ShowRaceReactions(career, ultimaGara, this, contentIndex.Cars, contentIndex.Tracks, career.Schedule ?? []);
@@ -5048,6 +5096,22 @@ public sealed partial class MainForm : Form
     /// </summary>
     private bool PlaySponsorScene(SponsorVisit visit, SponsorReply reply)
     {
+        SceneRecorder.Registra(career, "sponsor",
+            $"{visit.Target}: {(reply.Accepted ? $"sì, € {reply.Amount:N0}" : "no")}");
+
+        // Senza nessuno davanti allo schermo la scena non si apre. Mancava la
+        // guardia — era l'unica scena che non ce l'aveva — e appena il banco ha
+        // cominciato a percorrere davvero le visite agli sponsor, la
+        // simulazione si e' fermata alla prima.
+        if (CareerMessages.Unattended || !Visible || IsDisposed)
+        {
+            if (reply.Accepted) RaccontaMomento(MomentoDiCarriera.PrimoSponsor, CareerFirsts.Sponsor);
+            else RaccontaMomento(MomentoDiCarriera.SponsorRifiutato, "primo-no");
+            if (career.Cash < CareerFinances.SurvivalFloor)
+                RaccontaMomento(MomentoDiCarriera.CassaVuota, $"cassa-s{career.Season:00}");
+            return reply.Accepted;
+        }
+
         // La trattativa e' gia' stata giocata: qui si vede solo come e' finita.
         // Ripetere il discorso d'apertura di Haru farebbe sembrare che la
         // conversazione appena avuta non sia mai avvenuta.
@@ -5125,17 +5189,27 @@ public sealed partial class MainForm : Form
         using var scene = new AnimeDialogueDialog($"CorsaCareer — {report.Activity.Name}", lines);
         scene.ShowDialog(this);
 
-        // Le scene scritte della scuola. La prima volta che ci si va dopo aver
-        // corso, Sae e Tooru hanno qualcosa da dire; e quando il seguito
-        // comincia a farsi sentire, la scuola se ne accorge prima del paddock.
-        if (DayActivityCatalog.AScuola(report.Activity.Id))
-        {
-            var seguito = (career.ReputationProfile ?? new ReputationProfile()).PublicPopularity;
-            if (seguito >= 30 && career.Races > 0)
-                RaccontaMomento(MomentoDiCarriera.ScuolaSiParlaDiTe, "scuola-fama");
-            else if (career.Races > 0)
-                RaccontaMomento(MomentoDiCarriera.ScuolaDopoLaGara, "scuola-lunedi");
-        }
+        DopoUnAttivita(report);
+    }
+
+    /// <summary>
+    /// Le scene che seguono un'attivita' della giornata.
+    ///
+    /// Stavano dentro <c>ShowDayScene</c>, che e' la finestra: il banco svolge
+    /// le attivita' chiamando direttamente il motore e quella finestra non la
+    /// apre mai, quindi le due scene scolastiche non venivano mai messe alla
+    /// prova. Come per la firma, il racconto non deve dipendere da quale
+    /// schermata sia aperta.
+    /// </summary>
+    internal void DopoUnAttivita(DayReport report)
+    {
+        if (!DayActivityCatalog.AScuola(report.Activity.Id)) return;
+        if (career.Races <= 0) return;
+        var seguito = (career.ReputationProfile ?? new ReputationProfile()).PublicPopularity;
+        if (seguito >= 30)
+            RaccontaMomento(MomentoDiCarriera.ScuolaSiParlaDiTe, "scuola-fama");
+        else
+            RaccontaMomento(MomentoDiCarriera.ScuolaDopoLaGara, "scuola-lunedi");
     }
 
     /// <summary>

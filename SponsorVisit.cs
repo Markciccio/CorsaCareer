@@ -182,11 +182,93 @@ public static class SponsorVisits
         };
     }
 
-    private static string AcceptLine(SponsorVisit visit) =>
-        $"«Va bene. Facciamo € {visit.Amount:N0}. Però l'adesivo lo voglio dove si vede.»";
+    /// <summary>
+    /// Come dice di sì, e come dice di no.
+    ///
+    /// Erano due frasi sole, una per esito: dopo tre visite le si conosceva a
+    /// memoria e ogni trattativa sembrava la stessa — «il ragazzo mi piace, ma
+    /// quest'anno non ci sono margini», all'infinito.
+    ///
+    /// Adesso ogni tipo di interlocutore parla come parlerebbe lui: chi le
+    /// corse le conosce risponde sui numeri, il commerciante sulla visibilità,
+    /// quello del quartiere di pancia, e chi tratta di mestiere tratta anche
+    /// quando accetta. La scelta dipende dalla visita, quindi lo stesso
+    /// negozio risponde sempre allo stesso modo e due negozi diversi no.
+    /// </summary>
+    /// <summary>La risposta che darebbe questo sponsor, per il collaudo.</summary>
+    public static string RispostaDiProva(SponsorVisit visita, bool accettato) =>
+        accettato ? AcceptLine(visita) : RefuseLine(visita);
 
-    private static string RefuseLine(SponsorVisit visit) =>
-        $"«Il ragazzo mi piace, ma quest'anno con {visit.Trade} non ci sono margini. Mi dispiace davvero.»";
+    private static string AcceptLine(SponsorVisit visit)
+    {
+        string[] frasi = SponsorNegotiation.TemperamentoDi(visit.Trade) switch
+        {
+            SponsorTemperamento.Intenditore =>
+            [
+                $"«I tempi li ho guardati. € {visit.Amount:N0}, e voglio il rapporto dopo ogni gara: non l'adesivo, il rapporto.»",
+                $"«Va bene. € {visit.Amount:N0}. Ma non me li faccia rimpiangere in curva tre, che è dove vi perdete tutti.»",
+                $"«Ci sto. € {visit.Amount:N0} e il mio nome piccolo, sul musetto. Chi deve capire capisce.»"
+            ],
+            SponsorTemperamento.Commerciante =>
+            [
+                $"«€ {visit.Amount:N0}. Il logo grande, sul cofano, e mi manda le foto di ogni gara: mi servono per i social.»",
+                $"«Facciamo € {visit.Amount:N0}. Se la gente comincia a parlare di lei, l'anno prossimo ne parliamo di più.»",
+                $"«Ci metto € {visit.Amount:N0}. Non per le corse, sia chiaro: per la vetrina che mi fa.»"
+            ],
+            SponsorTemperamento.Duro =>
+            [
+                $"«€ {visit.Amount:N0}. Non uno di più, e li do adesso perché non mi ha fatto perdere tempo.»",
+                $"«Va bene, € {visit.Amount:N0}. Ma se l'anno prossimo torna a chiedermene il doppio, si porti dei risultati.»",
+                $"«Accetto. € {visit.Amount:N0}, stretta di mano, e non voglio carte da firmare.»"
+            ],
+            _ =>
+            [
+                $"«Ma sì, dai. € {visit.Amount:N0}. Mio figlio ti ha visto correre e non ha parlato d'altro per una settimana.»",
+                $"«Te li do volentieri, € {visit.Amount:N0}. L'adesivo mettilo dove vuoi, basta che quando vinci ti ricordi di passare.»",
+                $"«€ {visit.Amount:N0} è quello che posso. Non è molto, lo so, ma qui siamo tutti piccoli.»"
+            ]
+        };
+        return Scegli(frasi, visit, "sì");
+    }
+
+    private static string RefuseLine(SponsorVisit visit)
+    {
+        string[] frasi = SponsorNegotiation.TemperamentoDi(visit.Trade) switch
+        {
+            SponsorTemperamento.Intenditore =>
+            [
+                "«Ho visto i tempi. Non ci siamo ancora. Torni quando il distacco dal primo è dimezzato e ne riparliamo sul serio.»",
+                "«Mi piace come guida, ma io non compro speranze: compro cronometri. Per adesso è no.»",
+                $"«Con {visit.Trade} scelgo un pilota all'anno, e quest'anno l'ho già scelto. Mi dispiace.»"
+            ],
+            SponsorTemperamento.Commerciante =>
+            [
+                "«Quanta gente la segue? Ecco, appunto. Torni con il triplo e firmiamo domani.»",
+                "«Non è personale: io compro occhi, e in questo momento su di lei non ce ne sono abbastanza.»",
+                "«Il budget pubblicitario l'ho già speso in cartelloni. Quelli almeno so quanti li vedono.»"
+            ],
+            SponsorTemperamento.Duro =>
+            [
+                "«No. E le dico anche perché: lei non ha niente da darmi in cambio, e lo sa anche lei.»",
+                "«Ci risentiamo quando avrà qualcosa da trattare. Adesso non sta trattando, sta chiedendo.»",
+                "«Ho detto no al campione regionale il mese scorso. Non vorrà mica che dica di sì a lei.»"
+            ],
+            _ =>
+            [
+                $"«Eh, ragazzo... con {visit.Trade} quest'anno si fa fatica. Non è che non voglia.»",
+                "«Mi spiace davvero. Passa comunque a trovarmi, che un caffè te lo offro lo stesso.»",
+                "«Ne ho già dati alla squadra di calcio dell'oratorio. Se avessi saputo prima...»"
+            ]
+        };
+        return Scegli(frasi, visit, "no");
+    }
+
+    /// <summary>
+    /// Sceglie una frase in modo stabile: lo stesso negozio nella stessa
+    /// giornata risponde sempre allo stesso modo, ma negozi diversi no.
+    /// </summary>
+    private static string Scegli(string[] frasi, SponsorVisit visit, string esito) =>
+        frasi[(int)(Math.Abs(Hash($"{visit.Id}|{visit.Target}|{esito}")) % frasi.Length)];
 
     /// <summary>
     /// Haru migliora lavorando. Anche un rifiuto insegna qualcosa: è il motivo

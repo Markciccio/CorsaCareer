@@ -172,32 +172,65 @@ public static class SponsorNegotiation
         var delta = 0;
         string reazione;
 
+        // La variante si sceglie dall'etichetta della risposta: dentro la
+        // stessa trattativa due risposte diverse non danno mai la stessa
+        // reazione, e due trattative con lo stesso tipo di persona non si
+        // ripetono parola per parola.
+        var variante = Math.Abs(mossa.Etichetta.GetHashCode(StringComparison.Ordinal)) % 3;
+
         if (mossa.Piace == chi)
         {
             delta = mossa.Peso + doti.Credibility / 25;
-            reazione = chi switch
+            reazione = (chi, variante) switch
             {
-                SponsorTemperamento.Intenditore => "Annuisce lentamente e per la prima volta ti guarda in faccia. «Continui.»",
-                SponsorTemperamento.Commerciante => "Prende una penna e scrive qualcosa. «Questo mi interessa.»",
-                SponsorTemperamento.Duro => "Un mezzo sorriso. «Almeno lei non mi racconta storie.»",
-                _ => "Si appoggia allo schienale e sospira. «Eh. Vi ho visti crescere, voi due.»"
+                (SponsorTemperamento.Intenditore, 0) => "Annuisce lentamente e per la prima volta ti guarda in faccia. «Continui.»",
+                (SponsorTemperamento.Intenditore, 1) => "Si toglie gli occhiali e li pulisce, che è il suo modo di prendere tempo. «Questo ha senso.»",
+                (SponsorTemperamento.Intenditore, _) => "«Ah, ecco.» Batte due volte l'indice sul tavolo. «Finalmente qualcuno che parla di cose vere.»",
+
+                (SponsorTemperamento.Commerciante, 0) => "Prende una penna e scrive qualcosa. «Questo mi interessa.»",
+                (SponsorTemperamento.Commerciante, 1) => "Si sporge in avanti per la prima volta da quando siete entrati. «Vada avanti, la ascolto.»",
+                (SponsorTemperamento.Commerciante, _) => "«Uhm.» Guarda fuori dalla vetrina, poi torna su di voi. «Continui, che forse ci siamo.»",
+
+                (SponsorTemperamento.Duro, 0) => "Un mezzo sorriso. «Almeno lei non mi racconta storie.»",
+                (SponsorTemperamento.Duro, 1) => "Incrocia le braccia, ma l'aria è cambiata. «Bene. Uno che sa cosa chiede.»",
+                (SponsorTemperamento.Duro, _) => "«Questa non me l'aspettavo.» Vi guarda diversamente. «Avanti.»",
+
+                (_, 0) => "Si appoggia allo schienale e sospira. «Eh. Vi ho visti crescere, voi due.»",
+                (_, 1) => "Sorride senza dire niente per un paio di secondi. «Bravo il ragazzo. Bravo davvero.»",
+                (_, _) => "«Mia moglie me lo diceva.» Si gratta la testa. «Continua, continua.»"
             };
         }
         else if (mossa.Stona == chi)
         {
             delta = -(mossa.Peso - doti.Negotiation / 30);
-            reazione = chi switch
+            reazione = (chi, variante) switch
             {
-                SponsorTemperamento.Intenditore => "Aggrotta la fronte. «Sì, ma io le ho chiesto un'altra cosa.»",
-                SponsorTemperamento.Commerciante => "Guarda l'orologio. «Sarà, ma a me questo non serve.»",
-                SponsorTemperamento.Duro => "Scuote la testa. «Con me la faccia da poveretto non funziona.»",
-                _ => "Si irrigidisce un po'. «Mi sembra una cosa da città, questa.»"
+                (SponsorTemperamento.Intenditore, 0) => "Aggrotta la fronte. «Sì, ma io le ho chiesto un'altra cosa.»",
+                (SponsorTemperamento.Intenditore, 1) => "«Mi risparmi il discorso.» Allarga le mani. «I numeri. Aveva dei numeri?»",
+                (SponsorTemperamento.Intenditore, _) => "Sospira e guarda la foto del circuito dietro di sé. «Le corse non funzionano così.»",
+
+                (SponsorTemperamento.Commerciante, 0) => "Guarda l'orologio. «Sarà, ma a me questo non serve.»",
+                (SponsorTemperamento.Commerciante, 1) => "«Tutto molto bello.» Rimette a posto le carte sul bancone. «E io che ci faccio?»",
+                (SponsorTemperamento.Commerciante, _) => "Fa una faccia gentile che vuol dire no. «Mi sfugge il vantaggio, sinceramente.»",
+
+                (SponsorTemperamento.Duro, 0) => "Scuote la testa. «Con me la faccia da poveretto non funziona.»",
+                (SponsorTemperamento.Duro, 1) => "«Adesso mi tocca dirle una cosa spiacevole: questa l'ho già sentita cento volte.»",
+                (SponsorTemperamento.Duro, _) => "Si appoggia indietro, soddisfatto di avervi presi in fallo. «Ci riprovi.»",
+
+                (_, 0) => "Si irrigidisce un po'. «Mi sembra una cosa da città, questa.»",
+                (_, 1) => "«Boh.» Guarda il ragazzo invece che te. «A me sembra tanta roba complicata.»",
+                (_, _) => "Aggrotta la fronte. «Non è che mi stia prendendo in giro, vero?»"
             };
         }
         else
         {
             delta = 1 + doti.MotorsportKnowledge / 50;
-            reazione = "Ascolta senza sbilanciarsi. «Va bene. Altro?»";
+            reazione = variante switch
+            {
+                0 => "Ascolta senza sbilanciarsi. «Va bene. Altro?»",
+                1 => "Fa un cenno appena percettibile. «Mmh. Continui pure.»",
+                _ => "Non dice niente per un momento. «E poi?»"
+            };
         }
 
         return new SponsorEsitoMossa(mossa.Battuta, reazione, delta);

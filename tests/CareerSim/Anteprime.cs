@@ -37,11 +37,20 @@ internal static class Anteprime
             try
             {
                 using var form = costruisci();
-                // Fuori dallo schermo: si apre davvero — serve perche' i
-                // pannelli si dispongono solo quando la finestra ha un handle —
-                // ma non compare a nessuno.
+                // Fuori dallo schermo, e soprattutto NON massimizzata.
+                //
+                // CareerDialog massimizza ogni finestra, e una finestra
+                // massimizzata ignora la posizione: le anteprime si aprivano a
+                // tutto schermo sul monitor di chi stava lavorando, una dopo
+                // l'altra, ventisette volte. Si riporta a dimensione normale e
+                // le si da' a mano la misura che avrebbe da massimizzata, cosi'
+                // l'impaginazione e' quella vera ma non la vede nessuno.
+                var schermo = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1040);
+                form.WindowState = FormWindowState.Normal;
                 form.StartPosition = FormStartPosition.Manual;
-                form.Location = new Point(-4000, -4000);
+                form.MinimumSize = new Size(200, 200);
+                form.Size = new Size(schermo.Width, schermo.Height);
+                form.Location = new Point(-schermo.Width - 200, -schermo.Height - 200);
                 form.ShowInTaskbar = false;
                 form.Show();
                 Application.DoEvents();

@@ -34,6 +34,7 @@ internal static class ContenutiCheck
         problemi.AddRange(ControllaTrattative(log));
         problemi.AddRange(ControllaAttivita(log));
         ControllaTavole(log);
+        ControllaRisposteSponsor(log);
 
         log.WriteLine("");
         if (problemi.Count == 0)
@@ -211,6 +212,44 @@ internal static class ContenutiCheck
         log.WriteLine($"  giorno · {tutte.Count} attività, di cui {scuola.Count} a scuola");
 
         return problemi;
+    }
+
+    // ------------------------------------------------- le voci degli sponsor
+
+    /// <summary>
+    /// Quante risposte diverse sa dare uno sponsor.
+    ///
+    /// Erano due in tutto — una per il si' e una per il no — e dopo tre visite
+    /// si sapevano a memoria: «il ragazzo mi piace, ma quest'anno non ci sono
+    /// margini», sempre identica. Qui si contano quelle davvero distinte,
+    /// mestiere per mestiere, cosi' se qualcuno un giorno ne toglie una si
+    /// vede subito.
+    /// </summary>
+    private static void ControllaRisposteSponsor(TextWriter log)
+    {
+        string[] mestieri = ["riparazioni e saldature", "distribuzione bevande", "pneumatici e assetti", "agenzia assicurativa"];
+        var distinte = new HashSet<string>(StringComparer.Ordinal);
+
+        foreach (var mestiere in mestieri)
+        {
+            var perMestiere = new HashSet<string>(StringComparer.Ordinal);
+            for (var giorno = 0; giorno < 40; giorno++)
+            {
+                var visita = new SponsorVisit
+                {
+                    Id = $"prova-{giorno}", Target = $"Negozio {giorno}", Trade = mestiere,
+                    Amount = 300, Chance = 50
+                };
+                foreach (var accettato in new[] { true, false })
+                {
+                    var riga = SponsorVisits.RispostaDiProva(visita, accettato);
+                    perMestiere.Add(riga);
+                    distinte.Add(riga);
+                }
+            }
+            log.WriteLine($"  voci   · {SponsorNegotiation.NomeTemperamento(SponsorNegotiation.TemperamentoDi(mestiere)),-26} {perMestiere.Count} risposte diverse");
+        }
+        log.WriteLine($"  voci   · {distinte.Count} risposte distinte in tutto");
     }
 
     // -------------------------------------------------------- le tavole
