@@ -4624,9 +4624,12 @@ public sealed partial class MainForm : Form
         {
             // Al banco la scena non si apre ma si annota, e si lascia comunque
             // decidere alla regia quale prima volta sarebbe scattata.
-            SceneRecorder.Registra(career, "reazioni",
-                $"{UiText.Car(ultimaGara.Car)} a {ultimaGara.Track}: " +
-                (ultimaGara.Dnf ? "ritiro" : $"P{ultimaGara.Position}"));
+            // Si registrano le battute vere, non un riassunto: le reazioni di
+            // gara sono la scena piu' vista dell'intero gioco — al banco oltre
+            // centotrenta volte in dodici stagioni — ed e' quella dove la
+            // ripetizione si sente di piu'.
+            SceneRecorder.Registra(career, "reazioni", "reazioni di gara",
+                RaceReactions.Build(career, ultimaGara, contentIndex.Cars, contentIndex.Tracks, career.Schedule ?? []));
             ControllaPrimeVolte(ultimaGara.Dnf ? 0 : ultimaGara.Position, ultimaGara.Dnf);
         }
         if (ultimaGara != null && !stagioneAppenaChiusa && !CareerMessages.Unattended && Visible && !IsDisposed)

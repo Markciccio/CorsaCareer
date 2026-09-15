@@ -305,28 +305,130 @@ public static class CapetaScenes
         return righe;
     }
 
-    private static List<AnimeDialogueLine> AperturaStagione(Fatti f)
+    /// <summary>
+    /// Quale versione di una scena ricorrente si vede quest'anno.
+    ///
+    /// I momenti che tornano ogni stagione — l'apertura, il giro di boa,
+    /// l'ultima gara — avevano un testo solo: al banco l'apertura di stagione
+    /// scattava ventiquattro volte con le stesse identiche parole. Una scena
+    /// che si impara a memoria smette di essere una scena e diventa un tasto
+    /// da premere.
+    ///
+    /// Le varianti non cambiano solo le parole: cambiano chi apre, quante
+    /// persone parlano e da che parte guardano la cosa. Il seme dipende dalla
+    /// stagione, quindi due anni di fila non si somigliano mai, e dal pilota,
+    /// quindi due carriere diverse non vedono la stessa sequenza.
+    /// </summary>
+    private static int Variante(Fatti f, string chiave, int quante) =>
+        Math.Abs(StableHash.Of(f.Pilota, chiave, f.Stagione, f.Gradino)) % quante;
+
+    // --------------------------------------------------- apertura di stagione
+
+    private static List<AnimeDialogueLine> AperturaStagione(Fatti f) => Variante(f, "apertura", 4) switch
     {
-        var righe = new List<AnimeDialogueLine>();
+        0 => AperturaRegolamento(f),
+        1 => AperturaOfficina(f),
+        2 => AperturaConti(f),
+        _ => AperturaRivale(f)
+    };
+
+    /// <summary>L'apertura istituzionale: le regole dell'anno, dette da chi le conosce.</summary>
+    private static List<AnimeDialogueLine> AperturaRegolamento(Fatti f)
+    {
         var dove = string.IsNullOrEmpty(f.Campionato) ? "il campionato" : f.Campionato;
-        righe.Add(CastDirector.Battuta(CastDirector.Rei,
-            $"«Stagione {f.Stagione}, {dove}"
-            + (f.GareRimaste > 0 ? $", {Gare(f.GareRimaste)} in calendario" : "")
-            + $". Sei in {f.Categoria.ToLowerInvariant()}, che è il gradino {f.Gradino} di {f.GradiniTotali}. "
-            + $"Il livello del campionato è il {f.Livello} di {f.LivelliTotali}: "
-            + "chiudere nei primi tre ti porta a quello sopra, e questo è l'obiettivo dell'anno.»", "serena"));
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Rei,
+                $"«Stagione {f.Stagione}, {dove}"
+                + (f.GareRimaste > 0 ? $", {Gare(f.GareRimaste)} in calendario" : "")
+                + $". Sei in {f.Categoria.ToLowerInvariant()}, gradino {f.Gradino} di {f.GradiniTotali}, "
+                + $"livello {f.Livello} di {f.LivelliTotali}. Primi tre e si sale. "
+                + "Questo e' tutto quello che devi ricordare da qui a novembre.»", "serena")
+        };
         righe.Add(CastDirector.Battuta(CastDirector.Shigeo,
-            "«Dal punto di vista tecnico ti dico una cosa sola: le prime gare valgono come le ultime. "
-            + "Ogni anno c'è qualcuno che si sveglia a metà stagione e poi passa l'inverno a chiedersi "
-            + "dove sono finiti i punti di aprile.»", "neutro"));
+            "«E una cosa tecnica: le prime gare valgono come le ultime. Ogni anno c'e' qualcuno "
+            + "che si sveglia a meta' stagione e poi passa l'inverno a chiedersi dove sono finiti "
+            + "i punti di aprile.»", "neutro"));
         if (!string.IsNullOrEmpty(f.Squadra))
             righe.Add(CastDirector.Battuta(CastDirector.Haru,
-                $"«E siamo con {f.Squadra}! Ho già attaccato l'adesivo sul furgone. "
-                + "Andiamo a prenderceli, questi punti.»", "felice"));
+                $"«E siamo con {f.Squadra}! Ho gia' attaccato l'adesivo sul furgone.»", "felice"));
         return righe;
     }
 
-    private static List<AnimeDialogueLine> MetaStagione(Fatti f)
+    /// <summary>L'apertura dall'officina: si parte dalla macchina, non dal regolamento.</summary>
+    private static List<AnimeDialogueLine> AperturaOfficina(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Genji,
+                "«E' tutta smontata e rimontata. Ho guardato pezzo per pezzo e ti dico una cosa sola: "
+                + "quest'anno non ti si rompe niente per colpa mia.» Si pulisce le mani. "
+                + "«Il resto tocca a te.»", "fiero")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Shigeo,
+            $"«Su {(string.IsNullOrEmpty(f.Vettura) ? "questa macchina" : f.Vettura)} il punto debole "
+            + "sono le prime due curve dopo una frenata forte. Lo dico adesso cosi' quando succede "
+            + "non pensi di aver sbagliato tu.»", "neutro"));
+        if (f.GareRimaste > 0)
+            righe.Add(CastDirector.Battuta(CastDirector.Rei,
+                $"«{Gare(f.GareRimaste)}, da qui a fine stagione. Primi tre e si sale di livello: "
+                + "il conto lo tengo io, tu guida.»", "cauta"));
+        return righe;
+    }
+
+    /// <summary>L'apertura dei conti: quanto costa l'anno che comincia.</summary>
+    private static List<AnimeDialogueLine> AperturaConti(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Tooru,
+                $"«Ho fatto il preventivo dell'anno. In cassa ci sono € {f.Cassa:N0}"
+                + (f.GareRimaste > 0 ? $" e le gare da pagare sono {f.GareRimaste}." : ".")
+                + " Non ti dico se basta: te lo dico a maggio.»")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Miki,
+            f.HaSponsor
+                ? $"«{f.Sponsor} copre una parte, non tutto. La differenza la fanno i piazzamenti: "
+                  + "ogni posizione guadagnata in classifica vale piu' di quanto sembri, e non solo in premi.»"
+                : "«Sponsor a posto non ne abbiamo. Vuol dire che ogni iscrizione esce dalla cassa, "
+                  + "e che una domenica buttata via costa il doppio di quello che pensi.»",
+            "neutro"));
+        righe.Add(CastDirector.Battuta(CastDirector.Haru,
+            "«Va bene, va bene, adesso basta con i numeri.» Batte le mani. "
+            + "«Si comincia! E' questo che conta, no?»", "felice"));
+        return righe;
+    }
+
+    /// <summary>L'apertura dal paddock: la stagione vista da chi ti dovra' battere.</summary>
+    private static List<AnimeDialogueLine> AperturaRivale(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Riku,
+                "«Guarda chi c'e'.» Ti squadra dalla testa ai piedi. "
+                + $"«{(string.IsNullOrEmpty(f.Squadra) ? "Sei tornato" : f.Squadra + ", quest'anno")}. "
+                + "Bene: cosi' quando ti batto nessuno puo' dire che avevi la macchina scarsa.»", "spavaldo")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Haru,
+            "«Non ascoltarlo.» Poi, piu' piano: «Pero' ha ragione su una cosa: quest'anno "
+            + "non abbiamo scuse pronte. E forse e' meglio cosi'.»", "preoccupato"));
+        righe.Add(CastDirector.Battuta(CastDirector.Rei,
+            $"«Se avete finito.» Apre la cartellina. «{f.Categoria}, livello {f.Livello} di {f.LivelliTotali}, "
+            + "primi tre per salire. Il resto sono chiacchiere di paddock.»", "severa"));
+        return righe;
+    }
+
+    // ------------------------------------------------------------ giro di boa
+
+    private static List<AnimeDialogueLine> MetaStagione(Fatti f) => Variante(f, "meta", 3) switch
+    {
+        0 => MetaClassifica(f),
+        1 => MetaTecnica(f),
+        _ => MetaTesta(f)
+    };
+
+    /// <summary>Il giro di boa raccontato dai numeri del campionato.</summary>
+    private static List<AnimeDialogueLine> MetaClassifica(Fatti f)
     {
         var righe = new List<AnimeDialogueLine>();
         if (f.HaClassifica)
@@ -334,45 +436,95 @@ public static class CapetaScenes
             var distacco = f.PuntiDelPrimo - f.Punti;
             righe.Add(CastDirector.Battuta(CastDirector.Haru,
                 $"«Facciamo il punto, {f.Pilota}. Siamo {Ordinale(f.PostoInClassifica)} su {f.Iscritti} con {f.Punti} punti"
-                + (distacco > 0 ? $", a {distacco} dal primo" : ", e davanti non c'è nessuno")
-                + (f.GareRimaste > 0 ? $", e restano {Gare(f.GareRimaste)}.»" : ".»")
-                + " Non è finita niente, in nessuno dei due sensi.»", "preoccupato"));
+                + (distacco > 0 ? $", a {distacco} dal primo" : ", e davanti non c'e' nessuno")
+                + (f.GareRimaste > 0 ? $", e restano {Gare(f.GareRimaste)}." : ".")
+                + " Non e' finita niente, in nessuno dei due sensi.»", "preoccupato"));
             righe.Add(CastDirector.Battuta(CastDirector.Rei,
                 f.PostoInClassifica <= 3
-                    ? $"«Sei dentro la zona che promuove — servono i primi tre — ma ci sei dentro di poco. "
-                      + "Da qui alla fine non serve vincere: serve non perdere punti stupidamente.»"
+                    ? "«Sei dentro la zona che promuove, ma di poco. Da qui alla fine non serve vincere: "
+                      + "serve non perdere punti stupidamente.»"
                     : $"«Per salire servono i primi tre e tu sei {Ordinale(f.PostoInClassifica)}. "
-                      + "Vuol dire che una gara buona non basta più: servono piazzamenti pieni da qui in avanti.»",
+                      + "Una gara buona non basta piu': servono piazzamenti pieni da qui in avanti.»",
                 f.PostoInClassifica <= 3 ? "serena" : "severa"));
         }
         else
         {
             righe.Add(CastDirector.Battuta(CastDirector.Rei,
-                $"«Siamo a metà del percorso in {f.Categoria.ToLowerInvariant()}. "
-                + $"Hai {f.Gare} gare in carriera e {f.Vittorie} vittorie: quello che conta adesso è la continuità.»", "cauta"));
+                $"«Siamo a meta' del percorso in {f.Categoria.ToLowerInvariant()}. "
+                + $"Hai {f.Gare} gare in carriera e {f.Vittorie} vittorie: quello che conta adesso e' la continuita'.»", "cauta"));
         }
-        righe.Add(CastDirector.Battuta(CastDirector.Shigeo,
-            "«E la macchina è la stessa di aprile. Se vuoi trovare il decimo che manca, "
-            + "non è nel motore: è nei primi due giri dopo la partenza, dove stai perdendo più di tutti.»", "neutro"));
         return righe;
     }
 
-    private static List<AnimeDialogueLine> UltimaGara(Fatti f)
+    /// <summary>Il giro di boa visto dai dati: dove si perde il tempo.</summary>
+    private static List<AnimeDialogueLine> MetaTecnica(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Shigeo,
+                "«Ho messo insieme tutte le gare finora e c'e' uno schema. "
+                + "Non e' la velocita' di punta e non e' la frenata: e' il primo giro. "
+                + "Li perdi li', i decimi, e poi li rincorri per un'ora.»", "neutro")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Genji,
+            "«Lo dicevo io.» Scrolla le spalle. «Parti sempre come se dovessi recuperare, "
+            + "anche quando sei davanti. Un giorno lo capirai.»", "neutro"));
+        if (f.HaClassifica)
+            righe.Add(CastDirector.Battuta(CastDirector.Rei,
+                $"«Tradotto in classifica: {Ordinale(f.PostoInClassifica)} con {f.Punti} punti. "
+                + "Sistemare quei primi due giri vale piu' di qualunque modifica alla macchina.»", "cauta"));
+        return righe;
+    }
+
+    /// <summary>Il giro di boa dalla parte della testa: la stanchezza di meta' anno.</summary>
+    private static List<AnimeDialogueLine> MetaTesta(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Sae,
+                "«Si vede, sai? A meta' stagione siete tutti uguali: parlate solo di gare "
+                + "e vi dimenticate di dormire.» Si siede accanto a te. "
+                + "«Io a giugno dell'anno scorso volevo mollare. Poi e' passata.»", "scuola")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Haru,
+            f.Forma >= 70
+                ? "«Comunque stai bene, eh. Ti ho visto in palestra: l'anno scorso a questo punto eri un rottame.»"
+                : $"«Forma {f.Forma} su 100. Non e' un dramma, ma nemmeno una cosa da ignorare: "
+                  + "le gare di fine stagione si vincono con le gambe, non con le braccia.»",
+            f.Forma >= 70 ? "felice" : "preoccupato"));
+        if (f.HaClassifica && f.GareRimaste > 0)
+            righe.Add(CastDirector.Battuta(CastDirector.Rei,
+                $"«{Gare(f.GareRimaste)} alla fine, {Ordinale(f.PostoInClassifica)} in classifica. "
+                + "E' il momento in cui si decide che tipo di stagione e' stata.»", "cauta"));
+        return righe;
+    }
+
+    // ----------------------------------------------------------- l'ultima gara
+
+    private static List<AnimeDialogueLine> UltimaGara(Fatti f) => Variante(f, "ultima", 3) switch
+    {
+        0 => UltimaConti(f),
+        1 => UltimaSilenzio(f),
+        _ => UltimaNotte(f)
+    };
+
+    /// <summary>L'ultima con la calcolatrice in mano: cosa serve, esattamente.</summary>
+    private static List<AnimeDialogueLine> UltimaConti(Fatti f)
     {
         var righe = new List<AnimeDialogueLine>();
         if (f.HaClassifica)
         {
             var distacco = f.PuntiDelPrimo - f.Punti;
             righe.Add(CastDirector.Battuta(CastDirector.Haru,
-                $"«È l'ultima. {f.Pilota}, siamo {Ordinale(f.PostoInClassifica)} con {f.Punti} punti"
+                $"«E' l'ultima. {f.Pilota}, siamo {Ordinale(f.PostoInClassifica)} con {f.Punti} punti"
                 + (distacco > 0 ? $" e ne mancano {distacco} al primo" : " e comandiamo noi")
                 + ". Tutto quello che abbiamo fatto da marzo finisce dentro questo pomeriggio qua.»", "preoccupato"));
             righe.Add(CastDirector.Battuta(CastDirector.Rei,
                 f.PostoInClassifica <= 3
                     ? "«Sei in zona promozione e devi solo confermarla. Ti chiedo una cosa sola: niente eroismi. "
-                      + "Il rischio che prendi oggi non ti fa guadagnare niente e può costarti l'anno.»"
+                      + "Il rischio che prendi oggi non ti fa guadagnare niente e puo' costarti l'anno.»"
                     : "«Non sei in zona promozione, quindi oggi non hai niente da perdere. "
-                      + "È la giornata giusta per provare quella cosa che non hai mai osato.»",
+                      + "E' la giornata giusta per provare quella cosa che non hai mai osato.»",
                 f.PostoInClassifica <= 3 ? "severa" : "cauta"));
         }
         else
@@ -382,7 +534,51 @@ public static class CapetaScenes
                 + $"hai corso {f.Gare} gare. L'anno scorso, di questi tempi, non ne avevi corsa nemmeno una.»", "preoccupato"));
         }
         righe.Add(CastDirector.Battuta(CastDirector.Genji,
-            "«Ho controllato tutto due volte. La macchina non ti tradisce oggi. Il resto è tuo.»", "neutro"));
+            "«Ho controllato tutto due volte. La macchina non ti tradisce oggi. Il resto e' tuo.»", "neutro"));
+        return righe;
+    }
+
+    /// <summary>L'ultima in cui non si dice quasi niente, perche' c'e' poco da dire.</summary>
+    private static List<AnimeDialogueLine> UltimaSilenzio(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Genji,
+                "«Non ti dico niente, oggi.» Ti passa il casco. "
+                + "«Quello che dovevi imparare l'hai imparato a marzo. Se non l'hai imparato, "
+                + "non e' stamattina che cambia.»", "neutro")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Haru,
+            "«Io invece parlo, perche' se sto zitto mi viene l'ansia.» Pausa. "
+            + "«Va bene, sto zitto. Ma sono qui.»", "preoccupato"));
+        if (f.HaClassifica)
+            righe.Add(CastDirector.Battuta(CastDirector.Rei,
+                $"«{Ordinale(f.PostoInClassifica)} con {f.Punti} punti, e si chiude qui. "
+                + "Qualunque cosa succeda oggi, la stagione l'hanno fatta le altre dodici domeniche.»", "cauta"));
+        return righe;
+    }
+
+    /// <summary>L'ultima raccontata dalla sera prima.</summary>
+    private static List<AnimeDialogueLine> UltimaNotte(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Sae,
+                "«Domani e' l'ultima anche per me.» Guarda altrove. "
+                + "«E' strano, no? Tutto l'anno a lamentarsi e poi quando finisce non sai cosa farne, "
+                + "delle domeniche.»", "scuola")
+        };
+        if (f.HaClassifica && f.PostoInClassifica <= 3)
+            righe.Add(CastDirector.Battuta(CastDirector.Riku,
+                $"«{Ordinale(f.PostoInClassifica)}. Ti manca solo portarla a casa.» "
+                + "Poi, piu' piano: «Non sbagliare, che voglio batterti l'anno prossimo "
+                + "dove conta davvero.»", "spavaldo"));
+        else
+            righe.Add(CastDirector.Battuta(CastDirector.Riku,
+                "«Brutta stagione, eh?» Non e' una provocazione, per una volta. "
+                + "«Capita. A me e' capitata due anni fa e adesso sono qui.»", "neutro"));
+        righe.Add(CastDirector.Battuta(CastDirector.Haru,
+            "«Dormi. Ti prego, dormi. Domani ti sveglio io.»", "preoccupato"));
         return righe;
     }
 
@@ -488,19 +684,81 @@ public static class CapetaScenes
             + "Cominciamo dai tre più vicini così non spendiamo in treno.»")
     ];
 
-    private static List<AnimeDialogueLine> Rivalita(Fatti f)
+    private static List<AnimeDialogueLine> Rivalita(Fatti f) => Variante(f, "rivale", 4) switch
+    {
+        0 => RivaleComplimento(f),
+        1 => RivaleProvocazione(f),
+        2 => RivaleSilenzioso(f),
+        _ => RivaleRispetto(f)
+    };
+
+    /// <summary>Il complimento che gli costa dirlo.</summary>
+    private static List<AnimeDialogueLine> RivaleComplimento(Fatti f)
     {
         var righe = new List<AnimeDialogueLine>
         {
             CastDirector.Battuta(CastDirector.Riku,
                 $"«Bel weekend, {f.Pilota}. Davvero. Non fare quella faccia, te lo sto dicendo sul serio.» "
-                + "Poi, più piano: «Però la prossima volta parto davanti io, e allora vediamo.»", "spavaldo")
+                + "Poi, piu' piano: «Pero' la prossima volta parto davanti io, e allora vediamo.»", "spavaldo")
         };
         righe.Add(CastDirector.Battuta(CastDirector.Haru,
             "«Non rispondergli. Ti prego, non rispondergli.» Pausa. «Va bene, rispondigli.»", "felice"));
         righe.Add(CastDirector.Battuta(CastDirector.Genji,
-            "«Quel ragazzo lì ti fa un favore e non lo sa. Senza uno così davanti, "
-            + "tu adesso staresti girando un secondo più piano e saresti pure contento.»", "neutro"));
+            "«Quel ragazzo li' ti fa un favore e non lo sa. Senza uno cosi' davanti, "
+            + "tu adesso staresti girando un secondo piu' piano e saresti pure contento.»", "neutro"));
+        return righe;
+    }
+
+    /// <summary>La provocazione secca, senza mezze frasi.</summary>
+    private static List<AnimeDialogueLine> RivaleProvocazione(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Riku,
+                "«Ti ho lasciato passare, lo sai vero?» Sorride. "
+                + "«Scherzo. Pero' guarda i dati del secondo settore prima di festeggiare troppo.»", "beffardo")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Shigeo,
+            "«Li ho guardati io i dati del secondo settore.» Non alza lo sguardo dal computer. "
+            + "«Ha ragione. Ed e' l'unica cosa vera che ha detto.»", "neutro"));
+        return righe;
+    }
+
+    /// <summary>Quello che non dice niente, e pesa di piu'.</summary>
+    private static List<AnimeDialogueLine> RivaleSilenzioso(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Haru,
+                "«Hai visto? Ti e' passato davanti e non ha detto niente.» "
+                + "«Secondo me e' peggio di quando parla.»", "preoccupato")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Genji,
+            "«E' peggio per lui, non per te.» Chiude la cassetta degli attrezzi. "
+            + "«Uno che ti prende in giro ti ha ancora sotto. Uno che sta zitto ha cominciato ad avere paura.»", "fiero"));
+        return righe;
+    }
+
+    /// <summary>Il momento in cui i due si parlano davvero.</summary>
+    private static List<AnimeDialogueLine> RivaleRispetto(Fatti f)
+    {
+        var righe = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Riku,
+                "«Senti.» Si guarda le scarpe, che non e' da lui. "
+                + $"«Quella cosa che hai fatto all'ultima curva. Come l'hai fatta?» "
+                + "Poi si riprende: «Non che mi serva, eh. Curiosita'.»", "neutro")
+        };
+        righe.Add(CastDirector.Battuta(CastDirector.Sae,
+            "«Glielo dici o lo fai soffrire ancora un po'?» Ride. "
+            + "«Io lo farei soffrire.»", "felice"));
+        righe.Add(CastDirector.Battuta(CastDirector.Noa,
+            f.Seguito >= 40
+                ? $"«E questa la scrivo.» Prende il taccuino. «Due che si parlano dopo essersi presi "
+                  + $"a sportellate per un'ora: con {f.Seguito} di seguito, una foto cosi' vale dieci gare.»"
+                : "«Non la scrivo, tranquilli.» Mette via il taccuino. "
+                  + "«Certe cose e' meglio che restino nel paddock.»",
+            "neutro"));
         return righe;
     }
 

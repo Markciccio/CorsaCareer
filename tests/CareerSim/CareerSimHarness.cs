@@ -95,10 +95,38 @@ internal static class CareerSimEntry
 
         // Quali momenti scattano e quanti: se uno resta a zero, e' agganciato
         // male e non lo scopriremmo mai giocando.
+        //
+        // E soprattutto quante volte dicono cose DIVERSE: una scena che scatta
+        // ventiquattro volte con le stesse identiche parole e' peggio di una
+        // che non scatta, perche' la si impara a memoria e si comincia a
+        // saltarla. La colonna «diverse» e' quella che conta.
         log.WriteLine("");
-        log.WriteLine("QUANTE VOLTE OGNI SCENA");
+        log.WriteLine("QUANTE VOLTE OGNI SCENA        volte  diverse");
+        var ripetitive = new List<string>();
         foreach (var gruppo in scene.GroupBy(x => x.Titolo).OrderByDescending(x => x.Count()))
-            log.WriteLine($"  {gruppo.Count(),3}x  {gruppo.Key}");
+        {
+            var volte = gruppo.Count();
+            // Confronto a numeri rimossi: «stagione 3» e «stagione 4» sono la
+            // stessa identica scena con dentro una cifra diversa, e contarle
+            // come due testi diversi nascondeva proprio la ripetizione che
+            // questa misura esiste per trovare.
+            var diverse = gruppo.Select(x => SenzaNumeri(string.Join("|", x.Righe)))
+                                .Distinct(StringComparer.Ordinal).Count();
+            log.WriteLine($"  {gruppo.Key,-46} {volte,3}   {diverse,3}");
+            // Solo le scene che hanno davvero delle battute: le firme e gli
+            // esiti degli sponsor sono annotati come semplici marcatori, senza
+            // testo, e segnalarli come «ripetitivi» sarebbe un falso allarme
+            // che fa perdere di vista quelli veri.
+            var parlata = gruppo.Any(x => x.Righe.Count > 0);
+            if (parlata && volte > 3 && diverse * 3 < volte)
+                ripetitive.Add($"{gruppo.Key}: {volte} volte, {diverse} forme");
+        }
+        if (ripetitive.Count > 0)
+        {
+            log.WriteLine("");
+            log.WriteLine($"SCENE TROPPO RIPETITIVE ({ripetitive.Count})");
+            foreach (var r in ripetitive) log.WriteLine($"  · {r}");
+        }
 
         // I momenti scritti che non sono MAI scattati: e' la domanda vera.
         var visti = scene.Select(x => x.Titolo).ToHashSet();
@@ -123,6 +151,14 @@ internal static class CareerSimEntry
             foreach (var s in r) log.WriteLine($"      [{s.Tipo}] {s.Titolo}");
         }
         log.WriteLine("");
+    }
+
+    /// <summary>Il testo senza cifre: serve a confrontare la forma, non i dati.</summary>
+    private static string SenzaNumeri(string testo)
+    {
+        var b = new StringBuilder(testo.Length);
+        foreach (var c in testo) if (!char.IsDigit(c)) b.Append(c);
+        return b.ToString();
     }
 
     private static int ArgInt(string[] args, string nome, int predefinito)
