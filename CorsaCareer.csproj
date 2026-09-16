@@ -17,6 +17,9 @@
     <None Remove="tests\**" />
     <Compile Remove="publish\**" />
     <None Remove="publish\**" />
+    <Compile Remove="installer\**" />
+    <EmbeddedResource Remove="installer\**" />
+    <None Remove="installer\**" />
   </ItemGroup>
   <ItemGroup>
     <!--

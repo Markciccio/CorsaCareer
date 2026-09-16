@@ -9,6 +9,10 @@
 bin/
 obj/
 publish/
+installer/payload.zip
+installer/release/
+.setup-payload/
+.pre-github-sync-20260916/
 
 # Anteprime di layout rese da tests/UiRender
 ui-preview/

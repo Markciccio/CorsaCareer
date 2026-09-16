@@ -25,7 +25,7 @@ All'apertura di una nuova carriera viene pubblicato il numero zero come storia b
 
 ## Avvio
 
-Per un’installazione locale senza configurazioni manuali, copia la cartella `publish` e fai clic destro su `CorsaCareer-Install.ps1`, quindi scegli **Esegui con PowerShell**. Lo script crea le cartelle dati e media in `Documenti\Assetto Corsa\CorsaCareer`, prepara il collegamento `Corsa Career.lnk` sul desktop e avvia il manager. Non modifica Assetto Corsa e non scarica contenuti senza una richiesta esplicita dal programma.
+Per un’installazione come programma Windows, esegui `installer\release\CorsaCareer-Setup.exe`: è un unico file che contiene l’app, il runtime, immagini e audio. Installa CorsaCareer in `AppData\Local\CorsaCareer`, crea il collegamento `Corsa Career.lnk` sul Desktop e avvia il manager. Non modifica Assetto Corsa e non scarica contenuti senza una richiesta esplicita dal programma. In alternativa, la cartella `publish` contiene ancora `CorsaCareer-Install.ps1` per l’installazione da PowerShell.
 
 Eseguire `CorsaCareer.exe` dalla cartella `publish` oppure usare il collegamento `Corsa Career.lnk` sul Desktop. I salvataggi sono in `Documenti\Assetto Corsa\CorsaCareer` (con backup versionati in `backups`); dal pannello `Carriere salvate` puoi ripristinare l’ultimo backup con conferma. La scrittura è atomica e all’avvio viene recuperato un eventuale file temporaneo valido. Lo schema corrente è versionato e migra automaticamente le carriere precedenti, inclusi dati sponsor e redazione.
 Oltre ai salvataggi dopo ogni operazione importante, il manager esegue un autosave atomico silenzioso ogni 60 secondi; l’autosave non crea una cascata di backup, mentre le modifiche importanti continuano a generare copie versionate.
