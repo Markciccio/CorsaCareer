@@ -12,6 +12,8 @@ public sealed class ContentCarRecord
     public string Brand { get; set; } = "";
     public int PowerHp { get; set; }
     public int MassKg { get; set; }
+    /// <summary>Origine delle specifiche: evita che una stima sembri un dato dichiarato dal mod.</summary>
+    public string SpecificationsSource { get; set; } = "non disponibile";
     public int ModelYear { get; set; }
     public List<string> Skins { get; set; } = [];
     public string SourcePath { get; set; } = "";
@@ -127,13 +129,27 @@ public static class ContentScanner
         if (string.IsNullOrWhiteSpace(declaredCategory) && metadata.ValueKind == JsonValueKind.Undefined) declaredCategory = ReadLooseCategory(metadataPath);
         string category;
         int confidence;
-        if (TryDeclaredCategory(declaredCategory, out var declared)) { category = declared; confidence = 100; }
+        // Queste due mod sono equivalenti F2/F3000: spesso nei loro metadati
+        // compare solo "race", che le farebbe finire per errore nel turismo.
+        if (combined.Contains("lola_b99") || combined.Contains("lola b99") || combined.Contains("formula challenge")) { category = "formula 2"; confidence = 95; }
+        else if (TryDeclaredCategory(declaredCategory, out var declared)) { category = declared; confidence = 100; }
         else category = ClassifyCar(combined, out confidence);
         var skinsDir = Path.Combine(dir, "skins");
         var skins = SafeDirectories(skinsDir, warnings, "livree").Select(Path.GetFileName).Where(x => !string.IsNullOrWhiteSpace(x)).Cast<string>().OrderBy(x => x).ToList();
         var modelYear = ReadInt(metadata, "year", "model_year", "year_produced");
         if (modelYear == 0 && metadata.ValueKind == JsonValueKind.Undefined) modelYear = ReadLooseInt(metadataPath, "year", "model_year", "year_produced");
-        return new ContentCarRecord { Id = id, Name = string.IsNullOrWhiteSpace(name) ? text : name, Brand = brand, Category = category, Confidence = confidence, PowerHp = ReadInt(metadata, "bhp", "power", "power_hp"), MassKg = ReadInt(metadata, "weight", "mass"), ModelYear = modelYear, Skins = skins, SourcePath = dir };
+        var power = ReadInt(metadata, "bhp", "power", "power_hp");
+        var mass = ReadInt(metadata, "weight", "mass");
+        var estimate = EstimateSpecifications(id, name, category);
+        var estimated = false;
+        if (power <= 0 && estimate.PowerHp > 0) { power = estimate.PowerHp; estimated = true; }
+        if (mass <= 0 && estimate.MassKg > 0) { mass = estimate.MassKg; estimated = true; }
+        return new ContentCarRecord
+        {
+            Id = id, Name = string.IsNullOrWhiteSpace(name) ? text : name, Brand = brand, Category = category, Confidence = confidence,
+            PowerHp = power, MassKg = mass, SpecificationsSource = estimated ? $"stima modello ({estimate.Reason})" : (power > 0 || mass > 0 ? "metadati del contenuto" : "non disponibile"),
+            ModelYear = modelYear, Skins = skins, SourcePath = dir
+        };
     }
 
     private static IEnumerable<string> SafeDirectories(string path, List<string> warnings, string kind)
@@ -223,12 +239,17 @@ public static class ContentScanner
 
     private static string ClassifyCar(string value, out int confidence)
     {
+        // I nomi di cartella AC usano indifferentemente spazi, trattini e
+        // underscore (es. touring-light / touring_light).
+        value = value.Replace("_", " ").Replace("-", " ");
         // Prima le eccezioni con numeri: "f2004" non deve diventare F2 solo
         // perché contiene la sequenza di caratteri f2.
-        if (value.Contains("f2004") || value.Contains("sf70") || value.Contains("sf90") || value.Contains("f1")) { confidence = 90; return "formula"; }
+        if (value.Contains("lola_b99") || value.Contains("lola b99") || value.Contains("formula challenge")) { confidence = 95; return "formula 2"; }
+        if (value.Contains("f2004") || value.Contains("sf70") || value.Contains("sf90") || value.Contains("rb9") || value.Contains("cad26") || value.Contains("f1")) { confidence = 90; return "formula"; }
+        if (value.Contains("tatuusfa1") || value.Contains("formula vee") || value.Contains("f1600")) { confidence = 85; return "formula 4"; }
         if (value.Contains("787b") || value.Contains("lola") || value.Contains("prototype")) { confidence = 85; return "prototype"; }
         if (value.Contains("250 gto") || value.Contains("250_gto") || value.Contains("288 gto") || value.Contains("288_gto") || value.Contains("312 67") || value.Contains("312_67") || value.Contains("312t")) { confidence = 85; return "historic"; }
-        var rules = new (string key, string category)[] { ("kart", "kart"), ("formula junior", "formula junior"), ("formula 2", "formula 2"), ("formula", "formula"), ("f4", "formula 4"), ("f3", "formula 3"), ("gt3", "GT3"), ("gt4", "GT4"), ("gt2", "GT2"), ("gt1", "GT1"), ("tcr", "TCR"), ("touring", "touring"), ("lmp", "LMP"), ("hypercar", "hypercar"), ("cup", "cup"), ("historic", "historic") };
+        var rules = new (string key, string category)[] { ("kart", "kart"), ("formula junior", "formula junior"), ("formula 2", "formula 2"), ("formula", "formula"), ("f4", "formula 4"), ("f3", "formula 3"), ("gt3", "GT3"), ("gt4", "GT4"), ("gt2", "GT2"), ("gt1", "GT1"), ("tcr", "TCR"), ("touring light", "touring light"), ("s1600", "club"), ("touring", "touring"), ("lmp", "LMP"), ("hypercar", "hypercar"), ("cup", "cup"), ("historic", "historic") };
         foreach (var (key, category) in rules) if (value.Contains(key, StringComparison.OrdinalIgnoreCase)) { confidence = 90; return category; }
         // Chi non si riconosce non finisce in "special", che vuol dire esclusa
         // dalle gare: finisce in "touring". La stragrande maggioranza delle
@@ -240,6 +261,40 @@ public static class ContentScanner
         confidence = 20; return "touring";
     }
 
+    /// <summary>
+    /// Molti mod espongono ui_car.json vuoto o non standard. Non si può quindi
+    /// fingere che una 599XX o una F1 siano una piccola utilitaria: quando il
+    /// modello è riconoscibile si usa una stima prudente, esplicitamente
+    /// etichettata, soltanto per costo, livello e bilanciamento della carriera.
+    /// </summary>
+    private static (int PowerHp, int MassKg, string Reason) EstimateSpecifications(string id, string name, string category)
+    {
+        var key = $"{id} {name}".ToLowerInvariant();
+        if (key.Contains("458_gt2") || key.Contains("458 gt2")) return (450, 1100, "Ferrari 458 GT2");
+        if (key.Contains("599xx")) return (750, 1350, "Ferrari 599XX");
+        if (key.Contains("458") && key.Contains("stage 3")) return (650, 1380, "Ferrari 458 elaborata");
+        if (key.Contains("ferrari_458") || key.Contains("458 italia")) return (562, 1485, "Ferrari 458 Italia");
+        if (key.Contains("bmw_z4_s1")) return (306, 1490, "BMW Z4 E89");
+        if (key.Contains("f2004")) return (865, 605, "Ferrari F2004");
+        if (key.Contains("sf70h")) return (950, 728, "Ferrari SF70H");
+        if (key.Contains("rb9")) return (750, 642, "Red Bull RB9");
+        if (key.Contains("cad26") || key.Contains("grand prix 2026")) return (800, 760, "Formula Grand Prix moderna");
+        if (key.Contains("250_gto") || key.Contains("250 gto")) return (300, 880, "Ferrari 250 GTO");
+        if (key.Contains("312_67") || key.Contains("312/67")) return (450, 550, "Ferrari 312/67");
+        if (key.Contains("312t")) return (500, 590, "Ferrari 312T");
+        if (key.Contains("288_gto") || key.Contains("288 gto")) return (400, 1160, "Ferrari 288 GTO");
+
+        var normalized = (category ?? "").ToLowerInvariant();
+        if (normalized.Contains("formula")) return (300, 620, "classe formula");
+        if (normalized.Contains("gt3")) return (520, 1300, "classe GT3");
+        if (normalized.Contains("gt2")) return (450, 1150, "classe GT2");
+        if (normalized.Contains("gt4")) return (420, 1400, "classe GT4");
+        if (normalized.Contains("kart")) return (18, 150, "classe kart");
+        if (normalized.Contains("historic")) return (300, 1000, "classe storica");
+        if (normalized.Contains("road")) return (240, 1350, "classe stradale");
+        return (0, 0, "");
+    }
+
     private static bool TryDeclaredCategory(string value, out string category)
     {
         category = "";
@@ -247,8 +302,8 @@ public static class ContentScanner
         // I tag di Assetto Corsa arrivano come "#Kart", "#GT3", "#street": il
         // cancelletto faceva fallire il confronto esatto, e un kart dichiarato
         // tale dal contenuto non veniva riconosciuto come kart.
-        var normalized = value.Trim().TrimStart('#').ToLowerInvariant().Replace("_", " ").Trim();
-        var known = new[] { "kart", "formula junior", "formula 4", "formula 3", "formula 2", "formula", "gt4", "gt3", "gt2", "gt1", "tcr", "touring", "cup", "prototype", "lmp", "hypercar", "historic", "road", "special" };
+        var normalized = value.Trim().TrimStart('#').ToLowerInvariant().Replace("_", " ").Replace("-", " ").Trim();
+        var known = new[] { "kart", "formula junior", "formula 4", "formula 3", "formula 2", "formula", "gt4", "gt3", "gt2", "gt1", "tcr", "club", "s1600", "touring light", "touring", "cup", "prototype", "lmp", "hypercar", "historic", "road", "special" };
         var match = known.FirstOrDefault(x => normalized.Equals(x, StringComparison.OrdinalIgnoreCase));
         if (match == null) return false;
         category = match switch { "formula 4" => "formula 4", "formula junior" => "formula junior", _ => match };

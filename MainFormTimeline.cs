@@ -43,6 +43,17 @@ public sealed partial class MainForm
         if (CareerMessages.Unattended) return;
         if (!Visible || !IsHandleCreated || WindowState == FormWindowState.Minimized) return;
         if (!CareerPhases.NeedsAnnouncement(career, out var phase, contentIndex.Cars)) return;
+        // Una fase nuova non deve aprirsi da sola sopra la Home: resta visibile
+        // come azione esplicita, così il giocatore decide quando leggerla.
+        pendingPhase = phase;
+        CareerLog.Info("fase", $"fase pronta per la presentazione: «{phase.Title}» ({phase.Id})");
+    }
+
+    private void OpenPendingPhase()
+    {
+        if (pendingPhase == null) return;
+        var phase = pendingPhase;
+        pendingPhase = null;
         announcingPhase = true;
         try
         {
@@ -52,7 +63,11 @@ public sealed partial class MainForm
             intro.ShowDialog(this);
             CareerLog.Info("fase", $"presentata la fase «{phase.Title}» ({phase.Id})");
         }
-        finally { announcingPhase = false; }
+        finally
+        {
+            announcingPhase = false;
+            RefreshUi();
+        }
     }
 
     /// <summary>Evita che un aggiornamento innescato dalla finestra la riapra.</summary>
@@ -283,7 +298,7 @@ public sealed partial class MainForm
         ascentFlow.Controls.Add(Righe("COME LO VEDONO", UiTheme.Kicker, UiTheme.TextMuted, width, 10, 4));
         foreach (var (etichetta, valore) in new[]
                  {
-                     ("Fiducia dei team", profile.TeamTrust),
+                     ("Livello di fiducia dei followers", profile.TeamTrust),
                      ("Interesse degli sponsor", profile.SponsorAppeal),
                      ("Considerazione della stampa", profile.PressStanding),
                      ("Prestigio sportivo", profile.SportingPrestige),

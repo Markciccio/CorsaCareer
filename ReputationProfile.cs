@@ -73,7 +73,7 @@ public sealed class ReputationProfile
 
     public static string Label(ReputationKind kind) => kind switch
     {
-        ReputationKind.TeamTrust => "fiducia dei team",
+        ReputationKind.TeamTrust => "livello di fiducia dei followers",
         ReputationKind.SponsorAppeal => "interesse degli sponsor",
         ReputationKind.PublicPopularity => "livello influencer",
         ReputationKind.PressStanding => "considerazione della stampa",

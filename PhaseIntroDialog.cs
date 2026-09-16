@@ -24,7 +24,9 @@ public sealed class PhaseIntroDialog : CareerDialog
     private Image? currentArtwork, nextArtwork;
     private readonly Panel flashBar = new();
     private readonly Label flashText = new();
-    private readonly FlowLayoutPanel content = new();
+    private readonly Panel content = new();
+    private readonly FlowLayoutPanel reader = new();
+    private readonly Button narrationButton = new();
     private Label titleLabel = new();
     private Label? standfirstLabel;
     private PictureBox? artworkBox;
@@ -44,13 +46,16 @@ public sealed class PhaseIntroDialog : CareerDialog
         flashText.Dock = DockStyle.Fill; flashText.Font = new Font(UiTheme.FamilySemibold, 12F, FontStyle.Bold);
         flashText.ForeColor = Color.White; flashText.TextAlign = ContentAlignment.MiddleLeft; flashText.Padding = new Padding(30, 0, 0, 0);
         flashBar.Controls.Add(flashText);
-        content.Dock = DockStyle.Fill; content.FlowDirection = FlowDirection.TopDown; content.WrapContents = false; content.AutoScroll = true;
-        content.BackColor = UiTheme.Background; content.Padding = new Padding(54, 34, 54, 24);
+        content.Dock = DockStyle.Fill; content.BackColor = UiTheme.Background;
+        reader.Dock = DockStyle.Fill; reader.FlowDirection = FlowDirection.TopDown; reader.WrapContents = false; reader.AutoScroll = true;
+        reader.BackColor = UiTheme.Background; reader.Padding = new Padding(54, 24, 54, 24);
+        content.Controls.Add(reader);
 
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 76, BackColor = Color.FromArgb(16, 19, 27), Padding = new Padding(38, 12, 34, 12) };
         var start = UiTheme.PrimaryButton("COMINCIA"); start.Dock = DockStyle.Right; start.Width = 208; start.Click += (_, _) => Close();
-        var hint = new Label { Dock = DockStyle.Left, Width = 500, Font = new Font(UiTheme.FamilySans, 9F), ForeColor = UiTheme.TextMuted, TextAlign = ContentAlignment.MiddleLeft, Text = "Spazio: mostra subito il testo · COMINCIA: entra nella carriera" };
-        footer.Controls.Add(start); footer.Controls.Add(hint); Controls.Add(footer); Controls.Add(content); Controls.Add(flashBar);
+        narrationButton = UiTheme.GhostButton("▶  ASCOLTA", 168); narrationButton.Dock = DockStyle.Right; narrationButton.Margin = new Padding(0, 0, 12, 0); narrationButton.Click += (_, _) => ToggleNarration();
+        var hint = new Label { Dock = DockStyle.Left, Width = 620, Font = new Font(UiTheme.FamilySans, 9F), ForeColor = UiTheme.TextMuted, TextAlign = ContentAlignment.MiddleLeft, Text = "L'immagine resta fissa · scorri il testo qui sotto · Spazio: mostra subito il testo" };
+        footer.Controls.Add(start); footer.Controls.Add(narrationButton); footer.Controls.Add(hint); Controls.Add(footer); Controls.Add(content); Controls.Add(flashBar);
         // Nessun tasto di conferma automatica: il prologo resta aperto finché
         // il giocatore non seleziona esplicitamente COMINCIA.
         KeyDown += (_, e) =>
@@ -71,7 +76,15 @@ public sealed class PhaseIntroDialog : CareerDialog
         // brano non partiva mai, e il prologo si leggeva nel silenzio. Il
         // volume del tema d'apertura è già tarato per stare sotto a chi legge
         // (IntroVolume), quindi le due cose convivono invece di escludersi.
-        Shown += (_, _) => { SoundtrackService.PlayIntro(); StartNarrationAudio(); };
+        Shown += (_, _) =>
+        {
+            SoundtrackService.PlayIntro();
+            // La registrazione MP3 appartiene esclusivamente alla prefazione
+            // iniziale. Le scene di vittoria, contratto e carriera usano solo
+            // musica e testo, senza trascinarsi dietro la voce del prologo.
+            if (phase.Id == CareerPhases.Debut) StartNarrationAudio();
+            else narrationButton.Visible = false;
+        };
         FormClosed += (_, _) => HandBackSoundtrack();
         timer.Start();
     }
@@ -97,24 +110,42 @@ public sealed class PhaseIntroDialog : CareerDialog
         var current = narrative[lineIndex]; current.Label.Visible = true;
         letterIndex = Math.Min(current.Text.Length, letterIndex + 2); current.Label.Text = current.Text[..letterIndex]; ResizeForText(current.Label);
         if (letterIndex < current.Text.Length) return;
-        lineIndex++; letterIndex = 0; linePause = PauseBetweenLines; content.ScrollControlIntoView(current.Label);
+        lineIndex++; letterIndex = 0; linePause = PauseBetweenLines; reader.ScrollControlIntoView(current.Label);
     }
 
     /// <summary>Vero quando la narrazione registrata è partita davvero.</summary>
     private bool StartNarrationAudio()
     {
+        if (phase.Id != CareerPhases.Debut) return false;
         var path = Path.Combine(AppContext.BaseDirectory, "narration", "chapter1-intro-narration.mp3");
         narrationLinked = NarrationService.PlayAudioFile(path);
+        // Il player esterno non è un requisito dell'app: se manca ffplay, la
+        // prefazione resta comunque udibile con la voce Windows integrata.
+        if (!narrationLinked)
+        {
+            NarrationService.Speak(string.Join("\n\n", phase.Paragraphs));
+            narrationLinked = NarrationService.IsSpeaking;
+        }
+        narrationButton.Text = narrationLinked ? "❚❚  FERMA AUDIO" : "▶  ASCOLTA";
         return narrationLinked;
+    }
+
+    private void ToggleNarration()
+    {
+        if (NarrationService.IsSpeaking)
+        {
+            NarrationService.Stop(); narrationLinked = false; narrationButton.Text = "▶  ASCOLTA"; return;
+        }
+        StartNarrationAudio();
     }
 
     private void BuildBlocks()
     {
-        blocksBuilt = true; var width = Math.Max(540, content.ClientSize.Width - 105);
-        titleLabel = Block(phase.Title, new Font(UiTheme.FamilySemibold, 38F, FontStyle.Bold), UiTheme.TextPrimary, width, 0, 8); content.Controls.Add(titleLabel);
-        standfirstLabel = Block(phase.Standfirst, new Font(UiTheme.FamilySans, 17F, FontStyle.Italic), UiTheme.TextSecondary, width, 0, 22); content.Controls.Add(standfirstLabel);
+        blocksBuilt = true; var width = Math.Max(540, reader.ClientSize.Width - 105);
+        titleLabel = Block(phase.Title, new Font(UiTheme.FamilySemibold, 38F, FontStyle.Bold), UiTheme.TextPrimary, width, 0, 8); reader.Controls.Add(titleLabel);
+        standfirstLabel = Block(phase.Standfirst, new Font(UiTheme.FamilySans, 17F, FontStyle.Italic), UiTheme.TextSecondary, width, 0, 22); reader.Controls.Add(standfirstLabel);
         InsertArtwork(width);
-        content.Controls.Add(new Panel { Width = width, Height = 2, BackColor = UiTheme.Border, Margin = new Padding(0, 12, 0, 16) });
+        reader.Controls.Add(new Panel { Width = width, Height = 2, BackColor = UiTheme.Border, Margin = new Padding(0, 12, 0, 16) });
         foreach (var text in phase.Paragraphs) AddNarrativeLine(text, UiTheme.TextPrimary, width, 11);
         if (!string.IsNullOrWhiteSpace(phase.Objective)) { AddNarrativeLine("QUELLO CHE CONTA ADESSO", UiTheme.Positive, width, 14, true); AddNarrativeLine(phase.Objective, UiTheme.TextPrimary, width, 7); }
         if (!string.IsNullOrWhiteSpace(phase.Stake)) { AddNarrativeLine("COSA SI RISCHIA", UiTheme.Warning, width, 14, true); AddNarrativeLine(phase.Stake, UiTheme.TextSecondary, width, 7); }
@@ -124,7 +155,7 @@ public sealed class PhaseIntroDialog : CareerDialog
     private void AddNarrativeLine(string text, Color color, int width, int margin, bool kicker = false)
     {
         var font = kicker ? new Font(UiTheme.FamilySemibold, 10.5F, FontStyle.Bold) : new Font(UiTheme.FamilySans, 16F);
-        var label = Block(string.Empty, font, color, width, margin, kicker ? 4 : 14); label.Visible = false; content.Controls.Add(label); narrative.Add((label, text));
+        var label = Block(string.Empty, font, color, width, margin, kicker ? 4 : 14); label.Visible = false; reader.Controls.Add(label); narrative.Add((label, text));
     }
 
     private void InsertArtwork(int width)
@@ -134,7 +165,7 @@ public sealed class PhaseIntroDialog : CareerDialog
         // Le tavole sono il manifesto del capitolo: il rapporto del riquadro è
         // vicino a quello delle illustrazioni manga (3:2), così non restano
         // miniere nere ai lati quando la finestra è a tutto schermo.
-        artworkFrame = new Panel { Width = width, Height = Math.Clamp((int)(width / 1.62), 420, 760), BackColor = Color.FromArgb(7, 9, 13), Margin = new Padding(0, 4, 0, 0), Padding = new Padding(3) };
+        artworkFrame = new Panel { Dock = DockStyle.Top, Height = Math.Clamp(content.ClientSize.Height * 42 / 100, 260, 380), BackColor = Color.FromArgb(7, 9, 13), Margin = Padding.Empty, Padding = new Padding(3) };
         artworkFrame.Paint += (_, e) => { using var pen = new Pen(UiTheme.Border, 1); e.Graphics.DrawRectangle(pen, 0, 0, artworkFrame.Width - 1, artworkFrame.Height - 1); };
         artworkBox = new PictureBox { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(7, 9, 13) }; artworkFrame.Controls.Add(artworkBox); content.Controls.Add(artworkFrame);
         foreach (var asset in ArtworkAssets())

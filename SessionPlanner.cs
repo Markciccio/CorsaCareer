@@ -188,6 +188,8 @@ public static class SessionPlanner
         ApplyRaceDistance(plan, request, endurance);
         ApplyPracticeAndQualifying(plan, request, endurance);
         plan.FormatLabel = endurance ? "Gara di durata"
+            : (request.CarCategory ?? "").Contains("kart", StringComparison.OrdinalIgnoreCase)
+                ? "Manche kart · circa 10 minuti"
             : plan.RaceDistanceMeters > 0
                 ? plan.RaceDistanceMeters >= 90000 ? "Gara lunga" : plan.RaceDistanceMeters >= 45000 ? "Gara media" : "Gara sprint"
                 : plan.RaceLaps >= 18 ? "Gara lunga" : plan.RaceLaps >= 10 ? "Gara media" : "Gara sprint";
@@ -217,7 +219,14 @@ public static class SessionPlanner
         if (endurance) targetMeters = (int)Math.Round(targetMeters * 2.5);
         if (request.TrackLengthMeters > 0)
         {
-            plan.RaceLaps = Math.Clamp((int)Math.Round(targetMeters / (double)request.TrackLengthMeters), 2, 90);
+            var isKart = (request.CarCategory ?? "").Contains("kart", StringComparison.OrdinalIgnoreCase);
+            // Una manche kart deve restare un impegno breve: puntiamo a circa
+            // dieci minuti e non superiamo dieci giri, anche su un kartodromo
+            // molto corto. Sulle piste più lunghe la distanza reale decide il
+            // numero di passaggi senza trasformarla in una gara di mezz'ora.
+            plan.RaceLaps = isKart
+                ? Math.Clamp((int)Math.Ceiling(targetMeters / (double)request.TrackLengthMeters), 3, 10)
+                : Math.Clamp((int)Math.Round(targetMeters / (double)request.TrackLengthMeters), 2, 90);
             plan.RaceDistanceMeters = plan.RaceLaps * request.TrackLengthMeters;
         }
         else
@@ -233,7 +242,9 @@ public static class SessionPlanner
 
     private static int BaseRaceDistanceMeters(string carCategory, string tier) => (carCategory ?? "").Trim().ToLowerInvariant() switch
     {
-        "kart" => 20000,
+        // Con un kart da noleggio 8,5 km equivalgono normalmente a 7–10 giri
+        // e a una decina di minuti; prima 20 km generavano 22 giri a Fuji Short.
+        "kart" => 8500,
         "cup" or "touring" or "tcr" or "gt4" or "formula 4" or "formula junior" or "historic" => 60000,
         "gt3" or "gt2" or "formula 3" or "prototype" => 100000,
         "formula 2" => 120000,
@@ -252,7 +263,7 @@ public static class SessionPlanner
     {
         var laps = (carCategory ?? "").Trim().ToLowerInvariant() switch
         {
-            "kart" => 12,
+            "kart" => 8,
             "cup" or "touring" or "tcr" or "gt4" or "formula 4" or "formula junior" or "historic" => 14,
             "gt3" or "gt2" or "formula 3" or "prototype" or "formula 2" => 18,
             "gt1" or "lmp" or "hypercar" or "formula" => 22,

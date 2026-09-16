@@ -35,10 +35,10 @@ public static class NarrativeCalendar
     /// dichiarano: duemilacinque, l'epoca di Capeta, cosi' una carriera lunga
     /// vent'anni ci sta dentro tutta senza finire nel futuro.
     /// </summary>
-    public const int DefaultStartYear = 2005;
+    public const int DefaultStartYear = 2003;
 
     /// <summary>Prima domenica utile di marzo: apertura di stagione credibile.</summary>
-    public static readonly DateTime DefaultSeasonStart = new(DefaultStartYear, 3, 13);
+    public static readonly DateTime DefaultSeasonStart = new(DefaultStartYear, 1, 1);
 
     /// <summary>
     /// Quanto passa fra la firma di un contratto e il primo round.

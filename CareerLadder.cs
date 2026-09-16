@@ -46,12 +46,36 @@ public sealed class LadderRung
 /// </summary>
 public static class CareerLadder
 {
+    public const string RoadRookie = "road-rookie";
+    public const string ClubCup = "touring-club";
+    public const string RegionalTouring = "touring-regional";
     public const string FourStroke = "kart-4t";
     public const string TwoStroke = "kart-2t";
     public const string Shifter = "kart-125";
 
     public static readonly IReadOnlyList<LadderRung> Rungs =
     [
+        new()
+        {
+            Id = RoadRookie, Step = 1, Path = LadderPath.Touring, Tier = "Rookie",
+            Name = "Utilitarie e track day",
+            Description = "La gavetta più accessibile: auto stradali, gomme normali e giornate in pista pagate con il proprio budget.",
+            Company = "Chi comincia con la macchina che ha davvero, prima di potersi permettere una macchina da corsa."
+        },
+        new()
+        {
+            Id = ClubCup, Step = 2, Path = LadderPath.Touring, Tier = "Rookie",
+            Name = "Trofeo club",
+            Description = "La prima vettura preparata: campionati monomarca o S1600, budget ancora familiare ma una griglia vera.",
+            Company = "Piloti che hanno smesso di fare solo track day e cominciano a misurarsi in un campionato."
+        },
+        new()
+        {
+            Id = RegionalTouring, Step = 3, Path = LadderPath.Touring, Tier = "Categoria regionale",
+            Name = "Turismo regionale",
+            Description = "La prima stagione di turismo: trasferte, avversari abituali e risultati che iniziano a pesare.",
+            Company = "Squadre locali, piccoli sponsor e piloti che cercano una porta verso GT e categorie nazionali."
+        },
         // --- il tronco comune
         new()
         {
@@ -181,6 +205,15 @@ public static class CareerLadder
     {
         var c = (category ?? "").Trim().ToLowerInvariant();
 
+        // L'utente può dichiarare che una sua auto installata è un equivalente
+        // di un preciso gradino. Il prefisso evita di confondere questa scelta
+        // intenzionale con la classificazione automatica basata su nome e CV.
+        if (c.StartsWith("manual:", StringComparison.Ordinal))
+            return ById(c["manual:".Length..]);
+
+        // Touring-Light, Touring_Light e Touring Light sono lo stesso trofeo.
+        c = c.Replace("_", " ").Replace("-", " ");
+
         // 60 cavalli e non 45: un KZ125 da gara ne dichiara fino a 54, e sopra
         // la vecchia soglia usciva dal ramo dei kart per finire nel ripiego,
         // che lo rimandava al gradino dei due tempi. Il gradino del 125 con
@@ -200,6 +233,20 @@ public static class CareerLadder
             return ById(TwoStroke);
         }
 
+        // Quando non ci sono kart, la carriera parte da ciò che c'è: una
+        // piccola stradale non viene più raccontata come un kart a due tempi.
+        // È lo stesso gradino economico, ma una disciplina diversa.
+        if (c.Contains("road") || c.Contains("street") || c.Contains("rookie") || c.Contains("trackday") || c.Contains("utility"))
+        {
+            // "Road" descrive l'omologazione, non il budget. Una piccola
+            // utilitaria apre la carriera; una 458 o una 599XX non può essere
+            // raccontata allo stesso modo. In assenza di potenza resta una
+            // partenza prudente, ma quando la stima la conosce sale di costo.
+            if (powerHp >= 500) return ById("gt3");
+            if (powerHp >= 180) return ById("cup");
+            return ById(RoadRookie);
+        }
+
         // Il riconoscimento è per contenuto, non per uguaglianza esatta.
         //
         // Le categorie dei pacchetti reali di Assetto Corsa non sono un elenco
@@ -211,6 +258,11 @@ public static class CareerLadder
         // di specificità: la voce più precisa vince sulla più generica, così
         // "gt3 cup" resta una GT3 e non un monomarca.
         bool Ha(params string[] chiavi) => chiavi.Any(x => c.Contains(x, StringComparison.Ordinal));
+
+        // I trofei leggeri non sono GT4: S1600 e Touring Light sono proprio
+        // i due passaggi che riempiono la gavetta delle vetture turismo.
+        if (Ha("club", "s1600", "cup light")) return ById(ClubCup);
+        if (Ha("touring light", "regional touring", "turismo regionale")) return ById(RegionalTouring);
 
         // --- vertice delle vetture chiuse
         if (Ha("hypercar", "gt1", "group c", "can-am")) return ById("hypercar");
@@ -252,7 +304,7 @@ public static class CareerLadder
             : powerHp >= 500 ? ById("gt3")
             : powerHp >= 250 ? ById("cup")
             : powerHp >= 150 ? ById("formula-4")
-            : ById(TwoStroke);
+            : ById(RoadRookie);
     }
 
     public static LadderRung Current(CareerState career, IReadOnlyList<ContentCarRecord> cars)
@@ -284,18 +336,19 @@ public static class CareerLadder
             .Distinct().OrderBy(x => x).ToList();
 
     /// <summary>
-    /// Il primo gradino sopra a quello attuale fra quelli che esistono davvero.
-    /// Se sopra non c'e piu niente, restituisce il gradino attuale.
+    /// Il gradino immediatamente sopra, soltanto se esiste davvero.
+    /// Un buco non autorizza più un salto da F3 a F1: il pilota disputa
+    /// un'altra stagione nella categoria attuale, più selettiva, finché non
+    /// installa o assegna un equivalente del passaggio mancante.
     /// </summary>
     public static int NextPopulatedStep(int currentStep, IReadOnlyList<ContentCarRecord> cars)
     {
-        foreach (var s in PopulatedSteps(cars)) if (s > currentStep) return s;
-        return currentStep;
+        return PopulatedSteps(cars).Contains(currentStep + 1) ? currentStep + 1 : currentStep;
     }
 
     /// <summary>
-    /// Se una vettura e a portata: il gradino attuale o il primo pieno sopra.
-    /// Un salto solo per volta, ma contato sui gradini veri.
+    /// Se una vettura è a portata: il gradino attuale o quello immediatamente
+    /// sopra, mai un salto oltre una categoria mancante.
     /// </summary>
     public static bool WithinReach(int step, int currentStep, IReadOnlyList<ContentCarRecord> cars) =>
         step >= currentStep && step <= NextPopulatedStep(currentStep, cars);
@@ -379,6 +432,19 @@ public static class CareerLadder
     public static List<ContentCarRecord> OnPath(IEnumerable<ContentCarRecord> cars, string? chosenPath)
     {
         var elenco = cars.ToList();
+        // Turismo, GT ed endurance sono una carriera di vetture chiuse: può
+        // iniziare in un trofeo e, con i risultati, diventare una proposta GT
+        // o di durata. È separata dalle monoposto, ma non spezzata in tre
+        // binari artificiali.
+        if (string.Equals(chosenPath, "ClosedWheel", StringComparison.OrdinalIgnoreCase))
+        {
+            var chiuse = elenco.Where(x =>
+            {
+                var gradino = ForCar(x.Category, x.PowerHp, x.MassKg);
+                return gradino.Path is LadderPath.Touring or LadderPath.Endurance;
+            }).ToList();
+            return chiuse.Count > 0 ? chiuse : elenco;
+        }
         if (!Enum.TryParse<LadderPath>(chosenPath, ignoreCase: true, out var strada)) return elenco;
         var proprie = elenco
             .Where(x =>

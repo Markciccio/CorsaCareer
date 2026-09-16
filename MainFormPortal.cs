@@ -34,12 +34,13 @@ public sealed partial class MainForm
     private BudgetPanel budgetPanel = new();
 
     // Colonna azioni.
-    private Button continueStory = new(), launch = new(), briefing = new(), nextSeason = new(), activities = new(), opportunities = new(), simulate = new();
+    private Button continueStory = new(), launch = new(), briefing = new(), nextSeason = new(), activities = new(), opportunities = new(), simulate = new(), phaseAdvance = new();
     /// <summary>Il comando principale della card «ADESSO», distinto da quello del pannello sezioni.</summary>
     private Button homeContinue = new();
     private Button simulateGood = new(), simulateBad = new();
     private Label pendingBanner = new();
     private Label decisionSummary = new();
+    private CareerPhase? pendingPhase;
 
     // Colonna editoriale: l'articolo per intero, non due righe.
     private Label heroKicker = new();
@@ -762,7 +763,7 @@ public sealed partial class MainForm
             var trust = test.TrustAfter > 0 ? test.TrustAfter : career.TeamRelation;
             entries.Add((test.StoryDate, outcome,
                 $"Prova con {NomeVettura(test.Car)} a {NomeCircuito(test.Track)}",
-                $"Miglior giro {time} · forma {fitness}/100 · fiducia del team {trust}/100 · budget € {test.CashDelta:+#,##0;-#,##0;0}",
+                $"Miglior giro {time} · forma {fitness}/100 · fiducia followers {trust}/100 · budget € {test.CashDelta:+#,##0;-#,##0;0}",
                 outcome.StartsWith("SUPERATO", StringComparison.OrdinalIgnoreCase) ? UiTheme.Positive : UiTheme.Warning, false));
         }
         foreach (var race in career.RaceHistory)
@@ -776,7 +777,7 @@ public sealed partial class MainForm
                 : $"ARRIVATO {Ordinale(race.Position).ToUpperInvariant()}";
             entries.Add((race.StoryDate, esito,
                 $"Gara con {NomeVettura(race.Car)} a {NomeCircuito(race.Track)}",
-                $"{race.Points} punti · premio € {race.Prize:N0} · forma {fitness}/100 · fiducia del team {trust}/100 · budget € {race.CashDelta:+#,##0;-#,##0;0}",
+                $"{race.Points} punti · premio € {race.Prize:N0} · forma {fitness}/100 · fiducia followers {trust}/100 · budget € {race.CashDelta:+#,##0;-#,##0;0}",
                 race.Dnf ? UiTheme.Accent : UiTheme.Info, false));
         }
         var next = NextScheduled();
@@ -853,9 +854,13 @@ public sealed partial class MainForm
         nextSeason = UiTheme.SecondaryButton("Avanza stagione");
         nextSeason.Click += (_, _) =>
         {
-            if (NextScheduled()?.Kind == ScheduledEventKind.Invitation && !awaitingResult) DeclineInvitation();
+            if (awaitingResult) AbandonPendingSession();
+            else if (NextScheduled()?.Kind == ScheduledEventKind.Invitation) DeclineInvitation();
             else AdvanceSeason();
         };
+        phaseAdvance = UiTheme.PrimaryButton("VAI ALLA FASE SUCCESSIVA");
+        phaseAdvance.Visible = false;
+        phaseAdvance.Click += (_, _) => OpenPendingPhase();
         var checkResult = UiTheme.SecondaryButton("Referto di Assetto Corsa");
         checkResult.Click += (_, _) => CheckResultNow();
         // Alternativa al referto: risolve la sessione senza aprire Assetto
@@ -879,6 +884,7 @@ public sealed partial class MainForm
         weekend.Controls.Add(simulate);
         weekend.Controls.Add(checkResult);
         weekend.Controls.Add(nextSeason);
+        weekend.Controls.Add(phaseAdvance);
         weekend.Controls.Add(opportunities);
         weekend.Controls.Add(activities);
         weekend.Controls.Add(briefing);
@@ -1165,7 +1171,8 @@ public sealed partial class MainForm
         // categoria e campionato — e il quadro e' completo solo con entrambe.
         var gradinoTestata = CareerLadder.Current(career, contentIndex.Cars);
         headerChampionship.Text = ChampionshipLadder.Header(
-            gradinoTestata.Name, gradinoTestata.Step, CareerLadder.Steps, career.ChampionshipLevel);
+            gradinoTestata.Name, gradinoTestata.Step, CareerLadder.Steps, career.ChampionshipLevel)
+            + $" · {EtaPilota()} ANNI";
 
         // La data e la situazione sono il punto di riferimento della giornata:
         // devono restare visibili anche quando non c'e' una gara fissata.
@@ -1262,7 +1269,7 @@ public sealed partial class MainForm
         var conseguenze = new List<string>();
         if (prezzo.Popularity != 0) conseguenze.Add($"seguito {prezzo.Popularity:+#;-#;0}");
         if (prezzo.SportingReputation != 0) conseguenze.Add($"prestigio sportivo {prezzo.SportingReputation:+#;-#;0}");
-        if (prezzo.TeamTrust != 0) conseguenze.Add($"fiducia del team {prezzo.TeamTrust:+#;-#;0}");
+        if (prezzo.TeamTrust != 0) conseguenze.Add($"fiducia followers {prezzo.TeamTrust:+#;-#;0}");
         var costoSalto = conseguenze.Count > 0 ? $" ({string.Join(" · ", conseguenze)})" : "";
 
         var risposta = CareerMessages.Ask(this,
@@ -1371,7 +1378,8 @@ public sealed partial class MainForm
             homeArtworkKey = artworkKey;
             RestartHomeArtworkSequence();
         }
-        homeTeam.Text = $"{career.Team}\nCompagno: {career.Teammate}\nFiducia: {career.TeamRelation}/100";
+        var eta = EtaPilota();
+        homeTeam.Text = $"{career.Team}\nPilota: {eta} anni · {DriverAge.Fase(eta)}\nCompagno: {career.Teammate}\nFiducia: {career.TeamRelation}/100";
         // La cifra in cassa è già nella riga dati del passo attuale: qui conta
         // come sta il bilancio, non ripetere lo stesso numero una terza volta.
         homeMoney.Text = $"CASSA PERSONALE\n€ {career.Cash:N0} · {CareerFinances.Status(career.Cash)}\nSPONSOR\n{career.Sponsor} · budget € {career.SponsorBudget:N0}\nTEAM SUPPORT\n{career.TeamSupportPercent}% dei costi coperti\nRapporto sponsor: {career.SponsorRelation}/100";
@@ -1384,6 +1392,24 @@ public sealed partial class MainForm
         homeMarket.Text = career.ContractActive
             ? $"Contratto attivo\n€ {career.ContractSalary:N0}/anno\n{open} proposte aperte"
             : $"Nessun contratto\n\n{scouts}";
+    }
+
+    /// <summary>
+    /// Al rientro da una scena il portale non deve sembrare congelato sulla
+    /// giornata precedente: uno stacco breve dal nero dichiara il nuovo stato
+    /// e nomina il prossimo passo prima di restituire la Home.
+    /// </summary>
+    private void AnnounceNextAppointment()
+    {
+        if (CareerMessages.Unattended || IsDisposed || !Visible) return;
+        var next = NextScheduled();
+        var title = next == null ? "PORTALE AGGIORNATO" : "PROSSIMO APPUNTAMENTO";
+        var detail = next == null
+            ? "La giornata è stata archiviata. Controlla il calendario e le opportunità disponibili."
+            : $"{CareerScheduler.Describe(next)}\n\n{next.Objective}";
+        using var overlay = new PortalTransitionOverlay(title, detail);
+        overlay.Bounds = Bounds;
+        overlay.ShowDialog(this);
     }
 
     private void SimulateDebugFromHome()
@@ -2071,6 +2097,9 @@ public sealed partial class MainForm
         var seasonOver = !evaluation && rounds.Count > 0 && career.Round >= rounds.Count;
         var scheduled = NextScheduled();
 
+        phaseAdvance.Visible = pendingPhase != null && !awaitingResult;
+        phaseAdvance.Text = pendingPhase == null ? "VAI ALLA FASE SUCCESSIVA" : $"VAI ALLA FASE SUCCESSIVA · {pendingPhase.Title.ToUpperInvariant()}";
+
         pendingBanner.Visible = awaitingResult;
         pendingBanner.Text = awaitingResult
             ? "● SESSIONE APERTA IN CONTENT MANAGER\nIl referto viene acquisito solo a gara conclusa."
@@ -2084,7 +2113,7 @@ public sealed partial class MainForm
         continueStory.Text = !string.IsNullOrWhiteSpace(missingContent)
             ? "CONTINUA · SISTEMA I CONTENUTI"
             : awaitingResult
-                ? "CONTINUA · CERCA IL REFERTO"
+                ? "CONTINUA · RIPRENDI IL TEST"
                 // Una selezione aperta è la cosa più importante in agenda: il
                 // pulsante deve dire a che giornata si è arrivati.
                 : selection?.NextDay is { } pendingDay
@@ -2138,7 +2167,7 @@ public sealed partial class MainForm
             activities.Text = isInvitation ? "PREPARAZIONE, SPONSOR E AGENDA" : $"AGENDA E PREPARAZIONE · {Math.Max(0, career.DaysUntilNextRound)} giorni";
             nextSeason.Visible = awaitingResult || isInvitation;
             nextSeason.Enabled = awaitingResult || isInvitation;
-            nextSeason.Text = awaitingResult ? "Annulla la prova" : "Rifiuta l'invito";
+            nextSeason.Text = awaitingResult ? "ABBANDONA SESSIONE" : "Rifiuta l'invito";
         }
         else
         {
@@ -2146,7 +2175,7 @@ public sealed partial class MainForm
             launch.Enabled = career.ContractActive && rounds.Count > 0;
             launch.Text = awaitingResult ? "RIAPRI LA SESSIONE" : rounds.Count == 0 ? "CALENDARIO IN ATTESA" : "APRI IN CONTENT MANAGER";
             nextSeason.Enabled = awaitingResult;
-            nextSeason.Text = awaitingResult ? "Annulla il weekend" : "Avanza stagione";
+            nextSeason.Text = awaitingResult ? "ABBANDONA SESSIONE" : "Avanza stagione";
         }
         if (!evaluation) briefing.Enabled = !seasonOver && string.IsNullOrWhiteSpace(missingContent) && scheduled != null;
         activities.Enabled = !awaitingResult;
@@ -2179,7 +2208,7 @@ public sealed partial class MainForm
 
         if (awaitingResult)
         {
-            CheckResultNow();
+            ContinuePendingWeekend();
             return;
         }
 

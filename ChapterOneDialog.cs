@@ -526,7 +526,7 @@ public sealed class ChapterOneDialog : CareerDialog
         var lap = test.BestLapMilliseconds > 0 ? Lap(test.BestLapMilliseconds) : "nessun giro valido";
         var gap = test.BestLapMilliseconds > 0 && target > 0 ? test.BestLapMilliseconds - target : 0;
         var gapText = test.BestLapMilliseconds > 0 && target > 0 ? $"{(gap >= 0 ? "+" : "")}{gap / 1000.0:0.000} s" : "n/d";
-        return $"{test.Track} · {UiText.Car(test.Car)}\nMiglior giro: {lap} · riferimento: {(target > 0 ? Lap(target) : "n/d")} · scarto: {gapText}\nEsito: {career.RookieEvaluationStatus}\nCosa cambia: forma {career.Fitness}/100 · fiducia nel paddock {career.TeamRelation}/100 · budget € {career.Cash:N0}.";
+        return $"{UiText.Track(test.Track)} · {UiText.Car(test.Car)}\nMiglior giro: {lap} · riferimento: {(target > 0 ? Lap(target) : "n/d")} · scarto: {gapText}\nEsito: {career.RookieEvaluationStatus}\nCosa cambia: forma {career.Fitness}/100 · livello di fiducia dei followers {career.TeamRelation}/100 · budget € {career.Cash:N0}.";
     }
 
     private static string Lap(int milliseconds)

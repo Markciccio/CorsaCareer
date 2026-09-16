@@ -185,7 +185,7 @@ public sealed class DriverDayDialog : CareerDialog
         driverHours.Text = $"◉  PILOTA   {day.DriverHoursLeft} / {DriverDay.DriverHours} ORE LIBERE";
 
         var profile = career.ReputationProfile ?? new ReputationProfile();
-        indices.Text = $"FORMA  {career.Fitness}/100     FIDUCIA TEAM  {career.TeamRelation}/100     APPEAL SPONSOR  {career.SponsorRelation}/100";
+        indices.Text = $"FORMA  {career.Fitness}/100     FIDUCIA FOLLOWERS  {career.TeamRelation}/100     APPEAL SPONSOR  {career.SponsorRelation}/100";
         stats.Text = $"Budget disponibile € {career.Cash:N0}   ·   stanchezza {career.Fatigue}/100 ({DriverDay.ConditionLabel(career.Fitness, career.Fatigue)})   ·   "
                      + $"livello influencer {profile.PublicPopularity}/100   ·   reputazione sportiva {profile.SportingPrestige}/100";
 

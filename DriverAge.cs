@@ -18,7 +18,7 @@ namespace CorsaCareer;
 public static class DriverAge
 {
     /// <summary>Età con cui si comincia, se il profilo non ne dichiara una.</summary>
-    public const int EtaIniziale = 16;
+    public const int EtaIniziale = 12;
 
     /// <summary>L'età in cui un pilota è al massimo delle sue possibilità.</summary>
     public const int Apice = 29;

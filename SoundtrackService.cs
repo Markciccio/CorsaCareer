@@ -169,11 +169,36 @@ public static class SoundtrackService
     private static string? current;
     private static Process? fallback;
     private static bool mciOpen;
+    private static dynamic? mediaPlayer;
+    private static readonly Dictionary<string, dynamic> oneShots = new(StringComparer.OrdinalIgnoreCase);
     private static bool paused;
     private static int currentVolume = BackgroundVolume;
     private static readonly Dictionary<string, int> moodCursor = new(StringComparer.OrdinalIgnoreCase);
     private static string? lastMood;
     public static string LastBackend { get; private set; } = "nessuno";
+
+    public static bool TryPlayOneShot(string escapedPath, string alias)
+    {
+        try
+        {
+            mciSendString($"stop {alias}", IntPtr.Zero, 0, IntPtr.Zero);
+            mciSendString($"close {alias}", IntPtr.Zero, 0, IntPtr.Zero);
+            if (mciSendString($"open \"{escapedPath}\" type mpegvideo alias {alias}", IntPtr.Zero, 0, IntPtr.Zero) != 0)
+            {
+                var type = Type.GetTypeFromProgID("WMPlayer.OCX"); if (type == null) return false;
+                dynamic player = Activator.CreateInstance(type)!; player.settings.volume = 100; player.URL = escapedPath; player.controls.play(); oneShots[alias] = player; return true;
+            }
+            mciSendString($"setaudio {alias} volume 1000", IntPtr.Zero, 0, IntPtr.Zero);
+            mciSendString($"play {alias}", IntPtr.Zero, 0, IntPtr.Zero);
+            return true;
+        }
+        catch { return false; }
+    }
+
+    public static void StopOneShot(string alias)
+    {
+        try { mciSendString($"stop {alias}", IntPtr.Zero, 0, IntPtr.Zero); mciSendString($"close {alias}", IntPtr.Zero, 0, IntPtr.Zero); if(oneShots.Remove(alias,out dynamic? p)) p.controls.stop(); } catch { }
+    }
 
     /// <summary>
     /// Vero quando un canale audio è davvero aperto, indipendentemente dal
@@ -181,7 +206,7 @@ public static class SoundtrackService
     /// resta null sul percorso MCI: le guardie di rotazione non scattavano mai
     /// e ogni refresh della Home riavviava il brano da capo.
     /// </summary>
-    private static bool Active => (fallback != null && !HasFinished(fallback)) || mciOpen;
+    private static bool Active => (fallback != null && !HasFinished(fallback)) || mciOpen || mediaPlayer != null;
 
     /// <summary>
     /// Nei collaudi automatici non deve partire nessun audio: ffplay viene
@@ -277,12 +302,10 @@ public static class SoundtrackService
         current = null;
         currentVolume = Math.Clamp(volume, 0, 1000);
         var escaped = path.Replace("\"", "\"\"");
-        // I codec MCI presenti su alcune installazioni Windows possono
-        // restituire successo ma non emettere audio per gli MP3 moderni:
-        // per questi usiamo direttamente ffplay, verificato sul sistema.
-        var open = Path.GetExtension(path).Equals(".mp3", StringComparison.OrdinalIgnoreCase)
-            ? -1
-            : mciSendString($"open \"{escaped}\" type mpegvideo alias {Alias}", IntPtr.Zero, 0, IntPtr.Zero);
+        // MCI è disponibile su Windows senza dipendenze esterne. ffplay resta
+        // soltanto il fallback: forzarlo per gli MP3 rendeva silenziosa
+        // l'installazione distribuita, che non include ffplay.
+        var open = mciSendString($"open \"{escaped}\" type mpegvideo alias {Alias}", IntPtr.Zero, 0, IntPtr.Zero);
         if (open == 0)
         {
             mciSendString($"setaudio {Alias} volume {currentVolume}", IntPtr.Zero, 0, IntPtr.Zero);
@@ -310,7 +333,12 @@ public static class SoundtrackService
                 BindToApplicationLifetime(fallback);
                 LastBackend = fallback != null ? "ffplay" : "non disponibile";
             }
-            else LastBackend = "non disponibile";
+            else
+            {
+                var type = Type.GetTypeFromProgID("WMPlayer.OCX");
+                if (type != null) { mediaPlayer = Activator.CreateInstance(type)!; mediaPlayer.settings.volume = currentVolume / 10; mediaPlayer.URL = path; mediaPlayer.controls.play(); LastBackend = "Windows Media Player"; }
+                else LastBackend = "non disponibile";
+            }
         }
         // Senza un backend attivo non c'è nulla in riproduzione: registrare il
         // percorso comunque avrebbe fatto credere alle guardie che un canale
@@ -372,6 +400,8 @@ public static class SoundtrackService
     public static void Stop()
     {
         StopProcess(fallback);
+        try { mediaPlayer?.controls.stop(); } catch { }
+        mediaPlayer = null;
         fallback = null;
         // Non basta chiudere il player corrente: un cambio di brano puo aver
         // lasciato indietro un processo che non e' mai stato fermato.

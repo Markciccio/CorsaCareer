@@ -70,9 +70,9 @@ public static class CareerScheduler
     public const int MinimumInvitationScore = 65;
 
     /// <summary>Primo appuntamento di una carriera: una prova, non un campionato.</summary>
-    public static ScheduledEvent EvaluationStart(IReadOnlyList<ContentTrackRecord> tracks, DateTime date, int season = 1)
+    public static ScheduledEvent EvaluationStart(IReadOnlyList<ContentTrackRecord> tracks, DateTime date, int season = 1, string category = "")
     {
-        var track = PickTrack(tracks, 0);
+        var track = PickTrack(tracks, 0, category);
         return new ScheduledEvent
         {
             Id = $"eval-s{season:00}-1",
@@ -103,7 +103,7 @@ public static class CareerScheduler
     /// portata: un invito che non si puo' pagare blocca la carriera invece di
     /// farla avanzare, perche' occupa l'unica voce dell'agenda.
     /// </param>
-    public static ScheduledEvent? AfterEvaluation(RookieVerdict verdict, int attempts, IReadOnlyList<ContentTrackRecord> tracks, DateTime lastDate, int season = 1, int cash = int.MaxValue, int races = 0)
+    public static ScheduledEvent? AfterEvaluation(RookieVerdict verdict, int attempts, IReadOnlyList<ContentTrackRecord> tracks, DateTime lastDate, int season = 1, int cash = int.MaxValue, int races = 0, string category = "")
     {
         // Il numero di prove non basta a distinguere un appuntamento: dopo una
         // gara resta lo stesso, e l'identificativo generato collideva con uno
@@ -125,7 +125,7 @@ public static class CareerScheduler
         // pagare: e' la strada che funziona gia, e non richiede nessuna firma.
         if (verdict.Passed)
         {
-            var opening = PickTrack(tracks, turn + 2);
+            var opening = PickTrack(tracks, turn + 2, category);
             return new ScheduledEvent
             {
                 Id = $"debut-s{season:00}-{tag}",
@@ -145,7 +145,7 @@ public static class CareerScheduler
         var next = lastDate.AddDays(TestGapDays);
         if (verdict.Close)
         {
-            var track = PickTrack(tracks, turn);
+            var track = PickTrack(tracks, turn, category);
             return new ScheduledEvent
             {
                 Id = $"confirm-s{season:00}-{tag}",
@@ -169,7 +169,7 @@ public static class CareerScheduler
         {
             // La valutazione si è arenata: si apre una strada laterale invece di
             // riproporre la stessa prova all'infinito.
-            var track = PickTrack(tracks, turn + 1);
+            var track = PickTrack(tracks, turn + 1, category);
             return new ScheduledEvent
             {
                 Id = $"invite-s{season:00}-{tag}",
@@ -188,7 +188,7 @@ public static class CareerScheduler
 
         if (attempts >= AttemptsBeforeAlternativePath)
         {
-            var recovery = PickTrack(tracks, turn);
+            var recovery = PickTrack(tracks, turn, category);
             return new ScheduledEvent
             {
                 Id = $"recovery-s{season:00}-{tag}",
@@ -203,7 +203,7 @@ public static class CareerScheduler
             };
         }
 
-        var retry = PickTrack(tracks, turn);
+        var retry = PickTrack(tracks, turn, category);
         return new ScheduledEvent
         {
             Id = $"eval-s{season:00}-{tag}",
@@ -264,7 +264,7 @@ public static class CareerScheduler
         return $"c{somma:0000}";
     }
 
-    public static List<ScheduledEvent> BuildSeason(IReadOnlyList<ContentTrackRecord> tracks, string tier, int season, DateTime seasonStart, string championship, string category = "")
+    public static List<ScheduledEvent> BuildSeason(IReadOnlyList<ContentTrackRecord> tracks, string tier, int season, DateTime seasonStart, string championship, string category = "", int ladderStep = 0)
     {
         var events = new List<ScheduledEvent>();
         if (tracks.Count == 0) return events;
@@ -274,7 +274,18 @@ public static class CareerScheduler
         // Se il catalogo è troppo povero manteniamo il fallback completo, così
         // i cataloghi di test minimali continuano a produrre una stagione.
         var compatible = TracksForCategory(tracks, category);
-        var selected = SelectSeasonTracks(compatible.Count > 0 ? compatible : tracks, target, season);
+        var pool = compatible.Count > 0 ? compatible : tracks.ToList();
+        var japanese = pool.Where(IsJapaneseTrack).ToList();
+        // La gavetta è locale: nella tua installazione, se ci sono Fuji,
+        // Suzuka, Tsukuba ecc., li usiamo per i trofei bassi. Dal GT3 in su
+        // l'orizzonte diventa internazionale e si preferiscono le altre sedi.
+        if (ladderStep is > 0 and <= 4 && japanese.Count > 0) pool = japanese;
+        else if (ladderStep >= 5)
+        {
+            var international = pool.Where(track => !IsJapaneseTrack(track)).ToList();
+            if (international.Count > 0) pool = international;
+        }
+        var selected = SelectSeasonTracks(pool, target, season);
 
         // La firma di un campionato diverso nella stessa stagione deve produrre
         // un calendario suo.
@@ -304,22 +315,37 @@ public static class CareerScheduler
         return events;
     }
 
+    public static bool IsTrackCompatible(ContentTrackRecord track, string category)
+    {
+        if (string.IsNullOrWhiteSpace(category)) return true;
+        var kart = category.Contains("kart", StringComparison.OrdinalIgnoreCase);
+        var text = $"{track.Id} {track.Name} {track.Category}";
+        var isKartTrack = IsDedicatedKartTrack(track);
+        // Alcune mod non dichiarano "kartodromo" (per esempio Mobara), ma la
+        // lunghezza da kart è inequivocabile. Deep Forest non potrà più entrarci.
+        if (kart) return isKartTrack || (track.LengthMeters is > 0 and <= 1600);
+        return !isKartTrack
+            && !track.Category.Equals("hillclimb", StringComparison.OrdinalIgnoreCase)
+            && !track.Category.Equals("special", StringComparison.OrdinalIgnoreCase);
+    }
+
+    public static bool IsDedicatedKartTrack(ContentTrackRecord track)
+    {
+        var text = $"{track.Id} {track.Name} {track.Category}";
+        return text.Contains("kart", StringComparison.OrdinalIgnoreCase)
+            || track.Category.Equals("kartodromo", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static List<ContentTrackRecord> TracksForCategory(IReadOnlyList<ContentTrackRecord> tracks, string category)
     {
-        if (string.IsNullOrWhiteSpace(category)) return tracks.ToList();
-        var kart = category.Contains("kart", StringComparison.OrdinalIgnoreCase);
-        return tracks.Where(track =>
-        {
-            var text = $"{track.Id} {track.Name} {track.Category}";
-            var isKartTrack = text.Contains("kart", StringComparison.OrdinalIgnoreCase)
-                || track.Category.Equals("kartodromo", StringComparison.OrdinalIgnoreCase);
-            if (kart) return isKartTrack;
-            // Le categorie a ruote coperte/formula usano tracciati permanenti
-            // o cittadini, non layout kart dedicati.
-            return !isKartTrack
-                && !track.Category.Equals("hillclimb", StringComparison.OrdinalIgnoreCase)
-                && !track.Category.Equals("special", StringComparison.OrdinalIgnoreCase);
-        }).ToList();
+        return tracks.Where(track => IsTrackCompatible(track, category)).ToList();
+    }
+
+    private static bool IsJapaneseTrack(ContentTrackRecord track)
+    {
+        var text = $"{track.Id} {track.Name} {track.Country}";
+        var hints = new[] { "japan", "giapp", "fuji", "suzuka", "tsukuba", "mobara", "tokushima", "kunimoto" };
+        return hints.Any(hint => text.Contains(hint, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Numero di appuntamenti credibile per la categoria.</summary>
@@ -415,10 +441,22 @@ public static class CareerScheduler
     public static string TrackLabel(ScheduledEvent item) =>
         string.IsNullOrWhiteSpace(item.TrackName) ? item.TrackId : item.TrackName;
 
-    private static ContentTrackRecord? PickTrack(IReadOnlyList<ContentTrackRecord> tracks, int index)
+    public static ContentTrackRecord? PickTrack(IReadOnlyList<ContentTrackRecord> tracks, int index, string category = "")
     {
         if (tracks.Count == 0) return null;
-        var ordered = tracks.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
+        var compatible = TracksForCategory(tracks, category);
+        var pool = compatible.Count > 0 ? compatible : tracks.ToList();
+        if (category.Contains("kart", StringComparison.OrdinalIgnoreCase))
+        {
+            // Prima un kartodromo vero. Le piste sotto 1,6 km restano un
+            // ripiego utile per cataloghi poveri, non devono battere Tokushima
+            // o un altro impianto kart installato.
+            var dedicated = pool.Where(IsDedicatedKartTrack).ToList();
+            if (dedicated.Count > 0) pool = dedicated;
+            var japanese = pool.Where(IsJapaneseTrack).ToList();
+            if (japanese.Count > 0) pool = japanese;
+        }
+        var ordered = pool.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ThenBy(x => x.Id, StringComparer.OrdinalIgnoreCase).ToList();
         return ordered[Math.Abs(index) % ordered.Count];
     }
 }

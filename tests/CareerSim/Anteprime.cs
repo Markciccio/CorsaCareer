@@ -98,7 +98,7 @@ internal static class Anteprime
                 Id = "anteprima", Target = "Assicurazioni Tomoshibi", Trade = mestiere,
                 Amount = 4600, Chance = 42, Pitch = "«Proviamo.»"
             };
-            Scatta(nome, () => new SponsorNegotiationDialog(visita, carriera, 6));
+            Scatta(nome, () => new SponsorNegotiationDialog(visita, carriera));
         }
 
         // 3. Le scene scritte. Tutte e venti: sono la parte con piu' testo e

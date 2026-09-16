@@ -24,7 +24,7 @@ public static class CareerArticleBuilder
         PhraseBank.Remember(career, article.UsedPhrases);
         AttachClassification(career, story, article);
         var text = ComposePlainText(article);
-        return new BrowserPortalContent(article.Title, article.Standfirst, text, text, Headlines(career, article));
+        return new BrowserPortalContent(article.Title, article.Standfirst, ComposePortalArticle(article), text, Headlines(career, article));
     }
 
     /// <summary>
@@ -81,24 +81,28 @@ public static class CareerArticleBuilder
         var mechanic = cast.FirstOrDefault(x => x.Id == StoryCastService.Mechanic)?.Name ?? "Gianni Valli";
         var rival = cast.FirstOrDefault(x => x.Id == StoryCastService.Rival)?.Name ?? "Nico Valenti";
         var interest = string.Join(", ", (career.TeamInterests ?? []).OrderByDescending(x => x.Value).Take(2).Select(x => $"{x.Team} ({x.Value}%: {x.Status.ToLowerInvariant()})"));
+        var track = UiText.Track(test?.Track ?? story.Track);
+        var driver = DisplayName(career.Driver);
         var article = new NewsArticle
         {
             Kicker = "ROOKIE · TEST DI VALUTAZIONE",
-            Title = passed ? $"{career.Driver}, un giro che apre il paddock" : $"{career.Driver} resta fuori soglia, ma non fuori dal gioco",
-            Standfirst = $"A {test?.Track ?? story.Track}, con {UiText.Car(test?.Car ?? career.Car)}, il rookie ha fermato il cronometro a {lap}. Il riferimento era {RookieTargetEngine.Format(target)}: scarto {gapText}.",
+            Title = passed ? $"{driver} sorprende al debutto: un giro che fa notizia a {track}" : $"{driver} resta fuori soglia, ma il progetto resta aperto",
+            Standfirst = passed
+                ? $"Il rookie firma {lap} con la {UiText.Car(test?.Car ?? career.Car)}, oltre {Math.Abs(gap) / 1000.0:0.000} secondi sotto il riferimento della sessione. Un segnale importante per le prossime scelte di carriera."
+                : $"Il rookie chiude il test in {lap} con la {UiText.Car(test?.Car ?? career.Car)}. Il riferimento della sessione era {RookieTargetEngine.Format(target)}: il margine resta da colmare, ma il dossier offre già una base concreta.",
             Byline = $"di {career.Journalist?.Name ?? "Noa Minazuki"} · {career.Journalist?.Publication ?? "Grand Prix CorsaCareer"}",
-            DateLine = $"{test?.Track ?? story.Track} · {story.StoryDate:d MMMM yyyy}",
+            DateLine = $"{track} · {story.StoryDate:d MMMM yyyy}",
             CoverageLevel = 5, Impact = passed ? 82 : 62, Rating = Math.Clamp(career.RookieEvaluationScore / 10, 1, 10)
         };
-        article.Paragraphs.Add($"Non c'era una griglia da battere né un premio da incassare. C'era una sola vettura, {UiText.Car(test?.Car ?? career.Car)}, e un dossier ancora vuoto: {career.Races} gare disputate, {career.Wins} vittorie, € {career.Cash:N0} in cassa. Per {career.Driver}, senza contratto e senza uno sponsor alle spalle, questo era il tipo di giornata che decide se un nome resta nei corridoi del paddock o arriva sulla scrivania di qualcuno.");
-        article.Paragraphs.Add($"Il dato centrale è il crono: {lap} contro {RookieTargetEngine.Format(target)}. Lo scarto di {gapText} non è stato letto da solo. Il programma ha registrato {test?.Laps ?? 0} giri; la fiducia dei team è ora {career.TeamRelation}/100 e il bilancio aggiornato è di € {career.Cash:N0}. {manager}, responsabile del programma rookie, ha seguito il test insieme a {mechanic}, il meccanico che ha preparato la macchina; sullo sfondo c'era anche {rival}, il primo riferimento diretto del pilota.");
+        article.Paragraphs.Add($"Un debutto che non è passato inosservato. Nei test disputati al {track}, {driver} ha fatto segnare il miglior tempo della sessione alla guida della {UiText.Car(test?.Car ?? career.Car)}, fermando il cronometro su {lap}.");
+        article.Paragraphs.Add($"Il confronto con il riferimento, fissato a {RookieTargetEngine.Format(target)}, rende la misura della prestazione: {gapText}. Il programma ha registrato {test?.Laps ?? 0} giri, sufficienti per prendere confidenza con vettura e tracciato e per lasciare un primo dato tecnico sul tavolo.");
+        article.Paragraphs.Add($"Per {driver} era la prima uscita nel programma rookie, senza un contratto né uno sponsor alle spalle. Il test non assegna punti o premi, ma è un passaggio concreto per attirare l'attenzione dei team e costruire credibilità. A seguire il lavoro in pista c'erano {manager}, responsabile del programma rookie, {mechanic}, il meccanico della vettura, e {rival}, primo riferimento diretto del pilota.");
+        article.Paragraphs.Add($"Dopo questa prova, il livello di fiducia dei followers sale a {career.TeamRelation}/100, mentre il budget disponibile resta di € {career.Cash:N0}. Sul mercato i primi segnali arrivano da {interest}: interesse, non ancora un sedile garantito.");
         article.Paragraphs.Add(passed
-            ? "Il verdetto non è un contratto automatico. È più interessante: il diritto di essere discusso. Il test ha superato la soglia tecnica e ha spostato la conversazione dal cronometro al mercato, senza cancellare il fatto che una stagione intera richiede budget, costanza e risultati ripetibili."
-            : "Il verdetto non cancella il progetto. Il tempo non ha raggiunto la soglia, ma il referto conserva un riferimento concreto su cui lavorare. Il prossimo appuntamento non sarà una consolazione: sarà un test di conferma o di recupero, con meno margine per gli errori e con il budget che continua a pesare su ogni scelta.");
-        article.Paragraphs.Add($"Sul mercato, i segnali iniziali arrivano da {interest}. Per ora è interesse, non un'offerta: ciascuna squadra vuole capire se il giro di oggi è ripetibile, se il pilota sa restituire indicazioni tecniche e se potrà portare risorse senza trasformarsi in un semplice sedile pagante.");
-        article.Paragraphs.Add($"Il passato professionale di {career.Driver} è ancora breve per definizione: nessuna gara ufficiale, nessun podio da difendere. Proprio per questo il prossimo passo conta più del titolo. Un secondo test convincente può aprire un invito o una trattativa; un'altra prova opaca costringerà il rookie a cercare chilometri, sostegno economico e pazienza nelle formule minori.");
-        article.Verdict = passed ? "Prospettiva: il paddock ha aperto una porta. Adesso il risultato deve diventare continuità." : "Prospettiva: il cronometro ha detto no per ora; la carriera risponde con un nuovo appuntamento, non con una scorciatoia.";
-        article.Sidebar = [$"Tempo: {lap}", $"Riferimento: {RookieTargetEngine.Format(target)}", $"Scarto: {gapText}", $"Cassa: € {career.Cash:N0}", $"Fiducia paddock: {career.TeamRelation}/100"];
+            ? $"Non è il momento di parlare di un contratto sicuro, ma il messaggio lasciato dalla pista è chiaro: {driver} ha iniziato la propria avventura con un tempo che merita attenzione. Per trasformare il debutto in un'opportunità concreta serviranno continuità, risultati e la capacità di confermarsi nelle prossime uscite."
+            : $"Il cronometro non ha ancora aperto tutte le porte, ma il test ha fissato una base reale da cui ripartire. Per trasformarla in un'opportunità concreta serviranno chilometri, continuità e un'altra prestazione convincente.");
+        article.Verdict = passed ? "Prospettiva: l'esordio ha acceso l'attenzione; adesso serve conferma." : "Prospettiva: il progetto resta aperto, ma la prossima uscita peserà di più.";
+        article.Sidebar = [$"Tempo: {lap}", $"Riferimento: {RookieTargetEngine.Format(target)}", $"Scarto: {gapText}", $"Cassa: € {career.Cash:N0}", $"Livello di fiducia dei followers: {career.TeamRelation}/100"];
         return article;
     }
 
@@ -128,6 +132,26 @@ public static class CareerArticleBuilder
             foreach (var item in article.Sidebar) builder.AppendLine("· " + item);
         }
         return builder.ToString().TrimEnd();
+    }
+
+    private static string ComposePortalArticle(NewsArticle article)
+    {
+        var builder = new StringBuilder();
+        foreach (var paragraph in article.Paragraphs)
+        {
+            builder.AppendLine(paragraph);
+            builder.AppendLine();
+        }
+        if (!string.IsNullOrWhiteSpace(article.Verdict)) builder.AppendLine(article.Verdict);
+        if (!string.IsNullOrWhiteSpace(article.Byline)) builder.AppendLine(article.Byline);
+        if (!string.IsNullOrWhiteSpace(article.DateLine)) builder.AppendLine(article.DateLine);
+        return builder.ToString().TrimEnd();
+    }
+
+    private static string DisplayName(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return "Il rookie";
+        return System.Globalization.CultureInfo.GetCultureInfo("it-IT").TextInfo.ToTitleCase(value.Trim().ToLowerInvariant());
     }
 
     private static string[] Headlines(CareerState career, NewsArticle article)

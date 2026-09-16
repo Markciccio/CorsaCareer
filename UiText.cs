@@ -16,6 +16,19 @@ public static class UiText
         };
     }
 
+    public static string Track(string? id)
+    {
+        if (string.IsNullOrWhiteSpace(id)) return "circuito non indicato";
+        var key = id.Trim().ToLowerInvariant();
+        return key switch
+        {
+            "90sgdsp_mobara_twin_circuit" => "Mobara Twin Circuit",
+            "90sgdsp_mobara_twin_circuit-forward" => "Mobara Twin Circuit — tracciato forward",
+            "90sgdsp_mobara_twin_circuit-reverse" => "Mobara Twin Circuit — tracciato reverse",
+            _ => Humanize(key)
+        };
+    }
+
     private static string Humanize(string value)
     {
         var words = value.Replace('-', ' ').Replace('_', ' ').Split(' ', StringSplitOptions.RemoveEmptyEntries);

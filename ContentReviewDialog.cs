@@ -14,7 +14,7 @@ public sealed class ContentReviewDialog : CareerDialog
     private readonly ListBox list = new() { Left = 22, Top = 66, Width = 500, Height = 490, BackColor = Color.FromArgb(35, 40, 52), ForeColor = Color.White };
     private readonly ComboBox category = new() { Left = 550, Top = 105, Width = 230, DropDownStyle = ComboBoxStyle.DropDownList };
     private readonly Label details = new() { Left = 550, Top = 155, Width = 300, Height = 210, AutoSize = false, ForeColor = Color.Gainsboro };
-    private static readonly string[] Categories = ["kart", "rookie", "cup", "historic", "touring", "TCR", "GT4", "GT3", "GT2", "GT1", "prototype", "LMP", "hypercar", "formula junior", "formula 4", "formula 3", "formula 2", "formula", "road", "trackday", "hillclimb", "special"];
+    private static readonly string[] Categories = ["kart", "rookie", "club", "touring light", "cup", "historic", "touring", "TCR", "GT4", "GT3", "GT2", "GT1", "prototype", "LMP", "hypercar", "formula junior", "formula 4", "formula 3", "formula 2", "formula", "road", "trackday", "hillclimb", "special"];
     public ContentReviewDialog(ContentIndexRecord index, Action save, Action? refresh = null, Action? openContentManager = null, Action? chooseRoot = null)
     {
         this.index = index; this.index.InstalledPackages ??= []; this.save = save; this.refresh = refresh; this.openContentManager = openContentManager; this.chooseRoot = chooseRoot; Text = "CorsaCareer — Revisione contenuti"; ClientSize = new Size(880, 680); StartPosition = FormStartPosition.CenterParent; BackColor = Color.FromArgb(24, 28, 37); ForeColor = Color.White; Font = new Font("Segoe UI", 10);
@@ -36,11 +36,16 @@ public sealed class ContentReviewDialog : CareerDialog
     }
     private void ShowSelected()
     {
-        if (list.SelectedIndex < 0 || list.SelectedIndex >= index.Cars.Count) return; var car = index.Cars[list.SelectedIndex]; category.SelectedItem = car.Category;
+        if (list.SelectedIndex < 0 || list.SelectedIndex >= index.Cars.Count) return; var car = index.Cars[list.SelectedIndex];
+        // Le equivalenze create dalla mappa hanno un identificatore di gradino
+        // (manual:formula-2 ecc.). Mostriamolo anche qui così resta verificabile
+        // e modificabile come ogni altra classificazione manuale.
+        if (!category.Items.Contains(car.Category)) category.Items.Add(car.Category);
+        category.SelectedItem = car.Category;
         var trackNames = index.Tracks.Take(8).Select(x => string.IsNullOrWhiteSpace(x.Layout) || x.Layout.Equals(x.Name, StringComparison.OrdinalIgnoreCase) ? x.Name : $"{x.Name} ({x.Layout})");
         var packageSummary = index.InstalledPackages.Count == 0 ? "nessun pacchetto registrato" : string.Join("\n", index.InstalledPackages.OrderByDescending(x => x.InstalledUtc).Take(3).Select(x => $"{x.Source} · {x.InstalledFiles} file · {x.InstalledUtc:dd/MM/yyyy}"));
         var warnings = index.ScanWarnings.Count == 0 ? "nessuno" : string.Join("\n", index.ScanWarnings.Take(5)) + (index.ScanWarnings.Count > 5 ? "\n…" : "");
-        details.Text = $"{car.Name}\nMarca: {(string.IsNullOrWhiteSpace(car.Brand) ? "n/d" : car.Brand)}\nCategoria: {car.Category}\nConfidenza: {car.Confidence}%\nPotenza: {(car.PowerHp > 0 ? $"{car.PowerHp} CV" : "n/d")}\nMassa: {(car.MassKg > 0 ? $"{car.MassKg} kg" : "n/d")}\nSkin/livree: {car.Skins.Count}\n\nCIRCUITI RILEVATI ({index.Tracks.Count})\n{(index.Tracks.Count == 0 ? "nessuno" : string.Join("\n", trackNames))}{(index.Tracks.Count > 8 ? "\n…" : "")}\n\nAVVISI SCANSIONE\n{warnings}\n\nPROVENIENZA PACCHETTI\n{packageSummary}"; if (!Controls.Contains(details)) Controls.Add(details);
+        details.Text = $"{car.Name}\nMarca: {(string.IsNullOrWhiteSpace(car.Brand) ? "n/d" : car.Brand)}\nCategoria: {car.Category}\nConfidenza: {car.Confidence}%\nPotenza: {(car.PowerHp > 0 ? $"{car.PowerHp} CV" : "n/d")}\nMassa: {(car.MassKg > 0 ? $"{car.MassKg} kg" : "n/d")}\nSpecifiche: {car.SpecificationsSource}\nSkin/livree: {car.Skins.Count}\n\nCIRCUITI RILEVATI ({index.Tracks.Count})\n{(index.Tracks.Count == 0 ? "nessuno" : string.Join("\n", trackNames))}{(index.Tracks.Count > 8 ? "\n…" : "")}\n\nAVVISI SCANSIONE\n{warnings}\n\nPROVENIENZA PACCHETTI\n{packageSummary}"; if (!Controls.Contains(details)) Controls.Add(details);
     }
     private void ApplyCategory()
     {
