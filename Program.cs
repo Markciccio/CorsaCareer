@@ -2321,9 +2321,20 @@ public sealed partial class MainForm : Form
     }
 
     /// <summary>
-    /// Un appuntamento di gara vive nel weekend. Le prove possono cadere nei
-    /// giorni feriali, ma devono comunque lasciare il tempo di lavorare fra un
-    /// evento e l'altro; i salvataggi precedenti vengono riparati qui.
+    /// Ripassa l'agenda futura: ogni appuntamento in un giorno in cui si puo'
+    /// davvero scendere in pista, e con dello spazio fra uno e l'altro.
+    ///
+    /// Questo metodo era il secondo sistema di date del programma, e i due non
+    /// erano d'accordo. <c>CareerScheduler.Append</c> metteva l'appuntamento in
+    /// un giorno libero; questo passava dopo, lo spostava ad «almeno cinque
+    /// giorni da oggi» e per le prove non guardava nemmeno che giorno fosse.
+    /// Risultato visibile alla prima schermata di una carriera nuova: la prova
+    /// d'esordio finiva di LUNEDI', quando il pilota e' a scuola fino alle tre
+    /// e mezza.
+    ///
+    /// Adesso la regola e' una sola e sta in un posto solo — il calendario
+    /// giapponese — e qui resta soltanto la spaziatura, che e' l'unica cosa che
+    /// questo metodo aveva davvero da dire.
     /// </summary>
     private void AlignFutureAppointments()
     {
@@ -2335,9 +2346,7 @@ public sealed partial class MainForm : Form
         {
             var isRace = item.Kind is ScheduledEventKind.Invitation or ScheduledEventKind.ChampionshipRound;
             var requested = item.Date < earliest ? earliest : item.Date;
-            var aligned = isRace
-                ? NarrativeCalendar.RaceWeekend(requested)
-                : requested.Date;
+            var aligned = CalendarioGiapponese.ProssimoGiornoDaPista(requested);
             if (aligned != item.Date.Date) { item.Date = aligned; changed = true; }
             // Dopo una gara c'è almeno una settimana piena di lavoro; fra due
             // gare il ritmo diventa quindicinale. Un test può essere più vicino,

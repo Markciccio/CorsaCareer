@@ -422,13 +422,21 @@ public static class CareerScheduler
     {
         if (item == null || string.IsNullOrWhiteSpace(item.Id)) return false;
         if (schedule.Any(x => x.Id.Equals(item.Id, StringComparison.OrdinalIgnoreCase))) return false;
-        // Si corre nel fine settimana. Ogni generatore fissava la propria data
-        // contando i giorni da oggi (+7, +14, +21…), quindi le gare cadevano di
-        // martedì o di giovedì a seconda di quando il giocatore aveva premuto un
-        // pulsante. Le prove restano invece infrasettimanali, come nella realtà:
-        // un test privato non occupa un weekend di gara.
-        if (item.Kind is ScheduledEventKind.Invitation or ScheduledEventKind.ChampionshipRound)
-            item.Date = NarrativeCalendar.RaceWeekend(item.Date);
+        // Si scende in pista quando si e' liberi, e non e' un dettaglio.
+        //
+        // Ogni generatore fissava la propria data contando i giorni da oggi
+        // (+7, +14, +21…), quindi gli appuntamenti cadevano di martedì o di
+        // giovedì a seconda di quando il giocatore aveva premuto un pulsante.
+        // La prima prova della carriera cadeva il PRIMO GENNAIO: in Giappone e'
+        // la festa piu' importante dell'anno, i circuiti sono chiusi e un
+        // ragazzo di dodici anni e' a casa con la famiglia.
+        //
+        // E le prove non possono piu' stare infrasettimanali, come stavano
+        // prima «come nella realta'»: nella realta' di un dodicenne il
+        // mercoledi' alle dieci si e' a scuola. Finche' e' uno studente, tutto
+        // quello che si fa in pista si fa di sabato, di domenica o in una festa
+        // nazionale — che in Giappone sono sedici e valgono quanto un sabato.
+        item.Date = CalendarioGiapponese.ProssimoGiornoDaPista(item.Date);
         schedule.Add(item);
         return true;
     }

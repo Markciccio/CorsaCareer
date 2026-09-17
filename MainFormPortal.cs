@@ -404,8 +404,14 @@ public sealed partial class MainForm
                 ? $"  ·  SCUOLA {career.SchoolPerformance}/100"
                 : $"  ·  SCUOLA {career.SchoolPerformance}/100 — SOTTO {LifeCalendar.SogliaDiPromozione} SI RIPETE L'ANNO"
             : "";
+        // Se oggi e' una festa nazionale si dice qual e': spiega da sola
+        // perche' non c'e' scuola, e da' al calendario un sapore di posto vero.
+        var festa = CalendarioGiapponese.Festa(career.StoryDate);
+        var fermo = CalendarioGiapponese.PaeseFermo(career.StoryDate);
         situationLine.Controls.Add(Etichetta(
             $"{career.StoryDate:dddd d MMMM yyyy}".ToUpperInvariant()
+            + (festa != null ? $"  ·  {festa.ToUpperInvariant()}" : "")
+            + (fermo ? "  ·  IL PAESE È FERMO: CIRCUITI E OFFICINE CHIUSI" : "")
             + (career.RepeatingYear ? "  ·  RIPETENTE: RECUPERO FINO ALLE 18" : "") + scuola,
             UiTheme.Kicker,
             career.RepeatingYear || (eta <= 17 && career.SchoolPerformance < LifeCalendar.SogliaDiPromozione)

@@ -102,7 +102,7 @@ public sealed class BudgetPanel : Panel
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        accountLayout.Controls.Add(Intestazione("BUDGET DISPONIBILE", "oggi-sponsor.png", UiTheme.Warning), 0, 0);
+        accountLayout.Controls.Add(new Label { Text = "BUDGET DISPONIBILE", Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = UiTheme.Warning, UseMnemonic = false }, 0, 0);
         accountLayout.Controls.Add(amount, 0, 1);
         // I tre riquadri non aprono piu' niente.
         //
@@ -121,11 +121,9 @@ public sealed class BudgetPanel : Panel
         tutorialTargets = [account];
 
         grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "", UiTheme.Positive,
-            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false,
-            icona: "oggi-allenamento.png"), 1, 0);
+            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false), 1, 0);
         grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "",
-            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false,
-            icona: "oggi-social.png"), 2, 0);
+            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false), 2, 0);
         tutorialTargets = [account, grid.GetControlFromPosition(1, 0)!, grid.GetControlFromPosition(2, 0)!];
 
         movements.Font = UiTheme.Small;
@@ -162,40 +160,20 @@ public sealed class BudgetPanel : Panel
     /// a un cruscotto.
     /// </summary>
     /// <summary>
-    /// L'intestazione di un riquadro: l'icona e il titolo.
+    /// Un riquadro del cruscotto: titolo e numero.
     ///
-    /// Un controllo solo, con l'immagine dentro l'etichetta. La prima versione
-    /// metteva icona e testo in due celle di una tabella annidata, e in una
-    /// riga alta ventidue pixel il titolo spariva del tutto: restava un
-    /// frammento d'icona e un riquadro senza nome. Un'etichetta con la sua
-    /// immagine non ha niente da impaginare e non puo' rompersi cosi'.
+    /// Ci ho provato a metterci un'icona e il risultato era peggio del
+    /// problema: le tavole in <c>assets/ui-icons</c> sono disegni grandi, e
+    /// ridotte a sedici pixel diventano un grumo. Per giunta un'etichetta
+    /// disegna immagine e testo nello stesso rettangolo, quindi il grumo
+    /// finiva SOPRA le prime due lettere: «BUDGET DISPONIBILE» si leggeva
+    /// «DGET DISPONIBILE».
+    ///
+    /// Un'icona qui serve — il titolo si riconoscerebbe prima di leggerlo — ma
+    /// serve disegnata per questa misura. Finche' non c'e', il titolo da solo
+    /// e' meglio di un titolo mangiato.
     /// </summary>
-    private static Control Intestazione(string titolo, string fileIcona, Color accento)
-    {
-        var etichetta = new Label
-        {
-            Text = titolo, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accento,
-            AutoEllipsis = true, UseMnemonic = false,
-            TextAlign = ContentAlignment.MiddleLeft, ImageAlign = ContentAlignment.MiddleLeft,
-            Margin = new Padding(0), BackColor = Color.Transparent
-        };
-        // L'icona e' un di piu': se il file non c'e' o non si apre, resta il
-        // titolo e il riquadro funziona esattamente come prima.
-        try
-        {
-            var percorso = AssetPaths.File("ui-icons", fileIcona);
-            if (System.IO.File.Exists(percorso))
-            {
-                using var originale = Image.FromFile(percorso);
-                etichetta.Image = new Bitmap(originale, new Size(16, 16));
-                etichetta.Padding = new Padding(20, 0, 0, 0);
-            }
-        }
-        catch { }
-        return etichetta;
-    }
-
-    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true, string icona = "")
+    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true)
     {
         var card = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Padding = new Padding(12, 6, 12, 4), Margin = new Padding(6, 0, 6, 0) };
         card.Paint += (_, e) =>
@@ -209,9 +187,7 @@ public sealed class BudgetPanel : Panel
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         if (showAction) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        var caption = icona.Length > 0
-            ? Intestazione(title, icona, accent)
-            : new Label { Text = title, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accent, AutoEllipsis = true, UseMnemonic = false };
+        var caption = new Label { Text = title, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accent, AutoEllipsis = true, UseMnemonic = false };
         value.Font = new Font(UiTheme.FamilySemibold, 22F, FontStyle.Bold);
         value.ForeColor = UiTheme.TextPrimary;
         value.Dock = DockStyle.Fill;

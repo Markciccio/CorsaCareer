@@ -31,8 +31,18 @@ public static class DaySlots
     public const int ScuolaDalle = 8;
     public const int ScuolaAlle = 15;
 
+    /// <summary>
+    /// Vero se oggi c'e' scuola.
+    ///
+    /// Non basta guardare il giorno della settimana: in Giappone le feste
+    /// nazionali sono sedici, e in quei giorni un ragazzo e' libero dalle otto
+    /// del mattino esattamente come di sabato. Senza questo controllo il
+    /// programma mandava a scuola il giorno di Capodanno.
+    /// </summary>
     private static bool Feriale(DateTime giorno) =>
-        giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday;
+        giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday
+        && CalendarioGiapponese.Festa(giorno) == null
+        && !CalendarioGiapponese.PaeseFermo(giorno);
 
     /// <summary>
     /// Le fasce del pilota.
