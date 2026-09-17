@@ -19,8 +19,33 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
     public string SelectedPath { get; private set; } = "";
     public bool ContentChanged { get; private set; }
 
-    public InstalledCareerAnalysisDialog(ContentIndexRecord index, ContentCarRecord? suggestedStart, string currentPath = "")
+    /// <summary>
+    /// Vero se da questa schermata e' stato chiesto di rileggere i contenuti.
+    /// Chi l'ha aperta la richiude e la riapre sull'indice nuovo: e' il modo
+    /// piu' semplice di ricostruire una mappa che nasce tutta nel costruttore.
+    /// </summary>
+    public bool RichiestoAggiornamento { get; private set; }
+
+    /// <summary>
+    /// Vero quando la mappa si guarda e basta.
+    ///
+    /// La schermata nasce come bivio: all'inizio della carriera bisogna
+    /// scegliere fra monoposto e turismo, e senza scegliere non si va avanti.
+    /// Ma la stessa schermata si riapre dal portale per un'altra ragione —
+    /// guardare dove puo' arrivare la carriera con le auto installate — e li'
+    /// due pulsanti che cambiano la disciplina sono una trappola: si apre la
+    /// mappa per consultarla e si esce avendo cambiato mestiere.
+    ///
+    /// In sola lettura la direzione si vede ma non si tocca, e al posto della
+    /// conferma c'e' quello che serve davvero li': rileggere la cartella dei
+    /// contenuti, perche' il motivo per cui si riapre questa schermata e'
+    /// quasi sempre aver appena installato qualcosa.
+    /// </summary>
+    private readonly bool soloLettura;
+
+    public InstalledCareerAnalysisDialog(ContentIndexRecord index, ContentCarRecord? suggestedStart, string currentPath = "", bool soloLettura = false)
     {
+        this.soloLettura = soloLettura;
         this.index = index;
         Text = "CorsaCareer — Mappa della carriera";
         ClientSize = new Size(1420, 940);
@@ -37,7 +62,12 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         var start = suggestedStart == null ? "Nessuna auto utilizzabile: la carriera resta in attesa." : $"INIZIO CONSIGLIATO  ·  {suggestedStart.Name}  ·  {CareerLadder.ForCar(suggestedStart.Category, suggestedStart.PowerHp, suggestedStart.MassKg).Name}";
         Controls.Add(new Label { Text = start, Left = 40, Top = 113, Width = 1320, Height = 30, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = suggestedStart == null ? Color.OrangeRed : Color.FromArgb(60, 215, 145) });
 
-        Controls.Add(new Label { Text = "SCEGLI LA CARRIERA CHE PREFERISCI", Left = 40, Top = 162, Width = 700, Height = 25, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65) });
+        Controls.Add(new Label
+        {
+            Text = soloLettura ? "LA CARRIERA POSSIBILE CON I CONTENUTI INSTALLATI" : "SCEGLI LA CARRIERA CHE PREFERISCI",
+            Left = 40, Top = 162, Width = 900, Height = 25,
+            Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65)
+        });
         var formula = CareerPanel("KART → MONOPOSTO", "Kart a quattro tempi, due tempi, cambio: poi Formula 4, Formula 3 e il vertice. È una carriera distinta.", cars, true);
         formula.Left = 38; formula.Top = 196; Controls.Add(formula);
         var closed = CareerPanel("UTILITARIE → TURISMO · GT · ENDURANCE", "Track day, trofei e turismo prima di GT4, GT3, prototipi e mondiale endurance. È una carriera distinta.", cars, false);
@@ -67,12 +97,32 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
 
         conferma = new Button
         {
-            Text = "CONFERMA E CONTINUA", Left = 1120, Top = 872, Width = 258, Height = 44,
+            Text = soloLettura ? "↻  AGGIORNA I CONTENUTI" : "CONFERMA E CONTINUA",
+            Left = soloLettura ? 1000 : 1120, Top = 872, Width = soloLettura ? 250 : 258, Height = 44,
             BackColor = Color.FromArgb(224, 24, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
             Font = new Font("Segoe UI", 10, FontStyle.Bold)
         };
-        conferma.Click += (_, _) => { DialogResult = DialogResult.OK; Close(); };
+        conferma.Click += (_, _) =>
+        {
+            // Rileggere la cartella e ridisegnare: e' l'unica cosa che serve
+            // quando si riapre la mappa dopo aver installato un'auto nuova.
+            if (soloLettura) RichiestoAggiornamento = true;
+            DialogResult = DialogResult.OK;
+            Close();
+        };
         Controls.Add(conferma);
+
+        if (soloLettura)
+        {
+            var chiudi = new Button
+            {
+                Text = "CHIUDI", Left = 1262, Top = 872, Width = 116, Height = 44,
+                BackColor = Color.FromArgb(40, 46, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat
+            };
+            chiudi.Click += (_, _) => { DialogResult = DialogResult.Cancel; Close(); };
+            Controls.Add(chiudi);
+            CancelButton = chiudi;
+        }
         Select(SelectedPath, string.IsNullOrWhiteSpace(SelectedPath) ? "Scegli adesso: la prima auto e i primi test seguiranno questa carriera. Più avanti sponsor e team potranno proporti un cambio di specialità, che potrai accettare o rifiutare." : "Direzione già scelta: puoi confermarla o cambiarla qui. Sponsor e team potranno comunque proporti un passaggio all’altra carriera.");
     }
 
@@ -223,6 +273,24 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         var turismo = SelectedPath.Equals("ClosedWheel", StringComparison.OrdinalIgnoreCase);
         Vesti(sceltaMonoposto, monoposto, "KART → MONOPOSTO");
         Vesti(sceltaTurismo, turismo, "UTILITARIE → TURISMO");
+
+        // In sola lettura la direzione si mostra e non si tocca: chi apre la
+        // mappa per guardarla non deve poter cambiare mestiere per sbaglio.
+        if (soloLettura)
+        {
+            foreach (var pulsante in new[] { sceltaMonoposto, sceltaTurismo })
+            {
+                if (pulsante == null) continue;
+                pulsante.Enabled = false;
+                pulsante.Text = pulsante.Text.Replace("▸  SCEGLI: ", "");
+            }
+            if (sceltaMonoposto != null && !monoposto && !turismo) sceltaMonoposto.Text = "KART → MONOPOSTO";
+            if (conferma != null) { conferma.Enabled = true; conferma.BackColor = Color.FromArgb(224, 24, 58); }
+            choice.Text = monoposto || turismo
+                ? $"La tua direzione è {(monoposto ? "KART → MONOPOSTO" : "UTILITARIE → TURISMO")}. Da qui si guarda soltanto: per cambiarla servono una proposta di uno sponsor o di una squadra."
+                : "Nessuna direzione ancora scelta.";
+            return;
+        }
         if (conferma == null) return;
         // Finche' non si e' scelto non si va avanti: e' il modo piu' chiaro di
         // dire che la scelta e' obbligatoria, e toglie il caso in cui la

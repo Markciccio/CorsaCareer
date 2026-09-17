@@ -4069,16 +4069,32 @@ public sealed partial class MainForm : Form
     private void OpenCareerMap()
     {
         if (BlockIfPending("La mappa della carriera")) return;
-        ReloadContentAndAlignCareer();
-        using var mappa = new InstalledCareerAnalysisDialog(contentIndex, EntryLevelCar(), career.ChosenPath);
-        mappa.ShowDialog(this);
-        // Se da li' il pilota ha dichiarato una strada, la si prende.
-        if (!string.IsNullOrWhiteSpace(mappa.SelectedPath) && !mappa.SelectedPath.Equals(career.ChosenPath, StringComparison.OrdinalIgnoreCase))
+
+        // Dalla Home la mappa si guarda, non si sceglie.
+        //
+        // E' la stessa schermata del bivio d'apertura, e li' i due pulsanti
+        // servono: senza sceglierne uno la carriera non parte. Ma riaperta dal
+        // portale la ragione e' un'altra — vedere dove puo' arrivare questa
+        // carriera con le auto installate — e due pulsanti che cambiano la
+        // disciplina diventano una trappola: si apre per consultare e si esce
+        // avendo cambiato mestiere.
+        //
+        // Al loro posto c'e' quello che serve davvero: rileggere la cartella
+        // dei contenuti, perche' il motivo per cui si riapre questa schermata
+        // e' quasi sempre aver appena installato qualcosa. Premuto
+        // «aggiorna», la mappa si richiude e si riapre sull'indice nuovo: e'
+        // il modo piu' semplice di ricostruire una schermata che nasce tutta
+        // nel proprio costruttore.
+        bool ancora;
+        do
         {
-            career.ChosenPath = mappa.SelectedPath;
-            career.Offers = BuildOffers();
-            SaveCareer();
+            ReloadContentAndAlignCareer();
+            using var mappa = new InstalledCareerAnalysisDialog(contentIndex, EntryLevelCar(), career.ChosenPath, soloLettura: true);
+            mappa.ShowDialog(this);
+            ancora = mappa.RichiestoAggiornamento;
         }
+        while (ancora);
+
         RefreshUi();
     }
 
