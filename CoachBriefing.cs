@@ -60,35 +60,51 @@ public static class CoachBriefing
 
         return
         [
+            // I tre numeri si spiegano nell'ordine in cui stanno sullo schermo.
+            //
+            // Erano: il primo, poi «il terzo», poi «il numero in mezzo». Chi
+            // ascolta guarda in alto mentre gli si parla, e si trovava la
+            // seconda spiegazione sul terzo riquadro. Un tutorial che
+            // costringe a cercare di cosa sta parlando ha gia' fallito.
             CastDirector.Battuta(CastDirector.Haru,
                 $"«Prima che cominciamo ti spiego i tre numeri che vedi lì in alto, perché sono la tua carriera in tre cifre. "
-                + $"Il primo è il budget: adesso hai {career.Cash:N0} euro. Con quelli si pagano le iscrizioni, le trasferte e i pezzi rotti, "
-                + "e quando finiscono non si corre, punto. Aumentarlo è il mio lavoro: dal pulsante SPONSORIZZAZIONI mi mandi in giro "
+                + $"Il primo, a sinistra, è il budget: adesso hai {career.Cash:N0} euro. Con quelli si pagano le iscrizioni, le trasferte e i pezzi rotti, "
+                + "e quando finiscono non si corre, punto. Aumentarlo è il mio lavoro: dal pannello OGGI mi mandi in giro "
                 + "a bussare alle porte, e ogni tanto qualcuno apre.»",
                 "documenti"),
 
+            CastDirector.Battuta(CastDirector.Shigeo,
+                $"«Il secondo, quello in mezzo, è la condizione fisica: {career.Fitness} su 100, ed è quello che i ragazzi sottovalutano sempre. "
+                + "Sale con l'allenamento e con il riposo, scende con le gare e con i viaggi. "
+                + "Serve negli ultimi giri, quando le braccia si irrigidiscono e si comincia a frenare un metro prima senza accorgersene: "
+                + "è lì che si perdono i decimi, non al primo giro. Palestra, corsa, riposo: sono tutte lì, nel pannello OGGI.»",
+                "neutro"),
+
             CastDirector.Battuta(CastDirector.Haru,
-                $"«Il terzo numero invece è il livello influencer, che adesso sta a {profilo.PublicPopularity} su 100. "
+                $"«Il terzo, a destra, è il livello influencer, che adesso sta a {profilo.PublicPopularity} su 100. "
                 + "È quanto il tuo nome gira fuori dalla pista: social, interviste, gente che si ferma a guardarti. "
-                + "Lo fai crescere con i risultati ma anche con il lavoro d'immagine, dal pulsante SOCIAL. "
+                + "Lo fai crescere con i risultati ma anche con il lavoro d'immagine — e una parte la faccio io, dal computer di casa mia. "
                 + "E non è vanità, {0}: quando quel numero è alto arrivano gli sponsor e arrivano le chiamate. Quando è basso non ti cerca nessuno.»"
                     .Replace("{0}", pilota),
                 "felice"),
-
-            CastDirector.Battuta(CastDirector.Shigeo,
-                $"«Il numero in mezzo è la condizione fisica, {career.Fitness} su 100, ed è quello che i ragazzi sottovalutano sempre. "
-                + "Sale con l'allenamento e con il riposo, scende con le gare e con i viaggi. "
-                + "Serve negli ultimi giri, quando le braccia si irrigidiscono e si comincia a frenare un metro prima senza accorgersene: "
-                + "è lì che si perdono i decimi, non al primo giro. Si gestisce dal pulsante ATTIVITÀ DEL PILOTA.»",
-                "neutro"),
 
             CastDirector.Battuta(CastDirector.Rei,
                 "«E adesso la cosa che conta più delle tre messe insieme: nessuno dei tre numeri basta da solo. "
                 + "Con i soldi e senza forma non arrivi in fondo alle gare; con la forma e senza nome non ti chiama nessuno; "
                 + "con il nome e senza soldi non ti iscrivi. "
-                + "Ogni giornata libera ti dà delle ore: puoi darle all'allenamento, all'immagine o a Haru per gli sponsor. "
-                + "Come le spendi è la vera decisione di questa carriera — molto più di come guidi.»",
-                "seria")
+                + "Guarda il pannello OGGI, in alto a destra: una giornata è di ventiquattro ore e quasi tutte sono già prese "
+                + "dal sonno, dai pasti e dalla scuola. Quelle che restano le decidi tu, un pulsante alla volta — "
+                + "allenamento, immagine, libri, o Haru che gira a cercare chi paga. "
+                + "Come le spendi è la vera decisione di questa carriera, molto più di come guidi.»",
+                "seria"),
+
+            CastDirector.Battuta(CastDirector.Rei,
+                "«Un'ultima cosa, e non è un dettaglio: i libri. "
+                + "Studiare non ti fa andare più forte e non lo vedrai in nessuno dei tre numeri, "
+                + "ma a giugno c'è lo scrutinio, e se ti bocciano ti tocca il recupero il pomeriggio. "
+                + "Due ore in meno al giorno, per un anno intero, tolte proprio a quelle che stavi imparando a spendere. "
+                + "Il modo più stupido di perdere una stagione è perderla in classe.»",
+                "severa")
         ];
     }
 

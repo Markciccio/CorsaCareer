@@ -389,11 +389,11 @@ public sealed class BudgetPanel : Panel
             // farci: prima parlava in generale e non si capiva a quale dei tre
             // valori si riferisse.
             0 => ("1 di 3  ·  QUESTO È IL BUDGET",
-                "È la cifra che decide cosa puoi fare: iscrizioni, trasferte, riparazioni. Il pulsante SPONSORIZZAZIONI qui sotto è il modo per farla crescere quando è troppo bassa.", "AVANTI"),
+                "È la cifra che decide cosa puoi fare: iscrizioni, trasferte, riparazioni. Per farla crescere si manda Haru a cercare sponsor, dal pannello OGGI in alto a destra.", "AVANTI"),
             1 => ("2 di 3  ·  QUESTA È LA FORMA FISICA",
-                "Sale con allenamento e riposo, scende con le gare. Più è alta, più il pilota tiene il passo nei giri finali. Si gestisce dal pulsante ATTIVITÀ DEL PILOTA qui sotto.", "AVANTI"),
+                "Sale con allenamento e riposo, scende con le gare. Più è alta, più il pilota tiene il passo nei giri finali. Palestra, corsa e riposo stanno nel pannello OGGI, in alto a destra.", "AVANTI"),
             _ => ("3 di 3  ·  QUESTO È IL LIVELLO INFLUENCER",
-                "È quanto il tuo nome circola fuori dalla pista: social, interviste, presenze. Cresce con i risultati e con il lavoro di immagine del pulsante SOCIAL qui sotto. Quando è alto arrivano ingaggi promozionali e sponsor; quando è basso, nessuno ti cerca.", "INIZIA")
+                "È quanto il tuo nome circola fuori dalla pista: social, interviste, presenze. Cresce con i risultati e con il lavoro d'immagine, che si sceglie dal pannello OGGI. Quando è alto arrivano ingaggi promozionali e sponsor; quando è basso, nessuno ti cerca.", "INIZIA")
         };
     }
 
