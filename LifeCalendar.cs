@@ -69,8 +69,72 @@ public static class LifeCalendar
             }
         }
 
+        Scrutinio(career);
         Prune(career);
         return result;
+    }
+
+    /// <summary>La soglia dello scrutinio: sotto questa, si ripete l'anno.</summary>
+    public const int SogliaDiPromozione = 40;
+
+    /// <summary>
+    /// Lo scrutinio di giugno.
+    ///
+    /// E' il momento in cui tutte le lezioni saltate per andare in pista
+    /// presentano il conto. Bocciato significa recupero pomeridiano per un anno
+    /// intero: due ore in meno ogni giorno feriale — cioe' un quarto del tempo
+    /// che si aveva per allenarsi, per farsi vedere, per guadagnare qualcosa.
+    ///
+    /// E significa anche che il paddock lo viene a sapere. Un ragazzo che non
+    /// riesce a tenere insieme le due cose e' un ragazzo su cui una squadra ci
+    /// pensa due volte prima di investire.
+    ///
+    /// Si giudica una volta per anno scolastico: il campione con l'ultimo anno
+    /// gia' giudicato serve a questo.
+    /// </summary>
+    private static void Scrutinio(CareerState career)
+    {
+        var oggi = career.StoryDate.Date;
+        if (oggi.Month != 6 || oggi.Day < 10) return;
+        if (Age(career) > 17) return;
+        if (career.LastSchoolYearJudged >= oggi.Year) return;
+        career.LastSchoolYearJudged = oggi.Year;
+
+        var profile = career.ReputationProfile ??= new ReputationProfile();
+        if (career.SchoolPerformance >= SogliaDiPromozione)
+        {
+            var eraRipetente = career.RepeatingYear;
+            career.RepeatingYear = false;
+            // Si riparte da poco sopra la sufficienza: il credito dell'anno
+            // buono non si porta dietro, come nella realta'.
+            career.SchoolPerformance = 55;
+            var promosso = eraRipetente
+                ? $"{career.Driver} recupera l'anno: da settembre niente piu' pomeriggi di recupero."
+                : $"{career.Driver} e' promosso. L'estate e' libera, e il kartodromo pure.";
+            career.News.Add(promosso);
+            career.Events.Add(new CareerEventRecord
+            {
+                DateUtc = DateTime.UtcNow, StoryDate = oggi, Type = "SCHOOL_PASSED",
+                Headline = promosso, Importance = 40
+            });
+            return;
+        }
+
+        career.SchoolFailures++;
+        career.RepeatingYear = true;
+        career.SchoolPerformance = 45;
+        profile.Professionalism = Math.Clamp(profile.Professionalism - 10, 0, 100);
+        profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 4, 0, 100);
+        profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal - 5, 0, 100);
+        profile.SyncLegacyFields(career);
+        var bocciato = $"{career.Driver} e' bocciato. Da settembre due ore di recupero ogni pomeriggio: "
+                       + $"{DriverDay.OreDiRecupero} ore al giorno che non si passano in pista.";
+        career.News.Add(bocciato);
+        career.Events.Add(new CareerEventRecord
+        {
+            DateUtc = DateTime.UtcNow, StoryDate = oggi, Type = "SCHOOL_FAILED",
+            Headline = bocciato, Importance = 78
+        });
     }
 
     public static void Complete(CareerState career, DailyCommitment item)
@@ -81,6 +145,9 @@ public static class LifeCalendar
         if (item.Kind == "school")
         {
             profile.Professionalism = Math.Clamp(profile.Professionalism + 1, 0, 100);
+            // Esserci conta quanto studiare, quasi: chi frequenta arriva a
+            // giugno con qualche punto di margine anche senza aprire un libro.
+            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance + 2, 0, 100);
             career.News.Add("Scuola conclusa: una giornata normale tenuta insieme alla carriera.");
         }
         else if (item.Kind == "track-training")
@@ -121,6 +188,9 @@ public static class LifeCalendar
         {
             profile.Professionalism = Math.Clamp(profile.Professionalism - 2, 0, 100);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 1, 0, 100);
+            // Un'assenza pesa il doppio di una presenza: recuperare costa piu'
+            // di quanto costi tenersi in pari.
+            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance - 4, 0, 100);
         }
         profile.SyncLegacyFields(career);
         var reason = automatic ? "non hai chiuso la giornata prima di far scorrere il calendario" : "hai scelto di saltarlo";

@@ -39,6 +39,18 @@ public static class DayEngine
                 return new DayReport { Activity = activity, Refused = true, Refusal = payment.Refusal };
         }
 
+        // Studiare non ha un effetto fra quelli che il motore conosce — non e'
+        // forma, non e' seguito, non e' denaro — ma e' l'unica cosa che tiene
+        // lontana la bocciatura, e la bocciatura costa due ore al giorno.
+        if (activity.Id.Equals("studio", StringComparison.OrdinalIgnoreCase))
+            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance + 6, 0, 100);
+
+        // La lancetta della giornata avanza: la prossima attivita' comincia
+        // quando finisce questa. Sono due lancette, perche' la giornata di Haru
+        // non e' quella del pilota.
+        if (activity.Actor == DayActor.Agent) day.OraDiHaru += activity.Hours;
+        else day.OraDelPilota += activity.Hours;
+
         var seed = DriverDay.SeedFor(career.Driver ?? "", day.Date, activity.Id);
         var outcome = DriverDay.Resolve(activity, career, seed);
         var applied = new List<string>();

@@ -333,6 +333,33 @@ public static class DayActivityCatalog
                 }
             ]
         },
+        // Studiare non fa vincere una gara, e proprio per questo e' la scelta
+        // piu' difficile della giornata: due ore tolte alla pista che non
+        // migliorano niente di quello che si vede. Si capisce a giugno.
+        new()
+        {
+            Id = "studio", Name = "Studiare", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 2,
+            Promise = "Due ore sui libri. Non ti fanno andare piu' forte, ti evitano la bocciatura — e una bocciatura toglie due ore al giorno per un anno intero.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Due ore, e mezza te ne sei passata a guardare fuori dalla finestra. Ma qualcosa e' entrato.",
+                    Weight = 2, Effects = [new(DayEffectKind.Fatigue, 3)]
+                },
+                new()
+                {
+                    Line = "Hai finito i compiti e rifatto gli esercizi che avevi sbagliato. Domani in classe non ti chiami fuori.",
+                    Weight = 3, Effects = [new(DayEffectKind.Fatigue, 4)]
+                },
+                new()
+                {
+                    Line = "Una di quelle sere in cui la cosa torna, e resti li' anche dopo aver finito.",
+                    Weight = 1, Effects = [new(DayEffectKind.Fatigue, 5)]
+                }
+            ]
+        },
+
         new()
         {
             Id = "lavoro", Name = "Giornata di lavoro", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 4,

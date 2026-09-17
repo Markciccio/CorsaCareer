@@ -239,6 +239,29 @@ public sealed class CareerState
     public List<DailyCommitment> DailyCommitments { get; set; } = [];
 
     /// <summary>
+    /// Come va a scuola, da 0 a 100. Si parte da appena sopra la sufficienza.
+    ///
+    /// Sale studiando e frequentando, scende saltando le lezioni. A giugno si
+    /// tirano le somme: sotto la soglia si e' bocciati, e questo toglie tempo
+    /// alla pista per tutto l'anno dopo. E' il vincolo che rende la scuola una
+    /// scelta e non un fastidio da cliccare via.
+    /// </summary>
+    public int SchoolPerformance { get; set; } = 55;
+
+    /// <summary>Quante volte e' stato bocciato. Resta nella storia della carriera.</summary>
+    public int SchoolFailures { get; set; }
+
+    /// <summary>
+    /// Vero se sta ripetendo l'anno. Il recupero pomeridiano porta la scuola da
+    /// quattro ore a sei, cioe' due ore in meno da passare in pista, ogni
+    /// giorno feriale, per un anno intero.
+    /// </summary>
+    public bool RepeatingYear { get; set; }
+
+    /// <summary>L'ultimo anno scolastico gia' giudicato: gli scrutini non si ripetono.</summary>
+    public int LastSchoolYearJudged { get; set; }
+
+    /// <summary>
     /// Le capacita di Haru Senda. Migliorano lavorando, e cambiano l'esito di
     /// una trattativa quanto i risultati del pilota: senza, mandarlo da
     /// un'azienda o da un'altra sarebbe la stessa cosa.

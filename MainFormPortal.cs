@@ -29,7 +29,19 @@ public sealed partial class MainForm
 
     // Striscia dati.
     // Una riga in prosa al posto di sette caselle numeriche affiancate.
-    private Label situationLine = new();
+    /// <summary>
+    /// Il pannello «OGGI» della Home: le ore della giornata e i pulsanti per
+    /// spenderle.
+    ///
+    /// Era un'etichetta di sola lettura, che elencava gli impegni con l'orario
+    /// e si fermava li'. Per fare qualsiasi cosa bisognava aprire un'altra
+    /// finestra — e le finestre erano cinque. Le cose che si possono fare in
+    /// una giornata qualunque devono stare dove si legge la giornata.
+    /// </summary>
+    private FlowLayoutPanel situationLine = new();
+
+    /// <summary>La promessa di ogni attività, sul pulsante che la esegue.</summary>
+    private readonly ToolTip oggiTip = new() { AutoPopDelay = 20000, InitialDelay = 320, ReshowDelay = 120 };
     private Label todayDateLine = new();
     private BudgetPanel budgetPanel = new();
 
@@ -241,22 +253,28 @@ public sealed partial class MainForm
         // dettaglio sponsor, l'intestazione e la riga dei movimenti su due
         // righe. Con 196 l'ultima riga del riquadro — "Sponsor disponibili
         // ... premi gara ... sponsor" — veniva tagliata a meta.
-        var wrapper = new TableLayoutPanel { Dock = DockStyle.Top, Height = 250, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 10), ColumnCount = 2, RowCount = 1 };
+        // 330 e non 250: nella colonna di destra adesso ci sono i pulsanti
+        // della giornata, e con 250 se ne vedevano tre file su sette — il
+        // resto stava sotto una barra di scorrimento che nessuno cerca.
+        var wrapper = new TableLayoutPanel { Dock = DockStyle.Top, Height = 330, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 10), ColumnCount = 2, RowCount = 1 };
         // Il conto e i due indicatori decisivi devono stare a sinistra, prima
         // della frase narrativa: sono il cruscotto che guida ogni scelta.
-        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
-        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42));
+        // I riquadri di sinistra non hanno piu' i tre pulsanti che aprivano
+        // altre schermate: sono numeri, e occupano meno. Lo spazio che si
+        // libera va alla giornata, che adesso e' la parte con cui si gioca.
+        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
+        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
         todayDateLine = new Label
         {
             Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySemibold, 12F, FontStyle.Bold),
             ForeColor = UiTheme.Warning, TextAlign = ContentAlignment.MiddleLeft,
             UseMnemonic = false, AutoEllipsis = false, Margin = new Padding(0)
         };
-        situationLine = new Label
+        situationLine = new FlowLayoutPanel
         {
-            Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary,
-            TextAlign = ContentAlignment.TopLeft, UseMnemonic = false, AutoEllipsis = false,
-            Padding = new Padding(0, 0, 18, 0), Margin = new Padding(0)
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = true,
+            AutoScroll = true, BackColor = UiTheme.Background,
+            Padding = new Padding(0, 2, 12, 0), Margin = new Padding(0)
         };
         var narrative = new TableLayoutPanel
         {
@@ -322,27 +340,170 @@ public sealed partial class MainForm
     {
         var prossimo = CareerScheduler.NextPlanned(career.Schedule ?? []);
         if (prossimo == null)
-            return $"NESSUN APPUNTAMENTO IN AGENDA · {oggi:dddd d MMMM}".ToUpperInvariant();
-
-        var mancano = (prossimo.Date.Date - oggi.Date).Days;
-        var quando = mancano switch
-        {
-            <= 0 => "OGGI",
-            1 => "DOMANI",
-            < 7 => $"FRA {mancano} GIORNI",
-            _ => NarrativeCalendar.Format(prossimo.Date).ToUpperInvariant()
-        };
-        var cosa = prossimo.IsWildCard ? "WILD CARD" : CareerScheduler.KindLabel(prossimo).ToUpperInvariant();
-        return $"{quando} · {cosa} · {CareerScheduler.TrackLabel(prossimo)}".ToUpperInvariant();
+            return $"NESSUN APPUNTAMENTO IN AGENDA · {oggi:dddd d MMMM yyyy}".ToUpperInvariant();
+        return $"{QuandoSuccede(prossimo.Date, oggi)} · {EtichettaAppuntamento(prossimo)} · {CareerScheduler.TrackLabel(prossimo)}".ToUpperInvariant();
     }
 
     /// <summary>
-    /// Compone il programma quotidiano. I dati tecnici restano nel dossier: qui
-    /// devono essere visibili le ore che il protagonista deve vivere oggi.
+    /// Fra quanto succede una cosa, detto come lo direbbe una persona.
+    ///
+    /// Una data da sola obbliga a fare il conto a mente ogni volta; «fra tre
+    /// giorni» si legge e basta. Oltre la settimana la data torna ad essere
+    /// piu' chiara del numero.
     /// </summary>
-    private string BuildSituationLine()
+    private static string QuandoSuccede(DateTime giorno, DateTime oggi)
     {
-        return LifeCalendar.ProgramText(career, contentIndex);
+        var giorni = (giorno.Date - oggi.Date).Days;
+        var relativo = giorni switch
+        {
+            <= 0 => "OGGI",
+            1 => "DOMANI",
+            < 7 => $"FRA {giorni} GIORNI",
+            _ => ""
+        };
+        // La data per esteso c'e' sempre, anno compreso.
+        //
+        // «Fra tre giorni» si legge in fretta ma non dice dove si e' finiti, e
+        // «11 gennaio» senza l'anno, in una carriera che ne attraversa venti,
+        // non e' una data: e' meta' di una data.
+        var data = NarrativeCalendar.Format(giorno).ToUpperInvariant();
+        return relativo.Length == 0 ? data : $"{relativo} · {data}";
+    }
+
+    /// <summary>Che cosa si va a fare: la wild card ha un nome suo.</summary>
+    private static string EtichettaAppuntamento(ScheduledEvent evento) =>
+        evento.IsWildCard ? "Wild card" : CareerScheduler.KindLabel(evento);
+
+    /// <summary>
+    /// Ricostruisce il pannello «OGGI»: le ore della giornata, gli impegni con
+    /// un orario e i pulsanti per spendere le ore libere.
+    ///
+    /// E' la parte con cui si gioca fra un weekend e l'altro, e fino a ieri era
+    /// un'etichetta di sola lettura: diceva che c'erano due ore di riposo e
+    /// famiglia alle sedici, e per farne qualcosa bisognava aprire un'altra
+    /// finestra. Le cose che si possono fare in una giornata qualunque devono
+    /// stare dove si legge la giornata.
+    ///
+    /// La schermata grande — «OGGI · LA GIORNATA» — resta, e serve quando si
+    /// vuole leggere per intero che cosa promette un'attività. Qui c'è il
+    /// mestiere di tutti i giorni: guardo quante ore ho, premo, vado avanti.
+    /// </summary>
+    private void AggiornaPannelloDiOggi()
+    {
+        situationLine.SuspendLayout();
+        foreach (Control c in situationLine.Controls) c.Dispose();
+        situationLine.Controls.Clear();
+
+        var larghezza = Math.Max(320, situationLine.ClientSize.Width - 20);
+        var giorno = DriverDay.EnsureToday(career);
+        var eta = EtaPilota();
+
+        // --- dove finiscono le ventiquattro ore
+        var fisse = string.Join("  ·  ", DriverDay.BlocchiFissi(career.StoryDate, eta, career.RepeatingYear)
+            .Select(x => $"{x.Fascia} {x.Nome.ToLowerInvariant()}"));
+        situationLine.Controls.Add(Etichetta(
+            $"LA GIORNATA · {fisse}  ·  {giorno.DriverHoursTotal}h LIBERE"
+            + (career.RepeatingYear ? "  ·  RIPETENTE: DUE ORE DI RECUPERO" : ""),
+            UiTheme.Kicker, career.RepeatingYear ? UiTheme.Accent : UiTheme.TextMuted, larghezza));
+        var scuola = eta <= 17
+            ? career.SchoolPerformance >= LifeCalendar.SogliaDiPromozione
+                ? $"  ·  Scuola {career.SchoolPerformance}/100: sei sopra la soglia."
+                : $"  ·  Scuola {career.SchoolPerformance}/100: sotto {LifeCalendar.SogliaDiPromozione} a giugno si ripete l'anno."
+            : "";
+        situationLine.Controls.Add(Etichetta(
+            (giorno.DriverHoursLeft > 0
+                ? $"Dalle {giorno.OraDelPilota:00}:00 ti restano {giorno.DriverHoursLeft} ore su {giorno.DriverHoursTotal}. Haru ne ha {giorno.AgentHoursLeft} su {giorno.AgentHoursTotal}."
+                : $"Le tue ore sono finite. Haru ne ha ancora {giorno.AgentHoursLeft}.") + scuola,
+            UiTheme.BodyStrong, giorno.DriverHoursLeft > 0 ? UiTheme.Positive : UiTheme.TextMuted, larghezza));
+
+        // --- gli impegni con un orario
+        var impegni = LifeCalendar.Today(career, contentIndex)
+            .Where(x => x.Status is "planned" or "active")
+            .OrderBy(x => x.StartTime).ToList();
+        foreach (var item in impegni)
+        {
+            var fine = (int.Parse(item.StartTime.Split(':')[0]) + item.Hours) % 24;
+            var etichetta = $"{item.StartTime}–{fine:00}:00 · {item.Title.ToUpperInvariant()}"
+                            + (item.Required ? " · OBBLIGATORIO" : "");
+            var b = PulsanteDiOggi(etichetta, item.Required ? UiTheme.Warning : UiTheme.TextPrimary, 300);
+            oggiTip.SetToolTip(b, item.Detail);
+            b.Click += (_, _) =>
+            {
+                if (item.Kind == "track-training") { item.Status = "active"; SaveCareer(createVersionedBackup: false); LaunchDailyTrackTraining(); return; }
+                LifeCalendar.Complete(career, item);
+                SaveCareer(createVersionedBackup: false);
+                RefreshUi();
+            };
+            situationLine.Controls.Add(b);
+        }
+
+        // --- le ore libere: prima il pilota, poi Haru
+        foreach (var attivita in DayActivityCatalog.ForDriver().Concat(DayActivityCatalog.ForAgent()))
+        {
+            if (!DriverDay.CanDo(giorno, attivita, career.Cash, out _)) continue;
+            var diHaru = attivita.Actor == DayActor.Agent;
+            // La fascia che occuperebbe se la scegliessi adesso: le attivita' si
+            // incastrano una dopo l'altra e la giornata si legge in ordine.
+            var inizio = diHaru ? giorno.OraDiHaru : giorno.OraDelPilota;
+            var b = PulsanteDiOggi(
+                $"{inizio % 24:00}:00–{(inizio + attivita.Hours) % 24:00}:00 · {attivita.Name.ToUpperInvariant()}"
+                + (attivita.Cost > 0 ? $" · € {attivita.Cost:N0}" : ""),
+                diHaru ? UiTheme.Info : UiTheme.TextPrimary, 300);
+            oggiTip.SetToolTip(b, attivita.Promise
+                + (diHaru ? "\n\nOre di Haru: non tolgono niente alla tua giornata." : "")
+                + (attivita.IsCertain ? "\nEsito sicuro." : "\nEsito incerto: dipende da chi sei adesso."));
+            var scelta = attivita;
+            b.Click += (_, _) => EseguiAttivitaDiOggi(scelta);
+            situationLine.Controls.Add(b);
+        }
+
+        if (situationLine.Controls.Count <= 2)
+            situationLine.Controls.Add(Etichetta(
+                "Niente da fare oggi: non restano ore libere né a te né a Haru. Vai a domani.",
+                UiTheme.Prose, UiTheme.TextMuted, larghezza));
+
+        situationLine.ResumeLayout();
+    }
+
+    /// <summary>
+    /// Svolge un'attività dalla Home. Passa dallo stesso motore della schermata
+    /// grande: le ore, il denaro e gli effetti sono decisi in un posto solo.
+    /// </summary>
+    private void EseguiAttivitaDiOggi(DayActivity attivita)
+    {
+        if (BlockIfPending("le attività della giornata")) return;
+        var report = DayEngine.Perform(career, DriverDay.EnsureToday(career), attivita);
+        if (report.Refused)
+        {
+            CareerMessages.Show(this, report.Refusal, "CorsaCareer — non si può", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        SaveCareer(createVersionedBackup: false);
+        ShowDayScene(report);
+        RefreshUi();
+    }
+
+    private static Button PulsanteDiOggi(string testo, Color colore, int larghezza)
+    {
+        var b = UiTheme.SecondaryButton(testo);
+        b.Dock = DockStyle.None;
+        b.Width = larghezza; b.Height = 30;
+        b.Font = UiTheme.Small;
+        b.ForeColor = colore;
+        b.Margin = new Padding(0, 0, 8, 6);
+        b.Padding = new Padding(8, 0, 4, 0);
+        return b;
+    }
+
+    private static Label Etichetta(string testo, Font font, Color colore, int larghezza)
+    {
+        var l = new Label
+        {
+            Text = testo, Font = font, ForeColor = colore, BackColor = Color.Transparent,
+            Width = larghezza, AutoSize = false, Height = font.Height + 6,
+            UseMnemonic = false, Margin = new Padding(0, 0, 0, 4)
+        };
+        return l;
     }
 
     private static string DescribeStanding(ReputationProfile profile)
@@ -1180,7 +1341,7 @@ public sealed partial class MainForm
         // devono restare visibili anche quando non c'e' una gara fissata.
         todayDateLine.Text = TestataDellaGiornata(career.StoryDate);
         todayDateLine.Visible = true;
-        situationLine.Text = BuildSituationLine();
+        AggiornaPannelloDiOggi();
         situationLine.Visible = true;
         budgetPanel.Update(career);
     }
@@ -1888,12 +2049,21 @@ public sealed partial class MainForm
         // vuole sapere che cos'è la prossima cosa, non in che stato si trova
         // l'agenda. E la categoria va detta qui, perché è la prima domanda —
         // con che macchina si corre.
+        // Al centro dello schermo ci va la prossima volta che si scende in
+        // pista, e nient'altro.
+        //
+        // Quando non c'era un appuntamento oggi, questa riga passava a
+        // raccontare la vita di tutti i giorni — «Programma di oggi · Riposo e
+        // famiglia» — e la scheda piu' grande del portale finiva per dire che
+        // il sabato ci si riposa. La giornata qualunque ha il suo posto, in
+        // alto a destra, con i pulsanti per viverla; qui si sta parlando della
+        // carriera.
         var vettura = next == null ? "" : NomeVettura(career.Car);
-        var cosa = current
-            ? $"{CareerScheduler.KindLabel(next!)} · {NomeVettura(career.Car)}"
-            : daily.Count > 0
-                ? "Programma di oggi · " + string.Join(" · ", daily.Where(x => x.Status is "planned" or "active").Select(x => x.Title))
-                : "Giornata libera";
+        var cosa = next == null
+            ? "Nessuna gara né prova in agenda"
+            : current
+                ? $"{EtichettaAppuntamento(next)} · {NomeVettura(career.Car)}"
+                : $"{QuandoSuccede(next.Date, today)} · {EtichettaAppuntamento(next)} · {CareerScheduler.TrackLabel(next)}";
 
         var layout = new TableLayoutPanel
         {

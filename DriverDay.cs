@@ -105,8 +105,16 @@ public sealed class DayOutcome
 /// esisteva un modo di guadagnare, allenarsi o farsi conoscere. La giornata
 /// diventa un turno breve — poche decisioni, non venticinque.
 /// </summary>
-/// <summary>Una fetta fissa della giornata, che non si sceglie.</summary>
-public sealed record BloccoFisso(string Nome, int Ore, string Perche);
+/// <summary>
+/// Una fetta fissa della giornata, che non si sceglie, con la sua fascia oraria.
+///
+/// L'ora serve: una giornata raccontata solo in quantita' — nove, tre, quattro —
+/// e' un bilancio, non una giornata. Con gli orari si legge come si vive.
+/// </summary>
+public sealed record BloccoFisso(string Nome, int Ore, string Perche, int Dalle, int Alle)
+{
+    public string Fascia => $"{Dalle:00}:00–{Alle:00}:00";
+}
 
 public sealed class DayPlan
 {
@@ -126,6 +134,17 @@ public sealed class DayPlan
     /// </summary>
     public int DriverHoursTotal { get; set; } = DriverDay.DriverHours;
     public int AgentHoursTotal { get; set; } = DriverDay.AgentHours;
+
+    /// <summary>
+    /// L'ora a cui il pilota e' libero adesso, e quella di Haru.
+    ///
+    /// Servono a dire «15:00–17:00 · Palestra» invece di «Palestra · 2h»: le
+    /// attivita' si incastrano una dopo l'altra e la giornata si legge in
+    /// ordine, come un'agenda vera. Le due lancette sono separate perche' le
+    /// due giornate lo sono.
+    /// </summary>
+    public int OraDelPilota { get; set; } = 14;
+    public int OraDiHaru { get; set; } = 15;
 }
 
 /// <summary>
@@ -180,23 +199,50 @@ public static class DriverDay
     /// Le somma delle ore fisse piu' quelle libere fa sempre ventiquattro, ed
     /// e' questo che rende leggibile il bilancio a chi gioca.
     /// </summary>
-    public static IReadOnlyList<BloccoFisso> BlocchiFissi(DateTime giorno, int eta)
+    /// <summary>
+    /// Le due ore in piu' di scuola di chi ripete l'anno.
+    ///
+    /// Il recupero pomeridiano non e' una punizione simbolica: sono due ore
+    /// vere, ogni giorno feriale, che non si passano in pista. E' il modo in
+    /// cui una bocciatura si sente davvero.
+    /// </summary>
+    public const int OreDiRecupero = 2;
+
+    public static IReadOnlyList<BloccoFisso> BlocchiFissi(DateTime giorno, int eta, bool ripetente = false)
     {
-        var scuola = eta <= 17 && giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday;
+        var feriale = giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday;
+        var scuola = eta <= 17 && feriale;
         var blocchi = new List<BloccoFisso>
         {
-            new("Sonno", OreDiSonno, "Un ragazzo che cresce e corre dorme, o paga il conto la domenica."),
-            new("Pasti e spostamenti", OrePastiESpostamenti, "Casa, scuola, kartodromo, tavola. Nessuno ti ci porta gratis.")
+            new("Sonno", OreDiSonno, "Un ragazzo che cresce e corre dorme, o paga il conto la domenica.", 23, 8),
+            new("Pasti e spostamenti", OrePastiESpostamenti, "Casa, scuola, kartodromo, tavola. Nessuno ti ci porta gratis.", 12, 14)
         };
-        blocchi.Add(scuola
-            ? new BloccoFisso("Scuola", OreDiScuola, "Obbligatoria. Saltarla costa affidabilita' e seguito.")
-            : new BloccoFisso("Famiglia e casa", OreDiFamiglia, "Il fine settimana non e' tutto tuo, ma quasi."));
+        if (scuola)
+        {
+            var ore = OreDiScuola + (ripetente ? OreDiRecupero : 0);
+            blocchi.Add(new BloccoFisso("Scuola", ore,
+                ripetente
+                    ? "Obbligatoria, piu' due ore di recupero: stai ripetendo l'anno."
+                    : "Obbligatoria. Saltarla costa affidabilita' e seguito.",
+                8, 8 + ore));
+        }
+        else
+            blocchi.Add(new BloccoFisso("Famiglia e casa", OreDiFamiglia, "Il fine settimana non e' tutto tuo, ma quasi.", 9, 11));
         return blocchi;
     }
 
     /// <summary>Le ore che restano davvero da decidere, oggi.</summary>
-    public static int OreLibere(DateTime giorno, int eta) =>
-        OreDelGiorno - BlocchiFissi(giorno, eta).Sum(x => x.Ore);
+    public static int OreLibere(DateTime giorno, int eta, bool ripetente = false) =>
+        OreDelGiorno - BlocchiFissi(giorno, eta, ripetente).Sum(x => x.Ore);
+
+    /// <summary>
+    /// A che ora comincia il tempo che si decide.
+    ///
+    /// Nei giorni di scuola dopo pranzo; nel fine settimana la mattina, appena
+    /// finite le faccende di casa.
+    /// </summary>
+    public static int PrimaOraLibera(DateTime giorno) =>
+        giorno.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? 11 : 14;
 
     /// <summary>Oltre questa stanchezza le prestazioni cominciano a calare.</summary>
     public const int TiredThreshold = 60;
@@ -222,12 +268,14 @@ public static class DriverDay
             // da quanti anni ha il pilota. Prima erano una costante, quindi la
             // domenica valeva quanto un mercoledi' di scuola.
             var eta = career.BirthYear <= 0 ? 12 : Math.Max(10, career.StoryDate.Year - career.BirthYear);
-            var libere = OreLibere(career.StoryDate, eta);
+            var libere = OreLibere(career.StoryDate, eta, career.RepeatingYear);
+            var prima = PrimaOraLibera(career.StoryDate);
             career.Today = new DayPlan
             {
                 Date = career.StoryDate,
                 DriverHoursLeft = libere, DriverHoursTotal = libere,
-                AgentHoursLeft = AgentHours, AgentHoursTotal = AgentHours
+                AgentHoursLeft = AgentHours, AgentHoursTotal = AgentHours,
+                OraDelPilota = prima, OraDiHaru = prima + 1
             };
         }
         // Una carriera salvata prima di questo campo lo legge a zero: si

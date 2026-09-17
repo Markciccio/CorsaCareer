@@ -102,7 +102,7 @@ public sealed class BudgetPanel : Panel
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        accountLayout.Controls.Add(new Label { Text = "BUDGET DISPONIBILE", Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = UiTheme.Warning, UseMnemonic = false }, 0, 0);
+        accountLayout.Controls.Add(Intestazione("BUDGET DISPONIBILE", "oggi-sponsor.png", UiTheme.Warning), 0, 0);
         accountLayout.Controls.Add(amount, 0, 1);
         // I tre riquadri non aprono piu' niente.
         //
@@ -121,9 +121,11 @@ public sealed class BudgetPanel : Panel
         tutorialTargets = [account];
 
         grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "", UiTheme.Positive,
-            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false), 1, 0);
+            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false,
+            icona: "oggi-allenamento.png"), 1, 0);
         grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "",
-            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false), 2, 0);
+            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false,
+            icona: "oggi-social.png"), 2, 0);
         tutorialTargets = [account, grid.GetControlFromPosition(1, 0)!, grid.GetControlFromPosition(2, 0)!];
 
         movements.Font = UiTheme.Small;
@@ -151,7 +153,45 @@ public sealed class BudgetPanel : Panel
         };
     }
 
-    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true)
+    /// <summary>
+    /// L'intestazione di un riquadro: l'icona e il titolo, sulla stessa riga.
+    ///
+    /// I tre riquadri erano tre scritte in maiuscolo dello stesso colore e
+    /// della stessa misura: per capire quale fosse quale bisognava leggerle.
+    /// Un simbolo si riconosce prima di leggere, ed e' tutto quello che serve
+    /// a un cruscotto.
+    /// </summary>
+    private static Control Intestazione(string titolo, string fileIcona, Color accento)
+    {
+        var riga = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            BackColor = Color.Transparent, Margin = new Padding(0), Padding = new Padding(0)
+        };
+        riga.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 22));
+        riga.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        var icona = new PictureBox
+        {
+            Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom,
+            BackColor = Color.Transparent, Margin = new Padding(0, 1, 6, 1)
+        };
+        // L'icona e' un di piu': se il file non c'e', resta il titolo e il
+        // riquadro funziona esattamente come prima.
+        var percorso = AssetPaths.File("ui-icons", fileIcona);
+        try { if (System.IO.File.Exists(percorso)) icona.Image = Image.FromFile(percorso); }
+        catch { }
+
+        riga.Controls.Add(icona, 0, 0);
+        riga.Controls.Add(new Label
+        {
+            Text = titolo, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accento,
+            AutoEllipsis = true, UseMnemonic = false, TextAlign = ContentAlignment.MiddleLeft
+        }, 1, 0);
+        return riga;
+    }
+
+    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true, string icona = "")
     {
         var card = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Padding = new Padding(12, 6, 12, 4), Margin = new Padding(6, 0, 6, 0) };
         card.Paint += (_, e) =>
@@ -162,10 +202,12 @@ public sealed class BudgetPanel : Panel
             e.Graphics.FillRectangle(brush, 0, 0, 3, card.Height);
         };
         var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = showAction ? 3 : 2, BackColor = Color.Transparent };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 18));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
         if (showAction) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        var caption = new Label { Text = title, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accent, AutoEllipsis = true, UseMnemonic = false };
+        var caption = icona.Length > 0
+            ? Intestazione(title, icona, accent)
+            : new Label { Text = title, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accent, AutoEllipsis = true, UseMnemonic = false };
         value.Font = new Font(UiTheme.FamilySemibold, 22F, FontStyle.Bold);
         value.ForeColor = UiTheme.TextPrimary;
         value.Dock = DockStyle.Fill;
