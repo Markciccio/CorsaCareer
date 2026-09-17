@@ -11,6 +11,8 @@ public sealed class DailyCommitment
     public string Kind { get; set; } = ""; // school | track-training
     public string Title { get; set; } = "";
     public string Detail { get; set; } = "";
+    public string StartTime { get; set; } = "";
+    public int Hours { get; set; }
     public string TrackId { get; set; } = "";
     public string TrackName { get; set; } = "";
     public string Status { get; set; } = "planned"; // planned | active | done | skipped
@@ -33,8 +35,18 @@ public static class LifeCalendar
             Add(career, result, new DailyCommitment
             {
                 Id = $"school-{date:yyyyMMdd}", Date = date, Kind = "school",
-                Title = "Scuola", Detail = "Lezioni e compiti prima del kartodromo. Fa parte della giornata di un pilota di 12 anni."
+                Title = "Scuola", StartTime = "08:00", Hours = 4,
+                Detail = "Lezioni e compiti prima del kartodromo. Fa parte della giornata di un pilota di 12 anni."
             });
+
+        // Un calendario non è una lista di gare: fra i banchi e il box ci sono
+        // anche piccoli impegni che rendono il protagonista una persona.
+        if (date.DayOfWeek == DayOfWeek.Tuesday)
+            Add(career, result, new DailyCommitment { Id = $"sponsor-{date:yyyyMMdd}", Date = date, Kind = "sponsor-visit", Title = "Visita con Haru da uno sponsor", StartTime = "14:30", Hours = 2, Required = false, Detail = "Incontro locale: puoi farlo, rimandarlo senza colpe, oppure lasciare che Haru lavori da solo." });
+        if (date.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Thursday)
+            Add(career, result, new DailyCommitment { Id = $"fitness-{date:yyyyMMdd}", Date = date, Kind = "fitness", Title = "Preparazione fisica", StartTime = "17:30", Hours = 1, Required = false, Detail = "Corsa e core. Facoltativo, ma aiuta a non arrivare scarichi alla gara." });
+        if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
+            Add(career, result, new DailyCommitment { Id = $"recovery-{date:yyyyMMdd}", Date = date, Kind = "recovery", Title = "Riposo e famiglia", StartTime = "16:00", Hours = 2, Required = false, Detail = "Tempo libero e recupero. Puoi saltarlo senza penalità, ma non recupererai energie." });
 
         var next = CareerScheduler.NextPlanned(career.Schedule ?? []);
         var hasRaceToday = next?.Date.Date == date;
@@ -53,7 +65,8 @@ public static class LifeCalendar
                     Add(career, result, new DailyCommitment
                     {
                         Id = $"training-{date:yyyyMMdd}", Date = date, Kind = "track-training",
-                        Title = "Allenamento in pista", Detail = "Sessione libera programmata: va svolta in Assetto Corsa oppure saltata con conseguenze.",
+                        Title = "Allenamento in pista", StartTime = "15:30", Hours = 3,
+                        Detail = "Sessione libera programmata: va svolta in Assetto Corsa oppure saltata con conseguenze.",
                         TrackId = track.Id, TrackName = track.Name
                     });
             }
@@ -73,13 +86,26 @@ public static class LifeCalendar
             profile.Professionalism = Math.Clamp(profile.Professionalism + 1, 0, 100);
             career.News.Add("Scuola conclusa: una giornata normale tenuta insieme alla carriera.");
         }
-        else
+        else if (item.Kind == "track-training")
         {
             career.Fitness = Math.Clamp(career.Fitness + 6, 0, DriverDay.MaxFitness);
             career.Fatigue = Math.Clamp(career.Fatigue + 12, 0, DriverDay.MaxFatigue);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + 1, 0, 100);
             career.News.Add($"Allenamento in pista completato a {item.TrackName}: forma +6, stanchezza +12.");
         }
+        else if (item.Kind == "sponsor-visit")
+        {
+            profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal + 3, 0, 100);
+            profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + 1, 0, 100);
+            career.News.Add("Visita con Haru completata: un contatto locale ha ascoltato il progetto.");
+        }
+        else if (item.Kind == "fitness")
+        {
+            career.Fitness = Math.Clamp(career.Fitness + 3, 0, DriverDay.MaxFitness);
+            career.Fatigue = Math.Clamp(career.Fatigue + 5, 0, DriverDay.MaxFatigue);
+        }
+        else
+            career.Fatigue = Math.Clamp(career.Fatigue - 10, 0, DriverDay.MaxFatigue);
         profile.SyncLegacyFields(career);
         career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = item.Kind == "school" ? "SCHOOL_DONE" : "TRAINING_DONE", Headline = item.Title + " completato.", Track = item.TrackName, Importance = 28 });
     }
@@ -94,7 +120,7 @@ public static class LifeCalendar
             career.Fitness = Math.Clamp(career.Fitness - 5, 0, DriverDay.MaxFitness);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 2, 0, 100);
         }
-        else
+        else if (item.Kind == "school")
         {
             profile.Professionalism = Math.Clamp(profile.Professionalism - 2, 0, 100);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 1, 0, 100);
@@ -109,6 +135,28 @@ public static class LifeCalendar
     {
         foreach (var item in Today(career, content).Where(x => x.Required && x.Status is "planned" or "active").ToList())
             Skip(career, item, automatic: true);
+    }
+
+    /// <summary>Testo compatto per Home: orario, durata, obbligo e conseguenza.</summary>
+    public static string ProgramText(CareerState career, ContentIndexRecord content)
+    {
+        var items = Today(career, content).OrderBy(x => x.StartTime).ToList();
+        if (items.Count == 0) return "PROGRAMMA DI OGGI · giornata libera: scegli tu se allenarti, riposare o aiutare Haru.";
+        var lines = new List<string> { "PROGRAMMA DI OGGI" };
+        foreach (var x in items)
+        {
+            var status = x.Status == "done" ? "✓ fatto" : x.Status == "skipped" ? "— saltato" : x.Required ? "OBBLIGATORIO" : "FACOLTATIVO";
+            var consequence = x.Kind switch
+            {
+                "school" => "assenza: affidabilità -2, followers -1",
+                "track-training" => "salto: forma -5, followers -2",
+                "fitness" => "salto: nessuna penalità",
+                "recovery" => "salto: non recuperi energie",
+                _ => "salto: nessuna penalità"
+            };
+            lines.Add($"{x.StartTime} · {x.Title} · {x.Hours}h · {status} · {consequence}");
+        }
+        return string.Join("\n", lines);
     }
 
     private static void Add(CareerState career, List<DailyCommitment> result, DailyCommitment item)
@@ -163,7 +211,8 @@ public sealed class DailyAgendaDialog : CareerDialog
         card.Controls.Add(Line(item.Detail + (item.TrackName.Length > 0 ? "\nLuogo: " + item.TrackName : ""), UiTheme.Small, UiTheme.TextSecondary, 500, 0, 30));
         if (item.Status is "planned" or "active")
         {
-            var doIt = UiTheme.PrimaryButton(item.Kind == "track-training" ? "APRI ALLENAMENTO IN ASSETTO CORSA" : "FREQUENTA"); doIt.Width = 330; doIt.Height = 36; doIt.Location = new Point(0, 72);
+            var action = item.Kind switch { "track-training" => "APRI ALLENAMENTO IN ASSETTO CORSA", "sponsor-visit" => "INCONTRA LO SPONSOR", "fitness" => "ALLENATI", "recovery" => "RIPOSA", _ => "FREQUENTA" };
+            var doIt = UiTheme.PrimaryButton(action); doIt.Width = 330; doIt.Height = 36; doIt.Location = new Point(0, 72);
             doIt.Click += (_, _) => { if (item.Kind == "track-training") { item.Status = "active"; save(); Close(); launchTraining(); } else { LifeCalendar.Complete(career, item); save(); RefreshItems(); } };
             var skip = UiTheme.SecondaryButton("SALTA"); skip.Width = 120; skip.Height = 36; skip.Location = new Point(350, 72);
             skip.Click += (_, _) => { LifeCalendar.Skip(career, item); save(); RefreshItems(); };

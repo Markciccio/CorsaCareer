@@ -242,7 +242,7 @@ public sealed partial class MainForm
         // dettaglio sponsor, l'intestazione e la riga dei movimenti su due
         // righe. Con 196 l'ultima riga del riquadro — "Sponsor disponibili
         // ... premi gara ... sponsor" — veniva tagliata a meta.
-        var wrapper = new TableLayoutPanel { Dock = DockStyle.Top, Height = 214, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 10), ColumnCount = 2, RowCount = 1 };
+        var wrapper = new TableLayoutPanel { Dock = DockStyle.Top, Height = 250, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 10), ColumnCount = 2, RowCount = 1 };
         // Il conto e i due indicatori decisivi devono stare a sinistra, prima
         // della frase narrativa: sono il cruscotto che guida ogni scelta.
         wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
@@ -255,8 +255,8 @@ public sealed partial class MainForm
         };
         situationLine = new Label
         {
-            Dock = DockStyle.Fill, Font = UiTheme.Body, ForeColor = UiTheme.TextSecondary,
-            TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false, AutoEllipsis = false,
+            Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary,
+            TextAlign = ContentAlignment.TopLeft, UseMnemonic = false, AutoEllipsis = false,
             Padding = new Padding(0, 0, 18, 0), Margin = new Padding(0)
         };
         var narrative = new TableLayoutPanel
@@ -308,54 +308,12 @@ public sealed partial class MainForm
     }
 
     /// <summary>
-    /// Compone la riga di situazione dallo stato reale. Ogni segmento esiste solo
-    /// se ha qualcosa da dire: un pilota senza contratto non legge una frase sul
-    /// campionato che non ha.
+    /// Compone il programma quotidiano. I dati tecnici restano nel dossier: qui
+    /// devono essere visibili le ore che il protagonista deve vivere oggi.
     /// </summary>
     private string BuildSituationLine()
     {
-        var profile = career.ReputationProfile ?? new ReputationProfile();
-        var gradino = CareerLadder.Current(career, contentIndex.Cars);
-        var livello = ChampionshipLadder.Clamp(career.ChampionshipLevel);
-
-        // Le due scale, spiegate.
-        //
-        // In testata comparivano «CATEGORIA 1 DI 7» e «LIVELLO 1 DI 5» senza
-        // dire che cosa fossero: la categoria si intuisce dal nome della
-        // vettura, il livello no — «livello 1 di 5» poteva sembrare il numero
-        // delle gare. Sono due scale diverse e si salgono in modo diverso, ed è
-        // esattamente la cosa che il giocatore deve avere sempre sott'occhio.
-        var righe = new List<string>
-        {
-            $"CATEGORIA  ·  {gradino.Name} — la {gradino.Step}ª delle {CareerLadder.Steps} categorie, dal kart da noleggio al vertice. "
-            + "Si sale firmando per una vettura superiore, dopo aver fatto abbastanza gare su questa.",
-
-            $"CAMPIONATO  ·  {ChampionshipLadder.Name(livello)} — il {livello}° dei {ChampionshipLadder.Levels} livelli: "
-            + $"{ChampionshipLadder.Scope(livello)}. {ChampionshipLadder.PromotionRule(livello)}",
-
-            $"SQUADRA  ·  " + (career.ContractActive && !string.IsNullOrWhiteSpace(career.Team) && career.Team != "Senza contratto"
-                ? $"{career.Team}" + (string.IsNullOrWhiteSpace(career.TeamProfileId) ? "" : $" — {TeamProfile.ById(career.TeamProfileId).Nome.ToLowerInvariant()}")
-                : "nessun contratto: sei in cerca di un sedile")
-        };
-
-        var parti = new List<string>();
-
-        if (career.Races == 0) parti.Add("nessuna gara disputata");
-        else if (career.Wins > 0)
-            parti.Add($"{career.Races} gare, {career.Wins} {(career.Wins == 1 ? "vittoria" : "vittorie")} e {career.Podiums} {(career.Podiums == 1 ? "podio" : "podi")}");
-        else if (career.Podiums > 0) parti.Add($"{career.Races} gare e {career.Podiums} {(career.Podiums == 1 ? "podio" : "podi")}, nessuna vittoria");
-        else parti.Add($"{career.Races} gare, ancora nessun podio");
-
-        parti.Add($"€ {career.Cash:N0} in cassa, {CareerFinances.Status(career.Cash).Split('\u2014')[0].Trim().ToLowerInvariant()}");
-
-        // Una sola dimensione di reputazione: quella che in questo momento
-        // racconta di piu.
-        parti.Add(DescribeStanding(profile));
-
-        if (career.SimulatedSessions > 0) parti.Add($"carriera di prova, {career.SimulatedSessions} sessioni simulate");
-
-        righe.Add("BILANCIO  ·  " + string.Join("  ·  ", parti));
-        return string.Join("\n", righe);
+        return LifeCalendar.ProgramText(career, contentIndex);
     }
 
     private static string DescribeStanding(ReputationProfile profile)
@@ -1883,19 +1841,18 @@ public sealed partial class MainForm
         var today = career.StoryDate.Date;
         var plan = DriverDay.EnsureToday(career);
         var current = next != null && next.Date.Date <= today && next.IsPlanned;
+        var daily = LifeCalendar.Today(career, contentIndex);
 
         // «In attesa: round 3 di campionato» non dice niente: il giocatore
         // vuole sapere che cos'è la prossima cosa, non in che stato si trova
         // l'agenda. E la categoria va detta qui, perché è la prima domanda —
         // con che macchina si corre.
         var vettura = next == null ? "" : NomeVettura(career.Car);
-        var cosa = next == null
-            ? "Giornata libera"
-            : next.Kind == ScheduledEventKind.ChampionshipRound
-                ? $"Gara {next.Round} di campionato · {vettura}"
-                : current
-                    ? $"{CareerScheduler.KindLabel(next)} · {vettura}"
-                    : $"Prossimo impegno: {CareerScheduler.KindLabel(next).ToLowerInvariant()} · {vettura}";
+        var cosa = current
+            ? $"{CareerScheduler.KindLabel(next!)} · {NomeVettura(career.Car)}"
+            : daily.Count > 0
+                ? "Programma di oggi · " + string.Join(" · ", daily.Where(x => x.Status is "planned" or "active").Select(x => x.Title))
+                : "Giornata libera";
 
         var layout = new TableLayoutPanel
         {
