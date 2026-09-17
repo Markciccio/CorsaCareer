@@ -37,6 +37,13 @@ public static class LifeCalendar
         var giornoDiScuola = date.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday
                              && CalendarioGiapponese.Festa(date) == null
                              && !CalendarioGiapponese.PaeseFermo(date);
+        // Ogni giorno di lezione il programma va avanti: chi non lo segue
+        // resta indietro, e il livello cala. E' l'unico parametro della
+        // carriera che scende stando fermi, ed e' quello che rende «studiare»
+        // una scelta invece di un'attivita' fra le altre.
+        if (giornoDiScuola) Scuola.PassaUnGiornoDiLezione(career);
+        Scuola.AnnunciaLAnnoScolastico(career);
+
         if (Age(career) <= 17 && giornoDiScuola)
             Add(career, result, new DailyCommitment
             {
@@ -92,8 +99,12 @@ public static class LifeCalendar
         return result;
     }
 
-    /// <summary>La soglia dello scrutinio: sotto questa, si ripete l'anno.</summary>
-    public const int SogliaDiPromozione = 40;
+    /// <summary>
+    /// La soglia dello scrutinio. Vive in <see cref="Scuola"/> insieme a tutte
+    /// le altre regole scolastiche: qui resta solo il nome, per non avere due
+    /// numeri che devono essere d'accordo.
+    /// </summary>
+    public const int SogliaDiPromozione = Scuola.SogliaDiPromozione;
 
     /// <summary>
     /// Lo scrutinio di giugno.
@@ -114,7 +125,7 @@ public static class LifeCalendar
     {
         var oggi = career.StoryDate.Date;
         if (oggi.Month != 6 || oggi.Day < 10) return;
-        if (Age(career) > 17) return;
+        if (!Scuola.Riguarda(career)) return;
         if (career.LastSchoolYearJudged >= oggi.Year) return;
         career.LastSchoolYearJudged = oggi.Year;
 
@@ -125,7 +136,7 @@ public static class LifeCalendar
             career.RepeatingYear = false;
             // Si riparte da poco sopra la sufficienza: il credito dell'anno
             // buono non si porta dietro, come nella realta'.
-            career.SchoolPerformance = 55;
+            career.SchoolPerformance = 70;
             var promosso = eraRipetente
                 ? $"{career.Driver} recupera l'anno: da settembre niente piu' pomeriggi di recupero."
                 : $"{career.Driver} e' promosso. L'estate e' libera, e il kartodromo pure.";

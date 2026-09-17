@@ -422,23 +422,25 @@ public sealed partial class MainForm
         var larghezza = Math.Max(360, situationLine.ClientSize.Width - 24);
         var mezza = (larghezza - 16) / 2;
 
-        var scuola = eta <= 17
-            ? career.SchoolPerformance >= LifeCalendar.SogliaDiPromozione
-                ? $"  ·  SCUOLA {career.SchoolPerformance}/100"
-                : $"  ·  SCUOLA {career.SchoolPerformance}/100 — SOTTO {LifeCalendar.SogliaDiPromozione} SI RIPETE L'ANNO"
-            : "";
+        // La scuola si mostra finche' e' un vincolo, e poi sparisce del tutto.
+        // Finita la scuola dell'obbligo non ha senso tenere a schermo un
+        // parametro che non impedisce e non concede piu' niente.
+        var etichettaScuola = Scuola.Etichetta(career);
+        var scuola = etichettaScuola.Length == 0
+            ? ""
+            : $"  ·  {Scuola.Classe(career).ToUpperInvariant()}  ·  {etichettaScuola.ToUpperInvariant()}";
         // Se oggi e' una festa nazionale si dice qual e': spiega da sola
         // perche' non c'e' scuola, e da' al calendario un sapore di posto vero.
         var festa = CalendarioGiapponese.Festa(career.StoryDate);
         var fermo = CalendarioGiapponese.PaeseFermo(career.StoryDate);
         situationLine.Controls.Add(Etichetta(
             $"{career.StoryDate:dddd d MMMM yyyy}".ToUpperInvariant()
+            + $"  ·  {eta} ANNI"
             + (festa != null ? $"  ·  {festa.ToUpperInvariant()}" : "")
             + (fermo ? "  ·  IL PAESE È FERMO: CIRCUITI E OFFICINE CHIUSI" : "")
             + (career.RepeatingYear ? "  ·  RIPETENTE: RECUPERO FINO ALLE 18" : "") + scuola,
             UiTheme.Kicker,
-            career.RepeatingYear || (eta <= 17 && career.SchoolPerformance < LifeCalendar.SogliaDiPromozione)
-                ? UiTheme.Accent : UiTheme.TextMuted,
+            career.RepeatingYear || Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.TextMuted,
             larghezza));
 
         var colonne = new TableLayoutPanel
@@ -580,6 +582,20 @@ public sealed partial class MainForm
             .OrderBy(x => x.Id, StringComparer.Ordinal)
             .ToList();
         if (possibili.Count == 0) return null;
+
+        // Sotto la soglia la giornata propone i libri, e li propone per primi.
+        //
+        // Senza questo, una regola che punisce chi non studia sarebbe unita a
+        // una giornata che non permette di studiare quando serve: il divieto
+        // diventerebbe un vicolo cieco invece di un pomeriggio da spendere
+        // diversamente. Sotto la soglia del divieto e' la prima cosa che il
+        // giorno ti mette davanti, ed e' giusto che sia cosi' — in casa non
+        // parlerebbero d'altro.
+        if (chi == DayActor.Driver && Scuola.ARischio(career))
+        {
+            var libri = possibili.FirstOrDefault(x => x.Id.Equals("studio", StringComparison.OrdinalIgnoreCase));
+            if (libri != null) return libri;
+        }
         var seme = Math.Abs(StableHash.Of(career.Driver ?? "", career.StoryDate.ToString("yyyyMMdd"), indice, chi.ToString()));
         return possibili[seme % possibili.Count];
     }

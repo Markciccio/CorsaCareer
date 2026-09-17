@@ -246,7 +246,11 @@ public sealed class CareerState
     /// alla pista per tutto l'anno dopo. E' il vincolo che rende la scuola una
     /// scelta e non un fastidio da cliccare via.
     /// </summary>
-    public int SchoolPerformance { get; set; } = 55;
+    /// Si parte da settanta e non da cinquantacinque: a dodici anni, prima
+    /// che le gare comincino a mangiare i pomeriggi, un ragazzo e' in pari.
+    /// Partendo appena sopra la sufficienza il programma avrebbe gridato «a
+    /// rischio bocciatura» dopo otto giorni di scuola, cioe' quasi sempre.
+    public int SchoolPerformance { get; set; } = 70;
 
     /// <summary>Quante volte e' stato bocciato. Resta nella storia della carriera.</summary>
     public int SchoolFailures { get; set; }
@@ -260,6 +264,19 @@ public sealed class CareerState
 
     /// <summary>L'ultimo anno scolastico gia' giudicato: gli scrutini non si ripetono.</summary>
     public int LastSchoolYearJudged { get; set; }
+
+    /// <summary>L'ultimo anno annunciato ad aprile: l'annuncio non si ripete.</summary>
+    public int LastSchoolYearAnnounced { get; set; }
+
+    /// <summary>
+    /// L'ultimo giorno di lezione gia' conteggiato.
+    ///
+    /// Il livello scolastico cala una volta per giorno di scuola, e questa data
+    /// e' quello che lo garantisce: senza, ogni ridisegno del pannello della
+    /// giornata avrebbe tolto altri punti, e bastava guardare la schermata per
+    /// farsi bocciare.
+    /// </summary>
+    public DateTime LastSchoolDayCharged { get; set; }
 
     /// <summary>
     /// Le capacita di Haru Senda. Migliorano lavorando, e cambiano l'esito di
@@ -2837,6 +2854,7 @@ public sealed partial class MainForm : Form
     }
     private void LaunchTestSession()
     {
+        if (!PuoScendereInPista()) return;
         var uiAutomation = Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1";
         if (awaitingResult) return;
         var raceableCars = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).ToList();
@@ -5532,8 +5550,30 @@ public sealed partial class MainForm : Form
         if (career.SeasonArchive.Count > 0)
             Upsert("season-legacy", "Costruire una carriera", "LEGACY", 85, $"La carriera conserva {career.SeasonArchive.Count} stagione/i archiviate e una memoria consultabile.");
     }
+    /// <summary>
+    /// Vero se oggi si puo' scendere in pista.
+    ///
+    /// C'e' una cosa sola che lo impedisce, ed e' la scuola: sotto la soglia,
+    /// in casa non firmano niente. Il divieto vale per tutto — gare, prove,
+    /// giri liberi — perche' un divieto che si aggira scegliendo un'altra voce
+    /// di menu non e' un divieto.
+    ///
+    /// Si esce studiando, e il pannello della giornata propone i libri finche'
+    /// si e' sotto: non e' un vicolo cieco, e' un pomeriggio da spendere
+    /// diversamente.
+    /// </summary>
+    private bool PuoScendereInPista()
+    {
+        if (!Scuola.Vieta(career)) return true;
+        CareerLog.Info("carriera", $"pista negata dalla scuola: livello {Scuola.Livello(career)}/100");
+        CareerMessages.Show(null, Scuola.Divieto(career),
+            "CorsaCareer — la scuola viene prima", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+        return false;
+    }
+
     private void LaunchWeekend()
     {
+        if (!PuoScendereInPista()) return;
         if (awaitingResult) { ReopenPendingWeekend(); return; }
         if (NextScheduled()?.Kind == ScheduledEventKind.Invitation) { LaunchInvitation(); return; }
         // Il pilota cliente non ha un contratto perche' non deve averlo: paga
@@ -5662,6 +5702,7 @@ public sealed partial class MainForm : Form
     private void LaunchInvitation()
     {
         if (awaitingResult) return;
+        if (!PuoScendereInPista()) return;
         var invitation = NextScheduled();
         if (invitation?.Kind != ScheduledEventKind.Invitation) return;
         var entryFee = InvitationEntryFee(invitation);
@@ -6030,6 +6071,7 @@ public sealed partial class MainForm : Form
     /// </summary>
     private void LaunchDailyTrackTraining()
     {
+        if (!PuoScendereInPista()) return;
         if (awaitingResult) return;
         var commitment = LifeCalendar.Today(career, contentIndex).FirstOrDefault(x => x.Kind == "track-training" && x.Status == "active");
         if (commitment == null) return;

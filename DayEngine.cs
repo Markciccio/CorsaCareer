@@ -43,7 +43,7 @@ public static class DayEngine
         // forma, non e' seguito, non e' denaro — ma e' l'unica cosa che tiene
         // lontana la bocciatura, e la bocciatura costa due ore al giorno.
         if (activity.Id.Equals("studio", StringComparison.OrdinalIgnoreCase))
-            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance + 6, 0, 100);
+            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance + Scuola.Studiare, 0, 100);
 
         // La lancetta della giornata avanza: la prossima attivita' comincia
         // quando finisce questa. Sono due lancette, perche' la giornata di Haru

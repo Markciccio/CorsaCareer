@@ -384,18 +384,23 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Due ore, e mezza te ne sei passata a guardare fuori dalla finestra. Ma qualcosa e' entrato.",
+                    Line = "Due ore di matematica, e mezza te ne sei passata a guardare fuori dalla finestra. Ma qualcosa e' entrato.",
                     Weight = 2, Effects = [new(DayEffectKind.Fatigue, 3)]
                 },
                 new()
                 {
-                    Line = "Hai finito i compiti e rifatto gli esercizi che avevi sbagliato. Domani in classe non ti chiami fuori.",
+                    Line = "Kanji e verbi inglesi. Hai rifatto gli esercizi che avevi sbagliato: domani in classe non ti chiami fuori.",
                     Weight = 3, Effects = [new(DayEffectKind.Fatigue, 4)]
                 },
                 new()
                 {
-                    Line = "Una di quelle sere in cui la cosa torna, e resti li' anche dopo aver finito.",
+                    Line = "Scienze. Una di quelle sere in cui la cosa torna, e resti li' anche dopo aver finito i compiti.",
                     Weight = 1, Effects = [new(DayEffectKind.Fatigue, 5)]
+                },
+                new()
+                {
+                    Line = "Studi sociali, e per un'ora non hai pensato una sola volta alla curva sette. E' gia' qualcosa.",
+                    Weight = 2, Effects = [new(DayEffectKind.Fatigue, 3)]
                 }
             ]
         },

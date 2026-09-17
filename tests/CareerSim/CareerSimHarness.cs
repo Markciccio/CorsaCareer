@@ -560,6 +560,13 @@ public sealed partial class MainForm
     {
         DayActivity? PerId(string id) => catalogo.FirstOrDefault(x => x.Id == id && x.Hours <= giornata.DriverHoursLeft && !giornata.Done.Contains(x.Id));
 
+        // La scuola prima di tutto, quando e' sotto.
+        //
+        // Non e' una scelta di gusto: sotto la soglia il pilota non puo'
+        // scendere in pista, quindi un banco che non studia si bloccherebbe
+        // per sempre alla prima prova negata. E' anche quello che farebbe chi
+        // gioca, visto che la giornata gli propone i libri.
+        if (Scuola.ARischio(career) && PerId("studio") is { } libri) return libri;
         // Stanchezza alta: qualunque altra cosa renderebbe meno.
         if (career.Fatigue >= 55) return PerId("riposo") ?? PerId("corsa");
         // La forma è la base: sotto una certa soglia si allena e basta.
@@ -577,7 +584,7 @@ public sealed partial class MainForm
         // l'effetto delle loro attività sulla stanchezza.
         return PerId("social") ?? PerId("instagram-allenamento") ?? PerId("domande-follower")
                ?? PerId("scuola-volantini") ?? PerId("tifosi") ?? PerId("pr")
-               ?? PerId("scuola") ?? PerId("corsa") ?? PerId("riposo");
+               ?? PerId("studio") ?? PerId("corsa") ?? PerId("riposo");
     }
 
     // ------------------------------------------------------------- resoconto
