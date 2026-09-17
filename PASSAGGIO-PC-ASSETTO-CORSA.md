@@ -413,6 +413,17 @@ salire di campionato restando nella stessa categoria, e viceversa.
 
 ### Gavetta prima del salto — `OpportunityGenerator.RacesBeforeStepUp`
 
+> **Il punto che si rompe piu' spesso di tutti.** Questa regola e' stata
+> aggirata da **sei strade diverse** in altrettante occasioni: `BuildSeat`,
+> `BuildOffers`, `UpdateMarketAfterRace`, la promozione di fine stagione, il
+> test d'ingresso che spostava subito dal quattro tempi al due tempi, e la
+> promozione dopo una gara su invito chiusa nel primo sessanta per cento.
+> Ogni volta il sintomo e' lo stesso: al banco un gradino risulta
+> «attraversato in 1 gare, senza gavetta» e la carriera arriva in cima anni
+> troppo presto. Chi aggiunge un percorso di promozione **deve** passare da
+> `RacesBeforeStepUp`, e il collaudo va riletto dopo.
+
+
 Gare da correre su un gradino prima che arrivi un'offerta per quello sopra:
 
 | Gradino | Gare |

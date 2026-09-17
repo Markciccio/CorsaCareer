@@ -357,7 +357,18 @@ public sealed partial class MainForm : Form
     private readonly System.Windows.Forms.Timer narrationTimer = new() { Interval = 500 };
     // Nuove mod possono essere installate mentre il portale è aperto: la
     // libreria viene riletta senza finestre modali ogni cinque minuti.
-    private readonly System.Windows.Forms.Timer contentRefreshTimer = new() { Interval = 300000 };
+    // Niente timer sui contenuti.
+    //
+    // C'era un controllo automatico ogni cinque minuti che rifaceva la
+    // scansione completa della cartella content sul thread dell'interfaccia —
+    // e il confronto per capire se fosse cambiato qualcosa avveniva DOPO la
+    // scansione. Sul catalogo di prova, tredici auto, e' istantaneo; su
+    // un'installazione vera di Assetto Corsa, con centinaia di auto e
+    // circuiti ognuno con i suoi file da leggere, e' una passeggiata su disco
+    // che blocca la finestra, periodicamente, per sempre.
+    //
+    // I contenuti si leggono all'avvio e quando lo si chiede. E' anche piu'
+    // onesto: nessuno aggiunge una macchina mentre sta correndo.
     private PortalFocusServer? focusServer;
 
     /// <summary>
@@ -520,7 +531,7 @@ public sealed partial class MainForm : Form
         resultTimer.Tick += (_, _) => TryImportRaceResult(); resultTimer.Start();
         autosaveTimer.Tick += (_, _) => SaveCareer(createVersionedBackup: false); autosaveTimer.Start();
         narrationTimer.Tick += (_, _) => { if (!NarrationService.IsSpeaking && narrationControl.Text.StartsWith("❚❚", StringComparison.Ordinal)) narrationControl.Text = "▶  AVVIA RUBRICA TV"; }; narrationTimer.Start();
-        contentRefreshTimer.Tick += (_, _) => RefreshInstalledContentSilently(); contentRefreshTimer.Start();
+
         // Il referto può essere scritto da Assetto Corsa mentre la finestra è
         // sullo sfondo. Oltre al polling, lo rileggiamo immediatamente quando
         // il portale torna visibile e subito dopo il caricamento della UI:
@@ -528,7 +539,7 @@ public sealed partial class MainForm : Form
         // tentativo e far avanzare la carriera.
         Shown += (_, _) => BeginInvoke(new Action(TryImportRaceResult));
         Activated += (_, _) => TryImportRaceResult();
-        FormClosed += (_, _) => { autosaveTimer.Stop(); resultTimer.Stop(); narrationTimer.Stop(); contentRefreshTimer.Stop(); NarrationService.Stop(); SoundtrackService.Stop(); focusServer?.Dispose(); };
+        FormClosed += (_, _) => { autosaveTimer.Stop(); resultTimer.Stop(); narrationTimer.Stop(); NarrationService.Stop(); SoundtrackService.Stop(); focusServer?.Dispose(); };
     }
 
     private string SaveFile => Path.Combine(saveDir, "career.json");
@@ -1917,6 +1928,35 @@ public sealed partial class MainForm : Form
             _ => 20
         };
     }
+    /// <summary>
+    /// Se il pilota sta andando bene dove corre adesso.
+    ///
+    /// Serve a distinguere due cose che il mercato tratta in modo opposto: chi
+    /// va forte resta dov'e' e riceve inviti per gare singole; chi arriva
+    /// sempre dietro riceve proposte per cambiare aria. Senza questa
+    /// distinzione il cambio di disciplina arrivava a tutti, anche a un
+    /// campione del mondo, e la carriera perdeva la sua forma.
+    ///
+    /// Si guarda la classifica quando c'e', altrimenti i risultati recenti:
+    /// mai un numero inventato.
+    /// </summary>
+    private bool StaAndandoBene()
+    {
+        var classifica = (career.Standings ?? [])
+            .OrderByDescending(x => x.Points).ThenByDescending(x => x.Wins).ToList();
+        var mio = classifica.FindIndex(x => x.Driver == career.Driver);
+        if (mio >= 0)
+        {
+            // Prima meta' del gruppo: si sta reggendo il confronto.
+            return mio + 1 <= Math.Max(3, classifica.Count / 2);
+        }
+
+        // Nessuna classifica: contano le ultime domeniche.
+        var ultime = (career.RaceHistory ?? []).TakeLast(6).Where(x => !x.Dnf && x.Position > 0).ToList();
+        if (ultime.Count == 0) return false;
+        return ultime.Average(x => x.Position) <= 6.0;
+    }
+
     private List<TeamOffer> BuildOffers()
     {
         // Le offerte partono dal gradino raggiunto, non dal fondo della scala.
@@ -1975,11 +2015,27 @@ public sealed partial class MainForm : Form
         var selected = entryCars.OrderBy(x => x.Name).Select(x => x.Id).Take(3).ToList();
         if (selected.Count == 0) return new List<TeamOffer>();
         // Un cambio di specialità non è una scorciatoia né un evento casuale:
-        // dopo essersi fatto un nome in una categoria vera (livello 4+), uno
-        // sponsor può proporre un unico sedile nell'altra carriera. Il pilota
-        // lo vede come proposta dichiarata e decide se accettare.
+        // dopo essersi fatto un nome in una categoria vera (livello 4+), una
+        // squadra di un'altra disciplina può proporre un sedile. Il pilota lo
+        // vede come proposta dichiarata e decide se accettare.
+        //
+        // DUE REGOLE, ed è la differenza fra una carriera e un'oscillazione.
+        //
+        // 1. Il sedile è allo STESSO gradino, mai sotto. La finestra era fissa
+        //    fra il quarto e il quinto: a un pilota di Formula 1, che sta al
+        //    settimo, veniva offerta una GT3 del quinto. Il banco misurava una
+        //    carriera che ogni febbraio faceva 7 → 5 → 7, nello stesso giorno,
+        //    per vent'anni di fila — cioè esattamente il rimbalzo fra due
+        //    categorie che questa scala esiste per impedire.
+        //
+        // 2. Arriva SOLO a chi non sta andando bene. Chi va forte resta dov'è
+        //    e semmai riceve un invito per una gara singola (la wild card):
+        //    nella realtà un pilota che lotta per il titolo non cambia
+        //    campionato a fine anno, ci va a correre una gara e torna.
         var specialtySwitchIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (gradinoOfferte >= 4 && career.Reputation >= 55 && !string.IsNullOrWhiteSpace(career.ChosenPath))
+        if (gradinoOfferte >= 4 && career.Reputation >= 55
+            && !string.IsNullOrWhiteSpace(career.ChosenPath)
+            && !StaAndandoBene())
         {
             var wantsFormula = career.ChosenPath.Equals("SingleSeater", StringComparison.OrdinalIgnoreCase);
             var switchCar = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable)
@@ -1988,9 +2044,13 @@ public sealed partial class MainForm : Form
                     var path = CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg).Path;
                     return wantsFormula ? path is LadderPath.Touring or LadderPath.Endurance : path == LadderPath.SingleSeater;
                 })
-                .Where(x => CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg).Step is >= 4 and <= 5)
-                .OrderBy(x => Math.Abs(CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg).Step - gradinoOfferte))
-                .ThenBy(x => x.Name)
+                // Stesso gradino: un'altra strada allo stesso livello, come
+                // Mansell che dalla Formula 1 va in Indy. Se in quella
+                // disciplina il gradino non esiste fra i contenuti installati,
+                // la proposta non arriva — meglio nessuna offerta che una che
+                // riporta indietro.
+                .Where(x => CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg).Step == gradinoOfferte)
+                .OrderBy(x => x.Name)
                 .FirstOrDefault();
             if (switchCar != null && !selected.Contains(switchCar.Id, StringComparer.OrdinalIgnoreCase))
             {
@@ -2296,11 +2356,25 @@ public sealed partial class MainForm : Form
         career.Tier = TierForCategory(car.Category);
     }
 
+    /// <summary>
+    /// Un buon piazzamento in una gara su invito puo' far salire di gradino
+    /// nel kart — ma solo dopo aver fatto la gavetta su quello dove si sta.
+    ///
+    /// Senza il conteggio bastava UNA gara chiusa nel primo sessanta per cento
+    /// per passare al gradino sopra: al banco i gradini due e tre venivano
+    /// attraversati in una gara ciascuno e la Formula arrivava nello stesso
+    /// anno del debutto. La gavetta obbligatoria — otto gare sul primo
+    /// gradino, dieci sul secondo, dodici sul terzo — e' la regola su cui
+    /// poggia tutta la scala, ed era gia' stata aggirata da quattro strade
+    /// diverse in passato: questa era la quinta.
+    /// </summary>
     private bool PromoteKartAfterDecentInvitation(int position, int fieldSize)
     {
         if (position <= 0 || fieldSize <= 1 || position > Math.Ceiling(fieldSize * 0.60)) return false;
         var current = CurrentCareerCar();
         if (current == null) return false;
+        var gradinoOra = CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Step;
+        if (RacesOnCurrentStep() < OpportunityGenerator.RacesBeforeStepUp(gradinoOra)) return false;
         var rung = CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Id;
         ContentCarRecord? nextCar = rung switch
         {
@@ -2342,16 +2416,28 @@ public sealed partial class MainForm : Form
         return true;
     }
 
+    /// <summary>
+    /// Il test d'ingresso superato sul quattro tempi.
+    ///
+    /// Spostava subito il pilota sul due tempi: il primo gradino della scala
+    /// veniva attraversato con ZERO gare, prima ancora di aver corso. Un test
+    /// dice che sei pronto a correre, non che hai gia' corso — e il gradino
+    /// successivo si guadagna in pista, come tutti gli altri.
+    ///
+    /// Resta l'annuncio, che e' la parte che serviva: il pilota sa di aver
+    /// passato la prova e sa qual e' il passo dopo.
+    /// </summary>
     private void PromoteFromFourStrokeAfterPassedTest(RookieVerdict verdict)
     {
         if (!verdict.Passed) return;
         var current = CurrentCareerCar();
         if (current == null || CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Id != CareerLadder.FourStroke) return;
         var dap = CarForRung(CareerLadder.TwoStroke);
-        if (dap == null) return;
-        SetCareerCar(dap);
-        career.RookieEvaluationStatus = "Gavetta kart — pronto per le gare due tempi";
-        career.News.Add($"Test 4T superato: {career.Driver} passa a {dap.Name} per le prime gare vere.");
+        career.RookieEvaluationStatus = "Test superato — si comincia a correre sul quattro tempi";
+        var quante = OpportunityGenerator.RacesBeforeStepUp(1);
+        career.News.Add(dap == null
+            ? $"Test superato: {career.Driver} puo' cominciare a correre."
+            : $"Test superato: {career.Driver} comincia dal quattro tempi. Dopo {quante} gare si parlera' di {dap.Name}.");
     }
 
     // Prima di chiedere un giro, la carriera dichiara onestamente il mondo che
@@ -3917,6 +4003,35 @@ public sealed partial class MainForm : Form
         // tempo che deve spostare il debutto del pilota nel loro anno modello.
         return NarrativeCalendar.DefaultSeasonStart;
     }
+    /// <summary>
+    /// La mappa della carriera sui contenuti davvero installati.
+    ///
+    /// La stessa schermata che si vede all'inizio di una carriera, ma
+    /// richiamabile quando si vuole: prima compariva una volta sola e poi non
+    /// si sapeva piu' dove ritrovarla, che e' un problema proprio nel momento
+    /// in cui serve — dopo aver installato auto nuove, per vedere quali
+    /// gradini si sono riempiti e quali restano vuoti.
+    ///
+    /// Rilegge i contenuti prima di mostrarli: aprirla per controllare
+    /// un'installazione appena fatta e vedere i dati vecchi sarebbe peggio
+    /// che non averla.
+    /// </summary>
+    private void OpenCareerMap()
+    {
+        if (BlockIfPending("La mappa della carriera")) return;
+        ReloadContentAndAlignCareer();
+        using var mappa = new InstalledCareerAnalysisDialog(contentIndex, EntryLevelCar(), career.ChosenPath);
+        mappa.ShowDialog(this);
+        // Se da li' il pilota ha dichiarato una strada, la si prende.
+        if (!string.IsNullOrWhiteSpace(mappa.SelectedPath) && !mappa.SelectedPath.Equals(career.ChosenPath, StringComparison.OrdinalIgnoreCase))
+        {
+            career.ChosenPath = mappa.SelectedPath;
+            career.Offers = BuildOffers();
+            SaveCareer();
+        }
+        RefreshUi();
+    }
+
     private void RefreshContents()
     {
         ReloadContentAndAlignCareer();

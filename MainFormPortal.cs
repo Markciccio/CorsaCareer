@@ -856,14 +856,19 @@ public sealed partial class MainForm
 
         var sectionsCard = UiTheme.Card("sezioni del portale", out var sections, UiTheme.Info);
         sectionsCard.Dock = DockStyle.Top;
-        sectionsCard.Height = 216;
+        sectionsCard.Height = 256;
         foreach (var (text, action) in new (string, Action)[]
         {
             ("Calendario e classifica", OpenCalendar),
             ("Paddock e relazioni", OpenPaddock),
             ("Mercato e scouting", OpenMarket),
             ("Giornale e archivio", OpenMedia),
-            ("Dossier tecnico", OpenTechnicalDossier)
+            ("Dossier tecnico", OpenTechnicalDossier),
+            // La mappa dei contenuti si vedeva una volta sola, all'inizio
+            // della carriera, e poi non si sapeva piu' dove ritrovarla —
+            // proprio quando serve di piu', cioe' dopo aver installato auto
+            // nuove e volendo sapere quali gradini si sono riempiti.
+            ("Auto, categorie e carriera possibile", OpenCareerMap)
         })
         {
             var button = UiTheme.SecondaryButton(text);

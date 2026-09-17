@@ -111,7 +111,29 @@ internal static class Anteprime
                 () => new AnimeDialogueDialog(CapetaScenes.Titolo(momento), battute));
         }
 
-        // 4. L'epilogo della carriera.
+        // 4. Le schermate arrivate con l'aggiornamento di Codex: la mappa
+        //    della carriera sui contenuti installati, la scelta dell'auto
+        //    equivalente e lo stacco fra una scena e il portale. Nessuna di
+        //    queste e' mai stata vista da nessuno.
+        var indice = new ContentIndexRecord
+        {
+            AssettoCorsaRoot = AssetPaths.Root,
+            Cars =
+            [
+                new() { Id = "kart_4t", Name = "Kart Rental 4T", Category = "kart", PowerHp = 9, MassKg = 140 },
+                new() { Id = "kart_125", Name = "Kart KZ 125", Category = "kart", PowerHp = 48, MassKg = 165 },
+                new() { Id = "formula_4", Name = "Formula 4", Category = "formula 4", PowerHp = 160, MassKg = 570 },
+                new() { Id = "formula_1", Name = "Formula 1", Category = "formula 1", PowerHp = 1000, MassKg = 798 },
+                new() { Id = "civic", Name = "Civic Type R", Category = "touring", PowerHp = 320, MassKg = 1380 }
+            ]
+        };
+        Scatta("mappa-contenuti", () => new InstalledCareerAnalysisDialog(indice, indice.Cars[0]));
+        Scatta("auto-equivalente", () => new EquivalentCarPickerDialog(
+            indice.Cars, "Formula nazionale", CareerLadder.Rungs.First(x => x.Step == 5)));
+        Scatta("stacco", () => new PortalTransitionOverlay(
+            "Campionato nazionale", "Stagione 4 · dodici gare in calendario"));
+
+        // 5. L'epilogo della carriera.
         Scatta("epilogo", () => new CareerEpilogueDialog(
             CareerEpilogue.Compute(carriera, []),
             "Hai 39 anni e sono 4 stagioni che non vinci. Puoi continuare, ma la domanda è se ha ancora senso.",
