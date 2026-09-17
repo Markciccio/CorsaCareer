@@ -488,7 +488,7 @@ public static class DayActivityCatalog
         },
         new()
         {
-            Id = "haru-gomme", Name = "Haru: produttore di pneumatici", Actor = DayActor.Agent, Hours = 4,
+            Id = "haru-gomme", Name = "Haru: produttore di pneumatici", Actor = DayActor.Agent, Hours = 3,
             Promise = "Probabilità bassa, cifra alta. Una giornata intera per un forse.",
             Outcomes =
             [
@@ -514,6 +514,82 @@ public static class DayActivityCatalog
                 {
                     Line = "Telefonate, caffè, promesse vaghe. Ma qualche porta resta socchiusa.",
                     Effects = [new(DayEffectKind.SportingReputation, 1)]
+                }
+            ]
+        },
+
+        // --- Haru dietro una tastiera
+        //
+        // Il seguito non lo costruisce solo chi corre. Haru non ha una lira e
+        // non sa guidare, ma ha un computer e tutto il pomeriggio: il sito, la
+        // pagina, il profilo sono l'unica cosa che uno sponsor locale riesce a
+        // guardare prima di dire di sì. E sono ore che il pilota non spende.
+        new()
+        {
+            Id = "haru-sito", Name = "Haru: il sito del pilota", Actor = DayActor.Agent, Hours = 2,
+            Promise = "Haru aggiorna il sito: risultati, foto, una pagina per gli sponsor. Cresce il seguito, e chi paga trova qualcosa da leggere.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "«Ho rifatto la home. Ci ho messo tre ore e nessuno se ne accorgerà.» Se ne accorgono in due.",
+                    Weight = 2, Effects = [new(DayEffectKind.Popularity, 1)]
+                },
+                new()
+                {
+                    Line = "«Ho messo la pagina con i risultati in ordine.» Uno sponsor l'ha aperta due volte.",
+                    Weight = 3, Effects = [new(DayEffectKind.Popularity, 2), new(DayEffectKind.SportingReputation, 1)]
+                },
+                new()
+                {
+                    Line = "«Guarda le visite.» Un giornalista locale ha copiato mezza scheda pilota. Male non fa.",
+                    Weight = 1, Effects = [new(DayEffectKind.Popularity, 4), new(DayEffectKind.SportingReputation, 2)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "haru-pagina", Name = "Haru: la pagina Facebook", Actor = DayActor.Agent, Hours = 1,
+            Promise = "Un post con le foto del weekend. Arriva ai genitori, agli amici, ai negozianti del quartiere: sono quelli che poi mettono i soldi.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "«Sei like. Uno è mia madre.» Haru lo dice ridendo, ma ci è rimasto male.",
+                    Weight = 2, Effects = [new(DayEffectKind.Popularity, 1)]
+                },
+                new()
+                {
+                    Line = "Il gommista ha commentato «bravo ragazzo». Haru ha già segnato il nome.",
+                    Weight = 3, Effects = [new(DayEffectKind.Popularity, 2)]
+                },
+                new()
+                {
+                    Line = "Il post è girato per tutto il quartiere. Due negozianti hanno chiesto quanto costa metterci il nome.",
+                    Weight = 1, Effects = [new(DayEffectKind.Popularity, 3), new(DayEffectKind.Money, 150)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "haru-instagram", Name = "Haru: il profilo Instagram", Actor = DayActor.Agent, Hours = 2,
+            Promise = "Haru monta le foto e scrive le didascalie. Non è il pilota a farlo, quindi non costa ore al pilota — ma si vede che non è lui.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "«Ho scritto io la didascalia.» Si capisce. Funziona lo stesso, poco.",
+                    Weight = 3, Effects = [new(DayEffectKind.Popularity, 2)]
+                },
+                new()
+                {
+                    Line = "La foto in controluce sul rettilineo ha girato più di tutte le altre messe insieme.",
+                    Weight = 2, Effects = [new(DayEffectKind.Popularity, 4)]
+                },
+                new()
+                {
+                    Line = "«Ci ha scritto una pagina di motori con ventimila follower.» Haru non dorme da due giorni.",
+                    Weight = 1, Effects = [new(DayEffectKind.Popularity, 6), new(DayEffectKind.SportingReputation, 1)]
                 }
             ]
         }

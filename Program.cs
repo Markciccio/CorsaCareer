@@ -5986,7 +5986,7 @@ public sealed partial class MainForm : Form
     private void OpenDailyAgenda()
     {
         if (BlockIfPending("la giornata del pilota")) return;
-        using var dialog = new DailyAgendaDialog(career, contentIndex, LaunchDailyTrackTraining, () => SaveCareer(createVersionedBackup: false));
+        using var dialog = new DailyAgendaDialog(career, contentIndex, LaunchDailyTrackTraining, () => SaveCareer(createVersionedBackup: false), ShowDayScene);
         dialog.ShowDialog(this);
         SaveCareer(createVersionedBackup: false);
         RefreshUi();

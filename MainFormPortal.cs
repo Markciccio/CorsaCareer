@@ -135,16 +135,15 @@ public sealed partial class MainForm
             button.Click += (_, _) => open();
             flow.Controls.Add(button);
         }
-        // Una voce sola per quello che si fa fra un weekend e l'altro. Prima
-        // c'erano "Agenda e sponsor" e "Sponsor": due schermate per la stessa
-        // attivita, e bisognava ricordarsi in quale stava una cosa.
-        // La giornata del pilota: due agende parallele — la sua e quella di
-        // Haru — e un pulsante per andare a domani. Prende il posto dell'agenda
-        // perche e' la stessa cosa, fatta come si deve.
-        Section("ATTIVITÀ DEL PILOTA", () => OpenDriverDay());
-        // Le sponsorizzazioni sono il lavoro di Haru, non un'attivita del
-        // pilota: sezione separata, giornata separata.
-        Section("SPONSORIZZAZIONI", OpenSponsorDay);
+        // Una giornata, una schermata.
+        //
+        // Qui c'erano «ATTIVITÀ DEL PILOTA» e «SPONSORIZZAZIONI», e nei
+        // riquadri dei parametri ce n'erano altre tre: cinque porte per
+        // decidere come passa un giorno, ognuna con il proprio pezzo di
+        // bilancio delle ore e nessuna che li vedesse tutti. Adesso il giorno
+        // si decide dentro «OGGI», che e' anche il posto dove si vede dove
+        // finiscono le ventiquattro ore.
+        Section("OGGI · LA GIORNATA", OpenDailyAgenda);
         Section("MERCATO E OFFERTE", OpenMarket);
         // I contenuti sono già disponibili nella barra degli strumenti in alto;
         // non duplicare il comando nella barra delle sezioni.
@@ -305,6 +304,36 @@ public sealed partial class MainForm
         budgetPanel.CommunityRequested += (_, _) => OpenDriverDay(DayFocus.Immagine);
         wrapper.Controls.Add(budgetPanel, 0, 0); wrapper.Controls.Add(narrative, 1, 0);
         return wrapper;
+    }
+
+    /// <summary>
+    /// La riga grande al centro della Home.
+    ///
+    /// Diceva «OGGI · GIOVEDÌ 2 GENNAIO 2003», cioe' ripeteva la data che sta
+    /// gia' scritta due righe sotto e che il giocatore ha sempre sott'occhio.
+    /// Al centro dello schermo deve stare la cosa per cui si gioca: il
+    /// prossimo appuntamento in pista, e quanto manca.
+    ///
+    /// Quando non c'e' niente in agenda — ed e' la condizione normale di chi
+    /// deve ancora guadagnarsi un sedile — la riga lo dice, perche' «nessun
+    /// appuntamento» e' un'informazione, non un vuoto.
+    /// </summary>
+    private string TestataDellaGiornata(DateTime oggi)
+    {
+        var prossimo = CareerScheduler.NextPlanned(career.Schedule ?? []);
+        if (prossimo == null)
+            return $"NESSUN APPUNTAMENTO IN AGENDA · {oggi:dddd d MMMM}".ToUpperInvariant();
+
+        var mancano = (prossimo.Date.Date - oggi.Date).Days;
+        var quando = mancano switch
+        {
+            <= 0 => "OGGI",
+            1 => "DOMANI",
+            < 7 => $"FRA {mancano} GIORNI",
+            _ => NarrativeCalendar.Format(prossimo.Date).ToUpperInvariant()
+        };
+        var cosa = prossimo.IsWildCard ? "WILD CARD" : CareerScheduler.KindLabel(prossimo).ToUpperInvariant();
+        return $"{quando} · {cosa} · {CareerScheduler.TrackLabel(prossimo)}".ToUpperInvariant();
     }
 
     /// <summary>
@@ -1149,7 +1178,7 @@ public sealed partial class MainForm
 
         // La data e la situazione sono il punto di riferimento della giornata:
         // devono restare visibili anche quando non c'e' una gara fissata.
-        todayDateLine.Text = $"OGGI · {storyDate:dddd d MMMM yyyy}".ToUpperInvariant();
+        todayDateLine.Text = TestataDellaGiornata(career.StoryDate);
         todayDateLine.Visible = true;
         situationLine.Text = BuildSituationLine();
         situationLine.Visible = true;

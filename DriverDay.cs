@@ -105,6 +105,9 @@ public sealed class DayOutcome
 /// esisteva un modo di guadagnare, allenarsi o farsi conoscere. La giornata
 /// diventa un turno breve — poche decisioni, non venticinque.
 /// </summary>
+/// <summary>Una fetta fissa della giornata, che non si sceglie.</summary>
+public sealed record BloccoFisso(string Nome, int Ore, string Perche);
+
 public sealed class DayPlan
 {
     public DateTime Date { get; set; }
@@ -114,6 +117,15 @@ public sealed class DayPlan
     public int AgentHoursLeft { get; set; } = DriverDay.AgentHours;
     /// <summary>Identificativi delle attività già svolte oggi.</summary>
     public List<string> Done { get; set; } = [];
+
+    /// <summary>
+    /// Quante ore libere aveva questa giornata all'inizio.
+    ///
+    /// Serve a dire «tre su otto» invece del solo numero rimasto: senza, una
+    /// giornata di scuola e una domenica sembravano identiche.
+    /// </summary>
+    public int DriverHoursTotal { get; set; } = DriverDay.DriverHours;
+    public int AgentHoursTotal { get; set; } = DriverDay.AgentHours;
 }
 
 /// <summary>
@@ -125,14 +137,66 @@ public sealed class DayPlan
 /// </summary>
 public static class DriverDay
 {
-    /// <summary>Ore di una giornata del pilota.</summary>
-    public const int DriverHours = 8;
+    /// <summary>
+    /// Le ore libere di una giornata del pilota, e da dove vengono.
+    ///
+    /// Una giornata ha ventiquattro ore e quasi tutte sono gia' impegnate. Il
+    /// programma mostrava soltanto «otto ore disponibili», senza dire otto su
+    /// cosa: sembrava che il ragazzo avesse otto ore di vita al giorno.
+    ///
+    ///   sonno                 9      un ragazzo di dodici anni dorme cosi'
+    ///   pasti e spostamenti   3      casa, scuola, kartodromo, tavola
+    ///   scuola                4      nei giorni feriali, fino ai diciotto anni
+    ///   famiglia e casa       2      nel fine settimana, al posto della scuola
+    ///   ----------------------------------------------------------------
+    ///   libere                8      feriale  ·  10  sabato e domenica
+    ///
+    /// Il fine settimana vale due ore in piu', ed e' giusto che si veda: e' il
+    /// motivo per cui certe cose si fanno di domenica.
+    /// </summary>
+    public const int OreDelGiorno = 24;
+    public const int OreDiSonno = 9;
+    public const int OrePastiESpostamenti = 3;
+    public const int OreDiScuola = 4;
+    public const int OreDiFamiglia = 2;
+
+    /// <summary>Ore libere in un giorno di scuola. E' il riferimento storico del bilanciamento.</summary>
+    public const int DriverHours = OreDelGiorno - OreDiSonno - OrePastiESpostamenti - OreDiScuola;
 
     /// <summary>
-    /// Ore di Haru. Meno del pilota: è una persona che ha anche altro da fare, e
-    /// due o tre visite al giorno sono già molte.
+    /// Ore di Haru.
+    ///
+    /// Erano sei, cioe' un mestiere a tempo pieno. Ma Haru e' un compagno di
+    /// scuola, non un procuratore: la sua giornata e' fatta come quella del
+    /// pilota, e quello che gli resta per girare a cercare chi paga sono due o
+    /// tre ore di pomeriggio. Con sei ore riusciva a fare tre visite al giorno
+    /// e il denaro entrava troppo in fretta perche' la scelta contasse.
     /// </summary>
-    public const int AgentHours = 6;
+    public const int AgentHours = 3;
+
+    /// <summary>
+    /// Come e' fatta la giornata di oggi: le fette fisse, in ordine.
+    ///
+    /// Le somma delle ore fisse piu' quelle libere fa sempre ventiquattro, ed
+    /// e' questo che rende leggibile il bilancio a chi gioca.
+    /// </summary>
+    public static IReadOnlyList<BloccoFisso> BlocchiFissi(DateTime giorno, int eta)
+    {
+        var scuola = eta <= 17 && giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday;
+        var blocchi = new List<BloccoFisso>
+        {
+            new("Sonno", OreDiSonno, "Un ragazzo che cresce e corre dorme, o paga il conto la domenica."),
+            new("Pasti e spostamenti", OrePastiESpostamenti, "Casa, scuola, kartodromo, tavola. Nessuno ti ci porta gratis.")
+        };
+        blocchi.Add(scuola
+            ? new BloccoFisso("Scuola", OreDiScuola, "Obbligatoria. Saltarla costa affidabilita' e seguito.")
+            : new BloccoFisso("Famiglia e casa", OreDiFamiglia, "Il fine settimana non e' tutto tuo, ma quasi."));
+        return blocchi;
+    }
+
+    /// <summary>Le ore che restano davvero da decidere, oggi.</summary>
+    public static int OreLibere(DateTime giorno, int eta) =>
+        OreDelGiorno - BlocchiFissi(giorno, eta).Sum(x => x.Ore);
 
     /// <summary>Oltre questa stanchezza le prestazioni cominciano a calare.</summary>
     public const int TiredThreshold = 60;
@@ -153,7 +217,23 @@ public static class DriverDay
     public static DayPlan EnsureToday(CareerState career)
     {
         if (career.Today == null || career.Today.Date.Date != career.StoryDate.Date)
-            career.Today = new DayPlan { Date = career.StoryDate };
+        {
+            // Le ore libere non sono sempre otto: dipendono da che giorno e' e
+            // da quanti anni ha il pilota. Prima erano una costante, quindi la
+            // domenica valeva quanto un mercoledi' di scuola.
+            var eta = career.BirthYear <= 0 ? 12 : Math.Max(10, career.StoryDate.Year - career.BirthYear);
+            var libere = OreLibere(career.StoryDate, eta);
+            career.Today = new DayPlan
+            {
+                Date = career.StoryDate,
+                DriverHoursLeft = libere, DriverHoursTotal = libere,
+                AgentHoursLeft = AgentHours, AgentHoursTotal = AgentHours
+            };
+        }
+        // Una carriera salvata prima di questo campo lo legge a zero: si
+        // ricostruisce dal residuo, che e' il solo dato che c'era.
+        if (career.Today.DriverHoursTotal <= 0) career.Today.DriverHoursTotal = Math.Max(career.Today.DriverHoursLeft, DriverHours);
+        if (career.Today.AgentHoursTotal <= 0) career.Today.AgentHoursTotal = Math.Max(career.Today.AgentHoursLeft, AgentHours);
         return career.Today;
     }
 

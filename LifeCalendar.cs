@@ -1,6 +1,3 @@
-using System.Drawing;
-using System.Windows.Forms;
-
 namespace CorsaCareer;
 
 /// <summary>Un impegno della vita quotidiana, separato da gare, test e contratti.</summary>
@@ -172,58 +169,4 @@ public static class LifeCalendar
         var cutoff = career.StoryDate.Date.AddDays(-180);
         career.DailyCommitments.RemoveAll(x => x.Date.Date < cutoff && x.Status is "done" or "skipped");
     }
-}
-
-/// <summary>Scelta breve per gli impegni della giornata: niente minigioco.</summary>
-public sealed class DailyAgendaDialog : CareerDialog
-{
-    private readonly CareerState career;
-    private readonly ContentIndexRecord content;
-    private readonly Action launchTraining;
-    private readonly Action save;
-    private readonly FlowLayoutPanel flow = new() { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, Padding = new Padding(28, 18, 28, 18) };
-
-    public DailyAgendaDialog(CareerState career, ContentIndexRecord content, Action launchTraining, Action save)
-    {
-        this.career = career; this.content = content; this.launchTraining = launchTraining; this.save = save;
-        Text = "CorsaCareer — giornata del pilota"; BackColor = UiTheme.Background; ForeColor = UiTheme.TextPrimary;
-        Width = 820; Height = 560;
-        Controls.Add(flow);
-        RefreshItems();
-    }
-
-    private void RefreshItems()
-    {
-        flow.SuspendLayout(); foreach (Control c in flow.Controls) c.Dispose(); flow.Controls.Clear();
-        var date = career.StoryDate.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
-        flow.Controls.Add(Line("OGGI · " + date.ToUpperInvariant(), UiTheme.Kicker, UiTheme.Warning, 720, 0, 8));
-        flow.Controls.Add(Line("Prima di far passare il giorno scegli come affrontare gli impegni della vita quotidiana.", UiTheme.Prose, UiTheme.TextSecondary, 720, 0, 18));
-        foreach (var item in LifeCalendar.Today(career, content)) flow.Controls.Add(Card(item));
-        var close = UiTheme.SecondaryButton("TORNA AL PORTALE"); close.Width = 260; close.Height = 42; close.Click += (_, _) => Close(); flow.Controls.Add(close);
-        flow.ResumeLayout();
-    }
-
-    private Control Card(DailyCommitment item)
-    {
-        var card = new Panel { Width = 720, Height = 124, BackColor = UiTheme.SurfaceRaised, Padding = new Padding(14), Margin = new Padding(0, 0, 0, 12) };
-        card.Controls.Add(Line(item.Status.ToUpperInvariant(), UiTheme.Small, item.Status == "done" ? UiTheme.Positive : item.Status == "skipped" ? UiTheme.Accent : UiTheme.Warning, 150, 548, 0));
-        card.Controls.Add(Line(item.Title, UiTheme.BodyStrong, UiTheme.TextPrimary, 500, 0, 0));
-        card.Controls.Add(Line(item.Detail + (item.TrackName.Length > 0 ? "\nLuogo: " + item.TrackName : ""), UiTheme.Small, UiTheme.TextSecondary, 500, 0, 30));
-        if (item.Status is "planned" or "active")
-        {
-            var action = item.Kind switch { "track-training" => "APRI ALLENAMENTO IN ASSETTO CORSA", "sponsor-visit" => "INCONTRA LO SPONSOR", "fitness" => "ALLENATI", "recovery" => "RIPOSA", _ => "FREQUENTA" };
-            var doIt = UiTheme.PrimaryButton(action); doIt.Width = 330; doIt.Height = 36; doIt.Location = new Point(0, 72);
-            doIt.Click += (_, _) => { if (item.Kind == "track-training") { item.Status = "active"; save(); Close(); launchTraining(); } else { LifeCalendar.Complete(career, item); save(); RefreshItems(); } };
-            var skip = UiTheme.SecondaryButton("SALTA"); skip.Width = 120; skip.Height = 36; skip.Location = new Point(350, 72);
-            skip.Click += (_, _) => { LifeCalendar.Skip(career, item); save(); RefreshItems(); };
-            card.Controls.Add(doIt); card.Controls.Add(skip);
-        }
-        return card;
-    }
-
-    private static Label Line(string text, Font font, Color colour, int width, int x, int y) => new()
-    {
-        Text = text, Font = font, ForeColor = colour, BackColor = Color.Transparent,
-        Width = width, Height = 42, Location = new Point(x, y), AutoEllipsis = true
-    };
 }

@@ -104,18 +104,26 @@ public sealed class BudgetPanel : Panel
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         accountLayout.Controls.Add(new Label { Text = "BUDGET DISPONIBILE", Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = UiTheme.Warning, UseMnemonic = false }, 0, 0);
         accountLayout.Controls.Add(amount, 0, 1);
-        ConfigureActionButton(sponsorAction, "★  SPONSORIZZAZIONI", UiTheme.Info, () => SponsorRequested?.Invoke(this, EventArgs.Empty));
-        accountLayout.Controls.Add(sponsorAction, 0, 2);
+        // I tre riquadri non aprono piu' niente.
+        //
+        // Ognuno portava a una schermata diversa — sponsor, attivita' del
+        // pilota, social — e ognuna mostrava un pezzo del bilancio delle ore
+        // senza vedere gli altri due: dal social non si poteva sapere quante
+        // ore restavano dopo la palestra, perche' la palestra stava altrove.
+        // Adesso la giornata si decide in un posto solo, il sottomenu' OGGI,
+        // e questi riquadri fanno quello che il loro titolo promette: mostrano
+        // un numero.
+        sponsorAction.Visible = false;
         accountLayout.Controls.Add(breakdown, 0, 3);
         account.Controls.Add(accountLayout);
         grid.Controls.Add(account, 0, 0);
         metricGrid = grid;
         tutorialTargets = [account];
 
-        grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "⚡  ATTIVITÀ DEL PILOTA", UiTheme.Positive,
-            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction), 1, 0);
-        grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "★  SOCIAL · PILOTA + AMICI",
-            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction), 2, 0);
+        grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "", UiTheme.Positive,
+            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false), 1, 0);
+        grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "",
+            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false), 2, 0);
         tutorialTargets = [account, grid.GetControlFromPosition(1, 0)!, grid.GetControlFromPosition(2, 0)!];
 
         movements.Font = UiTheme.Small;
