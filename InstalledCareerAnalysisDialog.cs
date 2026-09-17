@@ -92,7 +92,9 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         Controls.Add(sceltaMonoposto);
         Controls.Add(sceltaTurismo);
 
-        choice.Left = 40; choice.Top = 872; choice.Width = 1040;
+        // 940 e non 1040: la riga finiva sotto ai pulsanti in basso a destra e
+        // le scritte si sovrapponevano. Il primo pulsante comincia a 1000.
+        choice.Left = 40; choice.Top = 872; choice.Width = 940;
         Controls.Add(choice);
 
         conferma = new Button

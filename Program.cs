@@ -5029,15 +5029,22 @@ public sealed partial class MainForm : Form
             DateUtc = DateTime.UtcNow, StoryDate = next.Date, Type = "SCHEDULE_UPDATED",
             Headline = headline, Track = string.IsNullOrWhiteSpace(track) ? next.TrackId : track, Importance = 48
         });
-        // Il diario si porta al giorno dell'appuntamento appena fissato: e' li
-        // che il pilota sta guardando, ed e' il modo in cui la carriera respira
-        // fra un impegno e l'altro invece di restare in un giorno unico.
-        if (next.Date > career.StoryDate)
-        {
-            var primaDellaPausa = career.StoryDate;
-            career.StoryDate = next.Date;
-            RecoverForElapsedDays(primaDellaPausa);
-        }
+        // Il diario si ferma al giorno DOPO la prova, non al prossimo
+        // appuntamento.
+        //
+        // Qui saltava direttamente alla data dell'appuntamento appena fissato,
+        // ed era giusto quando fra un impegno e l'altro non c'era niente da
+        // fare: il diario sarebbe rimasto fermo in un giorno unico. Adesso in
+        // mezzo c'e' una vita — la scuola, i libri, la palestra, Haru che gira
+        // a cercare sponsor — e saltarla significa saltare il gioco. Chi
+        // giocava vedeva la carriera correre da un evento in pista all'altro
+        // da sola, due settimane alla volta.
+        //
+        // I giorni si attraversano con «vai a domani» e «vai al prossimo
+        // impegno», che sono li' apposta: e' una scelta di chi gioca quanta
+        // vita vivere fra una gara e l'altra.
+        var domani = career.StoryDate.Date.AddDays(1);
+        if (domani > career.StoryDate && domani <= next.Date) career.StoryDate = domani;
         CareerLog.Info("agenda", $"programmato {next.Kind} dopo la prova {career.EvaluationAttempts} · diario al {career.StoryDate:dd/MM/yyyy}");
     }
 
