@@ -222,28 +222,6 @@ public static class LifeCalendar
             Skip(career, item, automatic: true);
     }
 
-    /// <summary>Testo compatto per Home: orario, durata, obbligo e conseguenza.</summary>
-    public static string ProgramText(CareerState career, ContentIndexRecord content)
-    {
-        var items = Today(career, content).OrderBy(x => x.StartTime).ToList();
-        if (items.Count == 0) return "PROGRAMMA DI OGGI · giornata libera: scegli tu se allenarti, riposare o aiutare Haru.";
-        var lines = new List<string> { "PROGRAMMA DI OGGI" };
-        foreach (var x in items)
-        {
-            var status = x.Status == "done" ? "✓ fatto" : x.Status == "skipped" ? "— saltato" : x.Required ? "OBBLIGATORIO" : "FACOLTATIVO";
-            var consequence = x.Kind switch
-            {
-                "school" => "assenza: affidabilità -2, followers -1",
-                "track-training" => "salto: forma -5, followers -2",
-                "fitness" => "salto: nessuna penalità",
-                "recovery" => "salto: non recuperi energie",
-                _ => "salto: nessuna penalità"
-            };
-            lines.Add($"{x.StartTime} · {x.Title} · {x.Hours}h · {status} · {consequence}");
-        }
-        return string.Join("\n", lines);
-    }
-
     private static void Add(CareerState career, List<DailyCommitment> result, DailyCommitment item)
     {
         if (career.DailyCommitments.Any(x => x.Id.Equals(item.Id, StringComparison.OrdinalIgnoreCase))) return;

@@ -275,6 +275,29 @@ internal static class ContenutiCheck
         log.WriteLine($"  tavole · {discipline.Length * momenti.Length} combinazioni disciplina/momento, {mancanti.Count} senza illustrazione");
         foreach (var riga in mancanti) log.WriteLine($"           manca: {riga}");
 
+        // Ogni attivita' della giornata deve portare alla SUA scena.
+        //
+        // Si preme «16:00-18:00 · PALESTRA», si entra nel fumetto, e il fumetto
+        // deve raccontare la palestra. Quando la tavola non c'e' la scena
+        // ripiega sul ritratto di chi parla: funziona, ma racconta una persona
+        // invece di una cosa fatta, e nessuno se ne accorge finche' non gioca.
+        // Misurarlo qui e' l'unico modo di chiedere le tavole che mancano
+        // sapendo esattamente quali sono.
+        var senzaTavola = new List<string>();
+        var senzaVarianti = new List<string>();
+        foreach (var attivita in DayActivityCatalog.All())
+        {
+            var file = SceneArtwork.ForActivity(attivita.Id);
+            if (file.Length == 0 || !File.Exists(AssetPaths.File(file)))
+                senzaTavola.Add($"{attivita.Id} ({attivita.Name})");
+            if (attivita.Outcomes.Count < 2)
+                senzaVarianti.Add(attivita.Id);
+        }
+        log.WriteLine($"  attivita · {DayActivityCatalog.All().Count} in catalogo, {senzaTavola.Count} senza tavola propria");
+        foreach (var riga in senzaTavola) log.WriteLine($"           manca la tavola: {riga}");
+        if (senzaVarianti.Count > 0)
+            log.WriteLine($"           un solo racconto: {string.Join(", ", senzaVarianti)}");
+
         // E i personaggi senza un ritratto proprio.
         var senzaVolto = CastDirector.Compagnia
             .Where(x => !x.RitrattoBase.StartsWith("character-", StringComparison.OrdinalIgnoreCase))

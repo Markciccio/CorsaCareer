@@ -27,7 +27,32 @@ public static class SceneArtwork
         "haru-officina" => "haru-visita-officina.png",
         "haru-ricambi" => "haru-visita-ferramenta.png",
         "haru-gomme" => "haru-visita-gommista.png",
-        "haru-contatti" => "haru-accordo-stretta-mano-nuovo.png",
+        "haru-contatti" => "anime-haru-telefonata-sponsor-stazione.png",
+        "haru-accompagna" => "haru-accordo-stretta-mano-nuovo.png",
+
+        // Haru dietro una tastiera: il sito, la pagina, il profilo. La tavola e'
+        // la stessa perche' la scena e' la stessa — lui, al computer, di sera.
+        "haru-sito" => "character-haru-senda-anxious-data.png",
+        "haru-pagina" => "character-haru-senda-anxious-data.png",
+        "haru-instagram" => "character-haru-senda-anxious-data.png",
+
+        // Il lavoro d'immagine del pilota.
+        "instagram-allenamento" => "anime-pilota-attivita-social-post.png",
+        "domande-follower" => "activity-pilota-social.png",
+        "youtube" => "anime-pilota-attivita-relazioni-pubbliche.png",
+        "intervista-radio" => "activity-pilota-pr.png",
+
+        // La scuola e gli amici.
+        "scuola-kart" => "scuola-kart.png",
+        "scuola-sae" => "character-sae-kurihara-scuola.png",
+        "scuola-tooru" => "character-tooru-inagaki-scuola.png",
+        "scuola-volantini" => "character-tooru-inagaki-scuola.png",
+
+        // «Scuola» e «Studiare» non hanno una tavola loro: non esiste
+        // un'illustrazione di un'aula ne' di un ragazzo sui libri. Finche' non
+        // c'e', la scena usa il ritratto di chi parla — che funziona, ma e'
+        // meno di quello che queste due meritano, visto che la bocciatura
+        // costa due ore al giorno per un anno.
         _ => ""
     };
 

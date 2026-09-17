@@ -41,8 +41,18 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Sessione completa: collo, core, riflessi. Domani si sentirà.",
-                    Effects = [new(DayEffectKind.Fitness, 6), new(DayEffectKind.Fatigue, 10)]
+                    Line = "Due ore di sala pesi. Nessuno ti guarda, nessuno ti applaude, e domani ti fara' male tutto.",
+                    Effects = [new(DayEffectKind.Fitness, 6), new(DayEffectKind.Fatigue, 12)]
+                },
+                new()
+                {
+                    Line = "Il tizio del bilanciere accanto ti chiede quanti anni hai. Dodici. Non ti crede e ti corregge la schiena.",
+                    Effects = [new(DayEffectKind.Fitness, 6), new(DayEffectKind.Fatigue, 12)]
+                },
+                new()
+                {
+                    Line = "Ultima serie, e le braccia non rispondono piu'. E' esattamente il punto in cui serve farne un'altra.",
+                    Effects = [new(DayEffectKind.Fitness, 6), new(DayEffectKind.Fatigue, 12)]
                 }
             ]
         },
@@ -54,8 +64,18 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Dieci chilometri senza forzare. Il fiato migliora.",
-                    Effects = [new(DayEffectKind.Fitness, 3), new(DayEffectKind.Fatigue, 5)]
+                    Line = "Sei chilometri lungo il fiume. Nessun pensiero per cinquanta minuti, che e' la parte che serve davvero.",
+                    Effects = [new(DayEffectKind.Fitness, 3), new(DayEffectKind.Fatigue, 6)]
+                },
+                new()
+                {
+                    Line = "Parti piano e finisci forte, come ti ha detto Genji di fare anche in gara. Non e' un caso che lo dica per tutte e due le cose.",
+                    Effects = [new(DayEffectKind.Fitness, 3), new(DayEffectKind.Fatigue, 6)]
+                },
+                new()
+                {
+                    Line = "Piove. Corri lo stesso, e per un quarto d'ora ti senti il tipo di persona che corre anche sotto la pioggia.",
+                    Effects = [new(DayEffectKind.Fitness, 3), new(DayEffectKind.Fatigue, 6)]
                 }
             ]
         },
@@ -67,7 +87,17 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Nessun allenamento, nessun impegno. Il corpo si riprende.",
+                    Line = "Due ore a fare niente. Ti sembra tempo buttato finche' non ti alzi e ti accorgi che non lo era.",
+                    Effects = [new(DayEffectKind.Fatigue, -18)]
+                },
+                new()
+                {
+                    Line = "Dormi sul divano con la televisione accesa. Ti sveglia tua madre, e ti dice che russavi.",
+                    Effects = [new(DayEffectKind.Fatigue, -18)]
+                },
+                new()
+                {
+                    Line = "Stai steso a fissare il soffitto e a rifare la curva sette nella testa. Riposo a modo tuo.",
                     Effects = [new(DayEffectKind.Fatigue, -18)]
                 }
             ]
@@ -80,8 +110,18 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Un'ora di lavoro sui muscoli: la schiena smette di tirare.",
-                    Effects = [new(DayEffectKind.Fatigue, -14), new(DayEffectKind.Fitness, 1), new(DayEffectKind.Money, -40)]
+                    Line = "Il fisioterapista ti trova un nodo nella spalla destra e ti chiede se freni sempre con quella. Si', sempre.",
+                    Effects = [new(DayEffectKind.Fatigue, -22), new(DayEffectKind.Fitness, 1)]
+                },
+                new()
+                {
+                    Line = "Un'ora sul lettino. Fa male mentre lo fanno e sta benissimo dopo, come quasi tutto quello che funziona.",
+                    Effects = [new(DayEffectKind.Fatigue, -22), new(DayEffectKind.Fitness, 1)]
+                },
+                new()
+                {
+                    Line = "«Alla tua eta' non dovresti avere questi carichi.» Poi guarda il tuo casco sulla sedia e non dice altro.",
+                    Effects = [new(DayEffectKind.Fatigue, -22), new(DayEffectKind.Fitness, 1)]
                 }
             ]
         },
@@ -368,8 +408,18 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Quattro ore in officina a dare una mano. Pochi soldi, ma sono soldi.",
-                    Effects = [new(DayEffectKind.Money, 70), new(DayEffectKind.Fatigue, 14)]
+                    Line = "Quattro ore a scaricare casse. Centoventi euro, e le mani che sanno di cartone fino a domani.",
+                    Effects = [new(DayEffectKind.Money, 120), new(DayEffectKind.Fatigue, 14)]
+                },
+                new()
+                {
+                    Line = "Turno al magazzino. Il capo ti dice che sei sveglio e ti chiede se vuoi tornare sabato. Forse.",
+                    Effects = [new(DayEffectKind.Money, 120), new(DayEffectKind.Fatigue, 14)]
+                },
+                new()
+                {
+                    Line = "Quattro ore in piedi. Pensavi di pensare alle gare e invece hai pensato solo a quando finiva.",
+                    Effects = [new(DayEffectKind.Money, 120), new(DayEffectKind.Fatigue, 14)]
                 }
             ]
         },
@@ -389,8 +439,18 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Quattro ore di lezione e un panino nel cortile. Per mezza giornata non hai pensato ai tempi.",
-                    Effects = [new(DayEffectKind.Fatigue, -8)]
+                    Line = "Quattro ore di lezione. Due le hai seguite, una l'hai passata a disegnare traiettorie sul quaderno.",
+                    Effects = [new(DayEffectKind.SportingReputation, 1)]
+                },
+                new()
+                {
+                    Line = "Interrogazione a sorpresa. Te la cavi, e ti accorgi che studiare martedi' sera e' servito a qualcosa.",
+                    Effects = [new(DayEffectKind.SportingReputation, 1)]
+                },
+                new()
+                {
+                    Line = "Il professore ti chiede come e' andata domenica. Non se lo ricorda nessun altro in tutta la scuola.",
+                    Effects = [new(DayEffectKind.SportingReputation, 1)]
                 }
             ]
         },
@@ -539,7 +599,17 @@ public static class DayActivityCatalog
             [
                 new()
                 {
-                    Line = "Telefonate, caffè, promesse vaghe. Ma qualche porta resta socchiusa.",
+                    Line = "Telefonate, caffe', promesse vaghe. Ma qualche porta resta socchiusa.",
+                    Effects = [new(DayEffectKind.SportingReputation, 1)]
+                },
+                new()
+                {
+                    Line = "Haru passa il pomeriggio a farsi dare numeri da gente che ne ha altri. Non porta a casa niente, oggi.",
+                    Effects = [new(DayEffectKind.SportingReputation, 1)]
+                },
+                new()
+                {
+                    Line = "«Ho parlato con uno che conosce uno.» Detto da chiunque altro sarebbe niente. Detto da Haru, di solito, e' l'inizio.",
                     Effects = [new(DayEffectKind.SportingReputation, 1)]
                 }
             ]

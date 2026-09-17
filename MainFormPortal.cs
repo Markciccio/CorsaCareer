@@ -317,9 +317,12 @@ public sealed partial class MainForm
         budgetPanel = new BudgetPanel { Dock = DockStyle.Fill, Margin = new Padding(8, 0, 0, 0) };
         // Ogni riquadro apre le proprie attività: dal social non si deve
         // finire a scegliere la palestra.
-        budgetPanel.FitnessRequested += (_, _) => OpenDriverDay(DayFocus.Fisico);
-        budgetPanel.SponsorRequested += (_, _) => OpenSponsorDay();
-        budgetPanel.CommunityRequested += (_, _) => OpenDriverDay(DayFocus.Immagine);
+        // I tre riquadri non aprono piu' niente: i pulsanti che avevano dentro
+        // sono stati tolti e questi tre agganci non potevano piu' scattare.
+        // Restavano come una porta murata dietro cui c'era ancora una stanza —
+        // e una di quelle stanze era la trattativa con gli sponsor, che per
+        // qualche giorno e' stata irraggiungibile da tutto il programma.
+        // Adesso la trattativa sta dove appartiene: nelle fasce di Haru.
         wrapper.Controls.Add(budgetPanel, 0, 0); wrapper.Controls.Add(narrative, 1, 0);
         return wrapper;
     }
@@ -451,39 +454,36 @@ public sealed partial class MainForm
         colonna.Controls.Add(Etichetta(titolo, UiTheme.Kicker,
             chi == DayActor.Agent ? UiTheme.Info : UiTheme.Warning, larghezza - 8));
 
+        // Due fasce della stessa giornata non propongono la stessa cosa: il
+        // pomeriggio deve offrire quattro cose diverse, non quattro volte la
+        // palestra.
+        var gia = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < fasce.Count; i++)
-            colonna.Controls.Add(Fascia(fasce[i], i, occupate, chi, giorno, larghezza - 8));
+            colonna.Controls.Add(Fascia(fasce[i], i, occupate, chi, giorno, larghezza - 8, gia));
         return colonna;
     }
 
     /// <summary>
-    /// Una fascia: fissa, libera o già usata.
+    /// Una fascia: fissa, gia' usata, oppure con dentro una cosa da fare.
+    ///
+    /// Una fascia libera propone UNA cosa, scritta per esteso — «16:00–18:00 ·
+    /// PALESTRA» — e si preme o non si preme. Prima apriva un menu con
+    /// diciassette voci: diciassette decisioni per una fascia, quattro volte al
+    /// giorno, e la giornata diventava un modulo da compilare invece di una
+    /// giornata da vivere. Chi non vuole quello che gli viene offerto oggi va a
+    /// domani, che e' esattamente come funziona una giornata.
+    ///
+    /// La proposta e' deterministica: dipende dal pilota, dal giorno e dalla
+    /// fascia. Riaprendo il portale non cambia, e domani e' un'altra.
     ///
     /// Una fascia usata resta al suo posto e cambia colore invece di sparire:
     /// se sparisse, la giornata si accorcerebbe sotto gli occhi e non si
-    /// capirebbe più che cosa si è scelto di fare. Quello che sparisce è la
-    /// possibilità, non l'ora.
+    /// capirebbe piu' che cosa si e' scelto di fare.
     /// </summary>
     private Control Fascia(FasciaDelGiorno fascia, int indice, List<string> occupate,
-                           DayActor chi, DayPlan giorno, int larghezza)
+                           DayActor chi, DayPlan giorno, int larghezza, HashSet<string> giaProposte)
     {
         var gia = indice < occupate.Count ? occupate[indice] : "";
-
-        // Un impegno gia' fissato occupa la sua fascia.
-        //
-        // Scuola, allenamento in pista, la visita con Haru, il riposo del fine
-        // settimana: sono le cose che il calendario mette in agenda da se', e
-        // hanno un nome e una conseguenza. Con la sola griglia delle fasce
-        // sparivano, e la giornata diventava quattro caselle «scegli» tutte
-        // uguali — che e' meno di quello che c'era prima.
-        if (!fascia.Fissa && chi == DayActor.Driver)
-        {
-            var impegno = LifeCalendar.Today(career, contentIndex)
-                .FirstOrDefault(x => x.Status is "planned" or "active"
-                                     && OraDiInizio(x.StartTime) >= fascia.Dalle
-                                     && OraDiInizio(x.StartTime) < fascia.Alle);
-            if (impegno != null) return Impegno(impegno, fascia, larghezza);
-        }
 
         if (fascia.Fissa)
         {
@@ -503,50 +503,73 @@ public sealed partial class MainForm
             return fatta;
         }
 
-        // Quello che ci sta dentro: un'attività non può durare più della fascia.
-        var possibili = (chi == DayActor.Agent ? DayActivityCatalog.ForAgent() : DayActivityCatalog.ForDriver())
-            .Where(x => x.Hours <= fascia.Ore)
-            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, out _))
-            .ToList();
+        // Un impegno gia' fissato occupa la sua fascia.
+        if (chi == DayActor.Driver)
+        {
+            var impegno = LifeCalendar.Today(career, contentIndex)
+                .FirstOrDefault(x => x.Status is "planned" or "active"
+                                     && OraDiInizio(x.StartTime) >= fascia.Dalle
+                                     && OraDiInizio(x.StartTime) < fascia.Alle);
+            if (impegno != null) return Impegno(impegno, fascia, larghezza);
+        }
 
-        if (possibili.Count == 0)
+        // Haru, quando ha una fascia lunga, va a trattare: e' il suo mestiere,
+        // e la trattativa e' una schermata sua con nomi, cifre e probabilita'.
+        if (chi == DayActor.Agent && fascia.Ore >= 2 && !giaProposte.Contains("trattativa"))
+        {
+            giaProposte.Add("trattativa");
+            var visita = PulsanteDiOggi($"{fascia.Orario} · TRATTATIVA CON UNO SPONSOR", UiTheme.Info, larghezza);
+            oggiTip.SetToolTip(visita, "Haru va a bussare. Si sceglie chi andare a trovare, si vede quanto porterebbe e quanto è probabile, poi si scopre com'è andata.");
+            visita.Click += (_, _) => ApriTrattativa(indice, occupate);
+            return visita;
+        }
+
+        var scelta = Proposta(fascia, indice, chi, giorno, giaProposte);
+        if (scelta == null)
         {
             var vuota = PulsanteDiOggi($"{fascia.Orario} · niente da fare", UiTheme.TextMuted, larghezza);
             vuota.Enabled = false;
             return vuota;
         }
 
-        var libera = PulsanteDiOggi($"{fascia.Orario} · SCEGLI ({possibili.Count})",
-            chi == DayActor.Agent ? UiTheme.Info : UiTheme.TextPrimary, larghezza);
-        oggiTip.SetToolTip(libera, $"{possibili.Count} cose possibili in questa fascia. Premi per vederle.");
-        libera.Click += (_, _) =>
-        {
-            var menu = new ContextMenuStrip
-            {
-                BackColor = UiTheme.SurfaceRaised, ForeColor = UiTheme.TextPrimary,
-                Font = UiTheme.Body, ShowImageMargin = false
-            };
-            foreach (var attivita in possibili)
-            {
-                var voce = new ToolStripMenuItem(
-                    $"{attivita.Name}  ·  {attivita.Hours}h"
-                    + (attivita.Cost > 0 ? $"  ·  € {attivita.Cost:N0}" : ""))
-                {
-                    ToolTipText = attivita.Promise,
-                    BackColor = UiTheme.SurfaceRaised, ForeColor = UiTheme.TextPrimary
-                };
-                var scelta = attivita;
-                voce.Click += (_, _) => EseguiNellaFascia(scelta, indice, occupate);
-                menu.Items.Add(voce);
-            }
-            menu.Show(libera, new Point(0, libera.Height));
-        };
-        return libera;
+        giaProposte.Add(scelta.Id);
+        var testo = $"{fascia.Orario} · {scelta.Name.ToUpperInvariant()}"
+                    + (scelta.Cost > 0 ? $" · € {scelta.Cost:N0}" : "");
+        var b = PulsanteDiOggi(testo, chi == DayActor.Agent ? UiTheme.Info : UiTheme.TextPrimary, larghezza);
+        oggiTip.SetToolTip(b, scelta.Promise
+            + (scelta.IsCertain ? "\nEsito sicuro." : "\nEsito incerto: dipende da chi sei adesso.")
+            + "\n\nSe non ti interessa, lasciala stare e vai a domani.");
+        b.Click += (_, _) => EseguiNellaFascia(scelta, indice, occupate);
+        return b;
     }
 
     /// <summary>
-    /// Svolge un'attività dentro una fascia. Passa dallo stesso motore di tutte
-    /// le altre schermate: ore, denaro ed effetti sono decisi in un posto solo.
+    /// Che cosa propone una fascia libera.
+    ///
+    /// Deterministica: stesso pilota, stesso giorno, stessa fascia, stessa
+    /// proposta. Niente casualita' — riaprendo il portale la giornata deve
+    /// essere quella di prima.
+    /// </summary>
+    private DayActivity? Proposta(FasciaDelGiorno fascia, int indice, DayActor chi, DayPlan giorno,
+                                  HashSet<string> giaProposte)
+    {
+        var possibili = (chi == DayActor.Agent ? DayActivityCatalog.ForAgent() : DayActivityCatalog.ForDriver())
+            .Where(x => x.Hours <= fascia.Ore)
+            .Where(x => !giaProposte.Contains(x.Id))
+            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, out _))
+            .OrderBy(x => x.Id, StringComparer.Ordinal)
+            .ToList();
+        if (possibili.Count == 0) return null;
+        var seme = Math.Abs(StableHash.Of(career.Driver ?? "", career.StoryDate.ToString("yyyyMMdd"), indice, chi.ToString()));
+        return possibili[seme % possibili.Count];
+    }
+
+    /// <summary>
+    /// Fa la cosa che la fascia proponeva, e la fascia si chiude.
+    ///
+    /// Passa dallo stesso motore di tutte le altre schermate: ore, denaro ed
+    /// effetti sono decisi in un posto solo, e questo pannello non ne conosce
+    /// nessuno.
     /// </summary>
     private void EseguiNellaFascia(DayActivity attivita, int indice, List<string> occupate)
     {
@@ -596,6 +619,11 @@ public sealed partial class MainForm
                 LaunchDailyTrackTraining();
                 return;
             }
+            // Andare da uno sponsor vuol dire andarci: si apre la trattativa,
+            // con i suoi nomi e le sue probabilita'. Prima questo impegno
+            // aggiungeva tre punti di interesse in silenzio e si chiudeva, il
+            // che lo rendeva un pulsante da premere senza guardare.
+            if (impegno.Kind == "sponsor-visit") OpenSponsorDay();
             LifeCalendar.Complete(career, impegno);
             SaveCareer(createVersionedBackup: false);
             RefreshUi();
@@ -613,6 +641,29 @@ public sealed partial class MainForm
         };
         riga.Controls.Add(salta);
         return riga;
+    }
+
+    /// <summary>
+    /// Manda Haru a trattare, dentro una fascia della sua giornata.
+    ///
+    /// La fascia si segna solo se qualcosa e' successo davvero: se si apre la
+    /// schermata e si torna indietro senza incontrare nessuno, il pomeriggio
+    /// e' ancora li'. Il metro e' le ore di Haru, che le consuma la schermata
+    /// stessa — non questo metodo, che non deve saperne niente.
+    /// </summary>
+    private void ApriTrattativa(int indice, List<string> occupate)
+    {
+        if (BlockIfPending("le sponsorizzazioni")) return;
+        var prima = DriverDay.EnsureToday(career).AgentHoursLeft;
+        OpenSponsorDay();
+        var dopo = DriverDay.EnsureToday(career).AgentHoursLeft;
+        if (dopo < prima)
+        {
+            while (occupate.Count <= indice) occupate.Add("");
+            occupate[indice] = "Trattativa con uno sponsor";
+            SaveCareer(createVersionedBackup: false);
+        }
+        RefreshUi();
     }
 
     private static Button PulsanteDiOggi(string testo, Color colore, int larghezza)

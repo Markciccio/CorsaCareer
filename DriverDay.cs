@@ -75,8 +75,22 @@ public sealed class DayActivity
     public string Promise { get; init; } = "";
     /// <summary>Gli esiti possibili, dal peggiore al migliore.</summary>
     public List<DayOutcome> Outcomes { get; init; } = [];
-    /// <summary>Vero se l'esito è sempre lo stesso: allenarsi funziona sempre.</summary>
-    public bool IsCertain => Outcomes.Count <= 1;
+    /// <summary>
+    /// Vero se l'esito e' sempre lo stesso: allenarsi funziona sempre.
+    ///
+    /// Si guardano gli EFFETTI, non quante battute ci sono. Contando le
+    /// battute, dare tre modi diversi di raccontare la stessa ora di palestra
+    /// l'avrebbe fatta diventare «esito incerto» agli occhi di chi gioca — cioe'
+    /// una bugia, perche' la palestra funziona sempre allo stesso modo. Il
+    /// racconto puo' variare quanto vuole; e' il risultato che dice se una cosa
+    /// e' una scommessa o no.
+    /// </summary>
+    public bool IsCertain =>
+        Outcomes.Count <= 1
+        || Outcomes.All(x => Uguali(x.Effects, Outcomes[0].Effects));
+
+    private static bool Uguali(List<DayEffect> a, List<DayEffect> b) =>
+        a.Count == b.Count && a.All(x => b.Any(y => y.Kind == x.Kind && y.Amount == x.Amount));
 }
 
 /// <summary>
@@ -167,49 +181,6 @@ public sealed class DayPlan
 public static class DriverDay
 {
     /// <summary>
-    /// Le ore libere di una giornata del pilota, e da dove vengono.
-    ///
-    /// Una giornata ha ventiquattro ore e quasi tutte sono gia' impegnate. Il
-    /// programma mostrava soltanto «otto ore disponibili», senza dire otto su
-    /// cosa: sembrava che il ragazzo avesse otto ore di vita al giorno.
-    ///
-    ///   sonno                 9      un ragazzo di dodici anni dorme cosi'
-    ///   pasti e spostamenti   3      casa, scuola, kartodromo, tavola
-    ///   scuola                4      nei giorni feriali, fino ai diciotto anni
-    ///   famiglia e casa       2      nel fine settimana, al posto della scuola
-    ///   ----------------------------------------------------------------
-    ///   libere                8      feriale  ·  10  sabato e domenica
-    ///
-    /// Il fine settimana vale due ore in piu', ed e' giusto che si veda: e' il
-    /// motivo per cui certe cose si fanno di domenica.
-    /// </summary>
-    public const int OreDelGiorno = 24;
-    public const int OreDiSonno = 9;
-    public const int OrePastiESpostamenti = 3;
-    public const int OreDiScuola = 4;
-    public const int OreDiFamiglia = 2;
-
-    /// <summary>Ore libere in un giorno di scuola. E' il riferimento storico del bilanciamento.</summary>
-    public const int DriverHours = OreDelGiorno - OreDiSonno - OrePastiESpostamenti - OreDiScuola;
-
-    /// <summary>
-    /// Ore di Haru.
-    ///
-    /// Erano sei, cioe' un mestiere a tempo pieno. Ma Haru e' un compagno di
-    /// scuola, non un procuratore: la sua giornata e' fatta come quella del
-    /// pilota, e quello che gli resta per girare a cercare chi paga sono due o
-    /// tre ore di pomeriggio. Con sei ore riusciva a fare tre visite al giorno
-    /// e il denaro entrava troppo in fretta perche' la scelta contasse.
-    /// </summary>
-    public const int AgentHours = 3;
-
-    /// <summary>
-    /// Come e' fatta la giornata di oggi: le fette fisse, in ordine.
-    ///
-    /// Le somma delle ore fisse piu' quelle libere fa sempre ventiquattro, ed
-    /// e' questo che rende leggibile il bilancio a chi gioca.
-    /// </summary>
-    /// <summary>
     /// Le due ore in piu' di scuola di chi ripete l'anno.
     ///
     /// Il recupero pomeridiano non e' una punizione simbolica: sono due ore
@@ -218,38 +189,23 @@ public static class DriverDay
     /// </summary>
     public const int OreDiRecupero = 2;
 
-    public static IReadOnlyList<BloccoFisso> BlocchiFissi(DateTime giorno, int eta, bool ripetente = false)
-    {
-        var feriale = giorno.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday;
-        var scuola = eta <= 17 && feriale;
-        var blocchi = new List<BloccoFisso>
-        {
-            new("Sonno", OreDiSonno, "Un ragazzo che cresce e corre dorme, o paga il conto la domenica.", 23, 8),
-            new("Pasti e spostamenti", OrePastiESpostamenti, "Casa, scuola, kartodromo, tavola. Nessuno ti ci porta gratis.", 12, 14)
-        };
-        if (scuola)
-        {
-            var ore = OreDiScuola + (ripetente ? OreDiRecupero : 0);
-            blocchi.Add(new BloccoFisso("Scuola", ore,
-                ripetente
-                    ? "Obbligatoria, piu' due ore di recupero: stai ripetendo l'anno."
-                    : "Obbligatoria. Saltarla costa affidabilita' e seguito.",
-                8, 8 + ore));
-        }
-        else
-            blocchi.Add(new BloccoFisso("Famiglia e casa", OreDiFamiglia, "Il fine settimana non e' tutto tuo, ma quasi.", 9, 11));
-        return blocchi;
-    }
-
     /// <summary>
-    /// Le ore che restano davvero da decidere, oggi.
+    /// Le ore libere di un giorno di scuola. Resta come riferimento del
+    /// bilanciamento e come ripiego per le carriere salvate prima delle fasce:
+    /// la giornata vera la disegna <see cref="DaySlots"/>.
     ///
-    /// Le danno le fasce, non una sottrazione a parte. Erano due conti
-    /// paralleli — le ventiquattro meno i blocchi fissi da una parte, la somma
-    /// delle fasce dall'altra — e due conti paralleli prima o poi non
-    /// tornano: si sarebbero potute avere ore in tasca e nessuna fascia in cui
-    /// spenderle, o il contrario.
+    /// Qui c'era una seconda descrizione della giornata — ventiquattro ore meno
+    /// sonno, pasti e scuola, con i suoi orari — e non era d'accordo con quella
+    /// delle fasce: la scuola finiva a mezzogiorno di la' e alle tre di qua.
+    /// Due descrizioni della stessa giornata sono sempre una di troppo, e
+    /// quella sbagliata la si scopre solo quando qualcuno ci gioca.
     /// </summary>
+    public const int DriverHours = 8;
+
+    /// <summary>Ore di Haru, come ripiego: le vere gliele danno le sue fasce.</summary>
+    public const int AgentHours = 3;
+
+    /// <summary>Le ore che restano davvero da decidere: le danno le fasce.</summary>
     public static int OreLibere(DateTime giorno, int eta, bool ripetente = false) =>
         DaySlots.Pilota(giorno, eta, ripetente).Where(x => !x.Fissa).Sum(x => x.Ore);
 
@@ -257,14 +213,9 @@ public static class DriverDay
     public static int OreDiHaruOggi(DateTime giorno) =>
         DaySlots.Haru(giorno).Where(x => !x.Fissa).Sum(x => x.Ore);
 
-    /// <summary>
-    /// A che ora comincia il tempo che si decide.
-    ///
-    /// Nei giorni di scuola dopo pranzo; nel fine settimana la mattina, appena
-    /// finite le faccende di casa.
-    /// </summary>
-    public static int PrimaOraLibera(DateTime giorno) =>
-        giorno.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? 11 : 14;
+    /// <summary>A che ora comincia il tempo che si decide: la prima fascia libera.</summary>
+    public static int PrimaOraLibera(DateTime giorno, int eta = 12, bool ripetente = false) =>
+        DaySlots.Pilota(giorno, eta, ripetente).FirstOrDefault(x => !x.Fissa)?.Dalle ?? 14;
 
     /// <summary>Oltre questa stanchezza le prestazioni cominciano a calare.</summary>
     public const int TiredThreshold = 60;
