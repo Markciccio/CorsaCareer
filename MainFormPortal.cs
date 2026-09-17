@@ -469,6 +469,22 @@ public sealed partial class MainForm
     {
         var gia = indice < occupate.Count ? occupate[indice] : "";
 
+        // Un impegno gia' fissato occupa la sua fascia.
+        //
+        // Scuola, allenamento in pista, la visita con Haru, il riposo del fine
+        // settimana: sono le cose che il calendario mette in agenda da se', e
+        // hanno un nome e una conseguenza. Con la sola griglia delle fasce
+        // sparivano, e la giornata diventava quattro caselle «scegli» tutte
+        // uguali — che e' meno di quello che c'era prima.
+        if (!fascia.Fissa && chi == DayActor.Driver)
+        {
+            var impegno = LifeCalendar.Today(career, contentIndex)
+                .FirstOrDefault(x => x.Status is "planned" or "active"
+                                     && OraDiInizio(x.StartTime) >= fascia.Dalle
+                                     && OraDiInizio(x.StartTime) < fascia.Alle);
+            if (impegno != null) return Impegno(impegno, fascia, larghezza);
+        }
+
         if (fascia.Fissa)
         {
             var fisso = PulsanteDiOggi($"{fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.TextMuted, larghezza);
@@ -546,6 +562,57 @@ public sealed partial class MainForm
         SaveCareer(createVersionedBackup: false);
         ShowDayScene(report);
         RefreshUi();
+    }
+
+    /// <summary>L'ora d'inizio di un impegno, letta dall'etichetta «16:00».</summary>
+    private static int OraDiInizio(string orario) =>
+        int.TryParse((orario ?? "").Split(':').FirstOrDefault(), out var ora) ? ora : -1;
+
+    /// <summary>
+    /// Un impegno gia' in agenda dentro la sua fascia: si fa o si salta.
+    ///
+    /// Saltarlo e' una scelta con un prezzo dichiarato, non un'omissione: il
+    /// tasto c'e' perche' rinunciare deve costare qualcosa e deve vedersi.
+    /// </summary>
+    private Control Impegno(DailyCommitment impegno, FasciaDelGiorno fascia, int larghezza)
+    {
+        var riga = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent,
+            Margin = new Padding(0, 0, 0, 5), Padding = new Padding(0)
+        };
+        var fai = PulsanteDiOggi($"{fascia.Orario} · {impegno.Title.ToUpperInvariant()}",
+            impegno.Required ? UiTheme.Warning : UiTheme.TextPrimary, larghezza - 46);
+        fai.Margin = new Padding(0, 0, 4, 0);
+        oggiTip.SetToolTip(fai, impegno.Detail
+            + (impegno.TrackName.Length > 0 ? "\nLuogo: " + impegno.TrackName : ""));
+        fai.Click += (_, _) =>
+        {
+            if (impegno.Kind == "track-training")
+            {
+                impegno.Status = "active";
+                SaveCareer(createVersionedBackup: false);
+                LaunchDailyTrackTraining();
+                return;
+            }
+            LifeCalendar.Complete(career, impegno);
+            SaveCareer(createVersionedBackup: false);
+            RefreshUi();
+        };
+        riga.Controls.Add(fai);
+
+        var salta = PulsanteDiOggi("✕", UiTheme.TextMuted, 38);
+        salta.Margin = new Padding(0);
+        oggiTip.SetToolTip(salta, "Salta questo impegno. Quello che costa è scritto nella carriera, non qui.");
+        salta.Click += (_, _) =>
+        {
+            LifeCalendar.Skip(career, impegno);
+            SaveCareer(createVersionedBackup: false);
+            RefreshUi();
+        };
+        riga.Controls.Add(salta);
+        return riga;
     }
 
     private static Button PulsanteDiOggi(string testo, Color colore, int larghezza)
@@ -2150,7 +2217,17 @@ public sealed partial class MainForm
         var whatFont = new Font(UiTheme.FamilySemibold, 15F, FontStyle.Bold);
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, TodayIconColumnWidth));
-        layout.Controls.Add(StepLine($"OGGI · {today:dddd d MMMM yyyy}".ToUpperInvariant(), dateFont, UiTheme.Warning, textWidth, 0, 4), 0, 0);
+        // Questa scheda parla della pista, non di oggi.
+        //
+        // La prima riga diceva «OGGI · MERCOLEDÌ 1 GENNAIO 2003», cioe' la
+        // stessa data che sta gia' scritta in alto a destra sopra la giornata.
+        // Due volte la stessa cosa, e nessuna delle due diceva di cosa parla la
+        // scheda. L'oggi sta nel pannello della giornata; qui c'e' la pista.
+        layout.Controls.Add(StepLine(
+            next == null ? "NESSUN APPUNTAMENTO IN PISTA"
+            : current ? "OGGI SI SCENDE IN PISTA"
+            : "PROSSIMO APPUNTAMENTO IN PISTA",
+            dateFont, UiTheme.Warning, textWidth, 0, 4), 0, 0);
         layout.Controls.Add(StepLine(cosa, whatFont, UiTheme.TextPrimary, textWidth, 0, 0), 0, 1);
 
         // L'icona riassume a colpo d'occhio il mestiere della giornata senza

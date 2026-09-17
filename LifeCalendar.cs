@@ -28,7 +28,16 @@ public static class LifeCalendar
         var date = career.StoryDate.Date;
         var result = career.DailyCommitments.Where(x => x.Date.Date == date).ToList();
 
-        if (Age(career) <= 17 && date.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday)
+        // La scuola non c'e' nelle feste nazionali.
+        //
+        // Guardava solo il giorno della settimana, quindi mandava a scuola il
+        // giorno di Capodanno — e il pannello della giornata, che il calendario
+        // giapponese lo conosce, mostrava invece il pomeriggio libero. Due
+        // schermate che raccontavano due giornate diverse dello stesso giorno.
+        var giornoDiScuola = date.DayOfWeek is not DayOfWeek.Saturday and not DayOfWeek.Sunday
+                             && CalendarioGiapponese.Festa(date) == null
+                             && !CalendarioGiapponese.PaeseFermo(date);
+        if (Age(career) <= 17 && giornoDiScuola)
             Add(career, result, new DailyCommitment
             {
                 Id = $"school-{date:yyyyMMdd}", Date = date, Kind = "school",
@@ -38,19 +47,28 @@ public static class LifeCalendar
 
         // Un calendario non è una lista di gare: fra i banchi e il box ci sono
         // anche piccoli impegni che rendono il protagonista una persona.
+        // Gli orari sono quelli delle fasce della giornata, non orari inventati.
+        //
+        // Nascevano alle 14:30, alle 17:30, alle 15:30 — cioe' in mezzo a una
+        // fascia o dentro l'orario di scuola — e da quando la giornata e'
+        // divisa in fasce non ci finivano dentro: la colonna del pilota
+        // mostrava solo caselle «scegli» e gli impegni veri sparivano.
         if (date.DayOfWeek == DayOfWeek.Tuesday)
-            Add(career, result, new DailyCommitment { Id = $"sponsor-{date:yyyyMMdd}", Date = date, Kind = "sponsor-visit", Title = "Visita con Haru da uno sponsor", StartTime = "14:30", Hours = 2, Required = false, Detail = "Incontro locale: puoi farlo, rimandarlo senza colpe, oppure lasciare che Haru lavori da solo." });
+            Add(career, result, new DailyCommitment { Id = $"sponsor-{date:yyyyMMdd}", Date = date, Kind = "sponsor-visit", Title = "Visita con Haru da uno sponsor", StartTime = "16:00", Hours = 2, Required = false, Detail = "Incontro locale: puoi farlo, rimandarlo senza colpe, oppure lasciare che Haru lavori da solo." });
         if (date.DayOfWeek is DayOfWeek.Monday or DayOfWeek.Thursday)
-            Add(career, result, new DailyCommitment { Id = $"fitness-{date:yyyyMMdd}", Date = date, Kind = "fitness", Title = "Preparazione fisica", StartTime = "17:30", Hours = 1, Required = false, Detail = "Corsa e core. Facoltativo, ma aiuta a non arrivare scarichi alla gara." });
+            Add(career, result, new DailyCommitment { Id = $"fitness-{date:yyyyMMdd}", Date = date, Kind = "fitness", Title = "Preparazione fisica", StartTime = "18:00", Hours = 2, Required = false, Detail = "Corsa e core. Facoltativo, ma aiuta a non arrivare scarichi alla gara." });
         if (date.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday)
-            Add(career, result, new DailyCommitment { Id = $"recovery-{date:yyyyMMdd}", Date = date, Kind = "recovery", Title = "Riposo e famiglia", StartTime = "16:00", Hours = 2, Required = false, Detail = "Tempo libero e recupero. Puoi saltarlo senza penalità, ma non recupererai energie." });
+            Add(career, result, new DailyCommitment { Id = $"recovery-{date:yyyyMMdd}", Date = date, Kind = "recovery", Title = "Riposo e famiglia", StartTime = "14:00", Hours = 2, Required = false, Detail = "Tempo libero e recupero. Puoi saltarlo senza penalità, ma non recupererai energie." });
 
         var next = CareerScheduler.NextPlanned(career.Schedule ?? []);
         var hasRaceToday = next?.Date.Date == date;
         // Due pomeriggi in pista alla settimana, solo se non rubano il giorno a
         // una gara/test. Il mercoledì è la prima data: il secondo allenamento
         // arriva il venerdì quando il calendario lascia spazio.
-        var trainingDay = date.DayOfWeek is DayOfWeek.Wednesday or DayOfWeek.Friday;
+        // A capodanno e a Ferragosto i circuiti sono chiusi: non si va a
+        // girare, per quanta voglia si abbia.
+        var trainingDay = date.DayOfWeek is DayOfWeek.Wednesday or DayOfWeek.Friday
+                          && !CalendarioGiapponese.PaeseFermo(date);
         if (trainingDay && !hasRaceToday && (next == null || (next.Date.Date - date).Days >= 2))
         {
             var car = content.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase))
@@ -62,7 +80,7 @@ public static class LifeCalendar
                     Add(career, result, new DailyCommitment
                     {
                         Id = $"training-{date:yyyyMMdd}", Date = date, Kind = "track-training",
-                        Title = "Allenamento in pista", StartTime = "15:30", Hours = 3,
+                        Title = "Allenamento in pista", StartTime = "16:00", Hours = 2,
                         Detail = "Sessione libera programmata: va svolta in Assetto Corsa oppure saltata con conseguenze.",
                         TrackId = track.Id, TrackName = track.Name
                     });
