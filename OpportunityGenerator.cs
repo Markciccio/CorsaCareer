@@ -81,6 +81,30 @@ public sealed class OpportunityContext
     public string CurrentCarId { get; set; } = "";
 
     /// <summary>
+    /// Se il pilota sta reggendo il confronto dove corre adesso.
+    ///
+    /// E' la differenza che divide in due il mercato, ed e' il motivo per cui
+    /// esiste questo campo invece di ricalcolare la cosa qui dentro: la
+    /// misura vive in un posto solo, accanto alla classifica vera, e questo
+    /// generatore la riceve gia' fatta.
+    ///
+    /// Chi va bene non viene portato via dal proprio campionato: riceve wild
+    /// card, inviti per una gara sola in un'altra disciplina, e poi torna.
+    /// Chi arriva sempre dietro riceve invece proposte per cambiare aria —
+    /// un'altra disciplina, o un gradino piu' in basso dove ricominciare.
+    /// Senza questa distinzione le due cose arrivavano a tutti e la carriera
+    /// oscillava fra due categorie per anni.
+    /// </summary>
+    public bool AndamentoPositivo { get; set; }
+
+    /// <summary>
+    /// Le wild card gia' corse in questa stagione. Un ospite e' un'eccezione:
+    /// se ne arrivano tre all'anno non e' piu' un'eccezione, e' un secondo
+    /// campionato che si sovrappone a quello vero.
+    /// </summary>
+    public int WildCardsThisSeason { get; set; }
+
+    /// <summary>
     /// Vittorie consecutive fino all'ultima gara. E' il segnale che fa alzare
     /// il telefono a una squadra di un campionato superiore, anche a stagione
     /// in corso: nessuno aspetta la classifica finale per prendersi uno che sta
@@ -280,9 +304,31 @@ public static class OpportunityGenerator
                 if (seat != null) results.Add(seat);
             }
 
-            // --- l'altra disciplina: in cima la scala finisce e comincia la mappa
-            var switchSeat = BuildDisciplineSwitch(context, seed);
-            if (switchSeat != null) results.Add(switchSeat);
+            // --- l'altra disciplina: due strade opposte, e dipende da come si va
+            //
+            // Chi sta andando bene NON viene portato via dal proprio
+            // campionato: riceve una wild card, cioe' un weekend da ospite in
+            // un'altra disciplina, e poi torna al suo sedile. Chi arriva
+            // sempre dietro riceve invece la proposta di cambiare aria per
+            // davvero — un contratto in un'altra disciplina, o, se non regge
+            // piu' nemmeno quel livello, un sedile un gradino piu' in basso.
+            //
+            // Sono mutuamente esclusive per costruzione: la stessa condizione
+            // che apre l'una chiude l'altra. E' quello che rende la carriera
+            // una linea invece di un'oscillazione.
+            if (context.AndamentoPositivo)
+            {
+                var wildCard = BuildWildCard(context, seed);
+                if (wildCard != null) results.Add(wildCard);
+            }
+            else
+            {
+                var switchSeat = BuildDisciplineSwitch(context, seed);
+                if (switchSeat != null) results.Add(switchSeat);
+
+                var ripiego = BuildRelegationSeat(context, seed);
+                if (ripiego != null) results.Add(ripiego);
+            }
 
             // --- sostituzione: solo se i team si fidano davvero, e solo se il
             // pilota e' libero quel fine settimana.
@@ -321,6 +367,13 @@ public static class OpportunityGenerator
             // campionato: cambiare disciplina e' una scelta in piu', non
             // un'alternativa al correre.
             OpportunityKind.DisciplineSwitch => 95,
+            // La wild card sta in mezzo: piu' interessante di una gara
+            // qualunque, perche' e' rara e non costa il sedile, ma sotto a
+            // ogni proposta che riguarda il futuro del pilota.
+            OpportunityKind.WildCard => 75,
+            // Il sedile piu' in basso e' l'ultima porta aperta: si mostra, ma
+            // non deve mai coprire una proposta che tiene il pilota dov'e'.
+            OpportunityKind.RelegationSeat => 20,
             OpportunityKind.PartiallyFundedSeat => 85,
             OpportunityKind.SubstituteDrive => 80,
             OpportunityKind.FundedTest => 70,
@@ -378,7 +431,7 @@ public static class OpportunityGenerator
 
     private static Opportunity? BuildEntryRace(OpportunityContext context, long seed)
     {
-        var track = PickTrack(context, seed, 0);
+        var track = PistaPerLaVettura(context, seed, 0);
         if (track == null) return null;
         var fee = CareerFinances.RaceEntryFee("Rookie");
         return new Opportunity
@@ -569,7 +622,14 @@ public static class OpportunityGenerator
 
     private static Opportunity? BuildInvitationRace(OpportunityContext context, long seed)
     {
-        var track = PickTrack(context, seed, 2);
+        // La pista deve reggere la vettura con cui ci si va.
+        //
+        // Al banco un pilota di Formula 1 ha comprato per sessantamila euro una
+        // gara su invito su un KARTODROMO, e il risultato insufficiente gli ha
+        // fatto programmare un test di recupero su un secondo kartodromo,
+        // sempre con la Formula 1. Il selettore di questo file ordina le piste
+        // per nome e ne prende una: non ha mai saputo niente di categorie.
+        var track = PistaPerLaVettura(context, seed, 2);
         if (track == null) return null;
         var tier = NextTier(context);
         var fee = CareerFinances.RaceEntryFee(tier);
@@ -634,6 +694,10 @@ public static class OpportunityGenerator
     private static Opportunity? BuildDisciplineSwitch(OpportunityContext context, long seed)
     {
         if (context.LadderStep <= 0) return null;
+        // Chi sta andando bene non lo si porta via: riceve una wild card e
+        // torna. Senza questa riga il cambio di disciplina arrivava anche a un
+        // campione del mondo, e la carriera perdeva la sua forma.
+        if (context.AndamentoPositivo) return null;
         var vetta = CareerLadder.PopulatedSteps(context.Cars).LastOrDefault();
         if (vetta <= 0 || context.LadderStep < vetta) return null;
         if (context.RacesAtStep < RacesBeforeDisciplineSwitch) return null;
@@ -678,6 +742,189 @@ public static class OpportunityGenerator
             LikelyReturn = 30000 + context.Reputation.SportingPrestige * 600,
             WorstCaseReturn = 0,
             Objective = $"Reggere il confronto in {serie}, dove nessuno ti deve niente"
+        };
+    }
+
+    /// <summary>Wild card corse in una stagione prima che smetta di essere un'eccezione.</summary>
+    public const int WildCardsPerSeason = 1;
+
+    /// <summary>
+    /// Gare da correre nella propria categoria prima che qualcuno ti inviti
+    /// altrove come ospite. Un ospite si invita perche' ha un nome li' dove
+    /// corre: se e' appena arrivato, quel nome non ce l'ha ancora.
+    /// </summary>
+    public const int RacesBeforeWildCard = 4;
+
+    /// <summary>
+    /// La wild card: una gara sola, ospite, in un'altra disciplina.
+    ///
+    /// E' la risposta alla domanda «cosa succede a un pilota che va forte?».
+    /// Non lo si porta via dal suo campionato: lo si invita per un weekend.
+    /// Villeneuve corre la 24 Ore mentre gioca il mondiale, Rossi va a
+    /// Daytona, Loeb fa Le Mans e il lunedi' e' di nuovo nel suo rally. Il
+    /// sedile resta, il gradino resta, il contratto resta: cambia solo la
+    /// macchina di quel fine settimana.
+    ///
+    /// Arriva SOLO a chi sta andando bene, e una volta l'anno. E' il
+    /// contrario esatto del cambio di disciplina, che e' la proposta che
+    /// riceve chi non sta piu' reggendo: le due cose non possono mai arrivare
+    /// insieme, ed e' per questo che la carriera resta leggibile.
+    ///
+    /// La quota la paga chi invita. Un ospite non e' un pilota pagante: se
+    /// deve comprarsi il posto non e' una wild card, e' una gara su invito —
+    /// che esiste gia' ed e' un'altra cosa.
+    /// </summary>
+    private static Opportunity? BuildWildCard(OpportunityContext context, long seed)
+    {
+        if (!context.AndamentoPositivo) return null;
+        if (context.WildCardsThisSeason >= WildCardsPerSeason) return null;
+        // Nel kart non esistono wild card: si e' ospiti quando si ha un nome,
+        // e il quarto gradino e' dove comincia ad averne uno.
+        if (context.LadderStep < 4) return null;
+        if (context.RacesAtStep < RacesBeforeWildCard) return null;
+        // Qualcuno deve volerti come ospite: o la stampa parla di te, o nel
+        // paddock sanno chi sei. Non basta andare bene in silenzio.
+        if (context.Reputation.SportingPrestige < 55 && context.Reputation.PressStanding < 50) return null;
+
+        var attuale = context.Cars.FirstOrDefault(x => x.Id.Equals(context.CurrentCarId, StringComparison.OrdinalIgnoreCase));
+        if (attuale == null) return null;
+        var stradaAttuale = CareerLadder.ForCar(attuale.Category, attuale.PowerHp, attuale.MassKg).Path;
+
+        // Stesso gradino, altra disciplina: un campione va ospite fra pari,
+        // non a vincere facile una categoria che ha gia' lasciato.
+        var ospiti = context.Cars
+            .Where(ContentCategoryRules.IsRaceable)
+            .Select(x => (Auto: x, Gradino: CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg)))
+            .Where(x => x.Gradino.Step == context.LadderStep && x.Gradino.Path != stradaAttuale)
+            .OrderBy(x => x.Auto.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (ospiti.Count == 0) return null;
+        var scelta = ospiti[(int)(Math.Abs(seed / 13) % ospiti.Count)];
+
+        // La pista deve stare in piedi con la vettura: il selettore generico
+        // di questo file non guarda la categoria, e la prima wild card uscita
+        // dal banco invitava una vettura da durata su un kartodromo. Quello
+        // del calendario filtra per categoria e tiene i kart dove devono
+        // stare.
+        var track = CareerScheduler.PickTrack(context.Tracks, (int)(Math.Abs(seed / 23) % 1_000_003), scelta.Auto.Category);
+        if (track == null) return null;
+
+        var serie = CareerLadder.PathName(scelta.Gradino.Path);
+        var squadra = TeamName(seed + 41, context.Reputation.PressStanding);
+        var mio = string.IsNullOrWhiteSpace(context.Championship) ? "il tuo campionato" : context.Championship;
+
+        // Il motivo per cui ti chiamano cambia ogni volta: e' la parte che
+        // rende la wild card un fatto e non una voce di menu.
+        var motivi = new[]
+        {
+            $"{squadra} porta una vettura in piu' a {track.Name} e la vuole affidare a un nome che la gente riconosce. "
+                + $"Sei in {mio} e stai andando bene: e' esattamente il tipo di pilota che si invita. "
+                + "Una gara, la loro macchina, i loro soldi. Lunedi' sei di nuovo al tuo posto.",
+            $"Gli organizzatori di {track.Name} hanno chiesto a {squadra} di schierare un ospite: vendono biglietti anche cosi'. "
+                + $"Il nome che hanno fatto e' il tuo, e la macchina e' {scelta.Auto.Name} — una cosa che non hai mai guidato. "
+                + "Nessuno si aspetta che tu vinca; tutti guarderanno se ci vai vicino.",
+            $"Un direttore sportivo delle {serie} ti ha visto correre e ha detto una frase sola: «Quello li' lo voglio provare una domenica». "
+                + $"{squadra} ti offre {scelta.Auto.Name} per la gara di {track.Name}. "
+                + "Non e' un contratto e non vuole diventarlo: e' curiosita', ed e' il complimento piu' sincero che gira nel paddock.",
+            $"{squadra} ha un pilota fermo per {track.Name} e due giorni per sostituirlo. "
+                + $"Hanno chiamato te perche' in {mio} stai facendo quello che stai facendo, non perche' eri comodo. "
+                + $"La macchina e' {scelta.Auto.Name}, il weekend e' uno solo, il tuo sedile ti aspetta dov'e'."
+        };
+        var motivo = motivi[(int)(Math.Abs(seed / 17) % motivi.Length)];
+
+        var premio = CareerFinances.RaceEntryFee(scelta.Gradino.Tier);
+        return new Opportunity
+        {
+            Id = $"wildcard-{Stamp(context)}-{scelta.Auto.Id}",
+            Kind = OpportunityKind.WildCard,
+            Title = $"Wild card a {track.Name}: una gara in categoria {serie}",
+            ProposedBy = squadra,
+            Justification = motivo
+                + "\nIl sedile, il gradino e il campionato restano quelli di adesso: questa e' una gara, non un trasferimento.",
+            Tier = scelta.Gradino.Tier,
+            Category = scelta.Auto.Category,
+            CarId = scelta.Auto.Id,
+            TrackId = track.Id,
+            TrackName = track.Name,
+            Date = DataDiGara(context.Today, 30),
+            Deadline = context.Today.AddDays(16),
+            // La paga l'ospitante: e' la condizione che distingue un ospite da
+            // un pilota pagante.
+            Cost = 0,
+            BestCaseReturn = premio * 3,
+            LikelyReturn = premio,
+            WorstCaseReturn = 0,
+            Objective = $"Reggere il confronto fra le {serie} da ospite, su una vettura mai guidata"
+        };
+    }
+
+    /// <summary>
+    /// Il sedile un gradino piu' in basso: la porta che resta aperta.
+    ///
+    /// Per anni questa proposta non e' esistita, e per una buona ragione: un
+    /// sedile piu' basso offerto a chiunque faceva rimbalzare la carriera fra
+    /// due categorie per vent'anni. Ma non esistendo, una carriera poteva solo
+    /// salire o fermarsi, e un pilota che non reggeva piu' il proprio livello
+    /// restava li' a raccogliere ultime posizioni per sempre.
+    ///
+    /// Le condizioni sono strette apposta, e sono tutte sulla stessa cosa: che
+    /// il declino sia reale e prolungato, non una domenica storta. Una
+    /// stagione intera senza punti, e una categoria vissuta abbastanza a lungo
+    /// da poter dire che non ha funzionato. In quel caso qualcuno ti dice la
+    /// verita': «a questo livello non ci stai piu', ma di sotto un posto ce
+    /// l'avresti».
+    ///
+    /// Resta una proposta, e si puo' rifiutare. Nessuno retrocede da solo.
+    /// </summary>
+    private static Opportunity? BuildRelegationSeat(OpportunityContext context, long seed)
+    {
+        if (context.AndamentoPositivo) return null;
+        if (context.LadderStep <= 1) return null;
+        // Il declino deve essere lungo: sotto questa soglia non e' declino,
+        // e' sfortuna.
+        if (context.PointlessStreak < 6) return null;
+        // E deve avere una storia dietro: a un pilota con tre gare in tutto
+        // non si dice che ha fallito una categoria.
+        if (context.RacesAtStep < 8) return null;
+
+        var sotto = context.Cars
+            .Where(ContentCategoryRules.IsRaceable)
+            .Select(x => (Auto: x, Gradino: CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg)))
+            .Where(x => x.Gradino.Step == context.LadderStep - 1)
+            .OrderBy(x => x.Auto.Name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (sotto.Count == 0) return null;
+        // La strada scelta resta: retrocedere non vuol dire cambiare mestiere.
+        var sullaStrada = CareerLadder.OnPath(sotto.Select(x => x.Auto).ToList(), context.ChosenPath);
+        var preferita = sotto.FirstOrDefault(x => sullaStrada.Any(y => y.Id.Equals(x.Auto.Id, StringComparison.OrdinalIgnoreCase)));
+        var scelta = preferita.Auto != null ? preferita : sotto[0];
+
+        var squadra = TeamName(seed + 53, context.Reputation.TeamTrust);
+        var quota = CareerFinances.SeasonEntryFee(scelta.Gradino.Tier) / 2;
+        return new Opportunity
+        {
+            Id = $"ripiego-{Stamp(context)}-{scelta.Auto.Id}",
+            Kind = OpportunityKind.RelegationSeat,
+            Title = $"{scelta.Gradino.Name}: ricominciare da un gradino piu' in basso",
+            ProposedBy = squadra,
+            Justification =
+                $"Sono {context.PointlessStreak} gare che non porti a casa un punto, e nel paddock se ne sono accorti tutti. "
+                + $"{squadra} non ti offre il sedile che avevi: te ne offre uno in {scelta.Gradino.Name}, con {scelta.Auto.Name}. "
+                + "«Li' davanti ci torni vincendo, non restando.» Non e' un complimento e non vuole esserlo."
+                + "\nE' un passo indietro dichiarato: il gradino scende di uno, il campionato si adegua, e quello che hai "
+                + "costruito finora non sparisce — ma da domani corri contro gente che hai gia' battuto anni fa.",
+            Tier = scelta.Gradino.Tier,
+            Category = scelta.Auto.Category,
+            CarId = scelta.Auto.Id,
+            Date = DataDiGara(context.Today, 40),
+            Deadline = context.Today.AddDays(30),
+            Cost = quota,
+            Salary = 0,
+            SeasonRounds = CareerScheduler.RoundsForTier(scelta.Gradino.Tier),
+            BestCaseReturn = quota * 3,
+            LikelyReturn = quota,
+            WorstCaseReturn = 0,
+            Objective = $"Tornare a vincere in {scelta.Gradino.Name} e rifarsi una reputazione"
         };
     }
 
@@ -1170,6 +1417,24 @@ public static class OpportunityGenerator
     {
         var next = ProgressionEngine.NextAvailableTier(context.Tier, context.AvailableTiers);
         return string.IsNullOrWhiteSpace(next) ? context.Tier : next;
+    }
+
+    /// <summary>
+    /// Una pista su cui la vettura attuale ha senso.
+    ///
+    /// <see cref="PickTrack"/> ordina per nome e pesca: va bene quando la
+    /// vettura non c'entra, ma per una gara mandava monoposto sui kartodromi e
+    /// kart sui circuiti permanenti. Il selettore del calendario filtra per
+    /// categoria e, per i kart, preferisce un kartodromo vero.
+    ///
+    /// Se la carriera non ha ancora una vettura si ricade sul selettore
+    /// generico: all'inizio non c'e' niente su cui filtrare.
+    /// </summary>
+    private static ContentTrackRecord? PistaPerLaVettura(OpportunityContext context, long seed, int salt)
+    {
+        var auto = context.Cars.FirstOrDefault(x => x.Id.Equals(context.CurrentCarId, StringComparison.OrdinalIgnoreCase));
+        if (auto == null) return PickTrack(context, seed, salt);
+        return CareerScheduler.PickTrack(context.Tracks, (int)(Math.Abs(seed / 3 + salt * 31) % 1_000_003), auto.Category);
     }
 
     private static ContentTrackRecord? PickTrack(OpportunityContext context, long seed, int salt)

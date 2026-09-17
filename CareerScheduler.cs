@@ -33,6 +33,26 @@ public sealed class ScheduledEvent
     /// <summary>Scuderia/organizzatore che ha proposto l'invito.</summary>
     public string ProposedBy { get; set; } = "";
 
+    /// <summary>
+    /// La vettura di questo appuntamento, quando non e' quella del sedile.
+    ///
+    /// Vuota quasi sempre: si corre con l'auto che si ha. Serve alla wild
+    /// card, che e' una gara da ospite su una macchina di un'altra
+    /// disciplina. Prima l'appuntamento non portava con se' nessuna vettura e
+    /// usava sempre <c>career.Car</c>, quindi un invito a Le Mans si sarebbe
+    /// corso con la Formula 1.
+    ///
+    /// Campo nuovo e facoltativo: le carriere salvate prima lo leggono vuoto
+    /// e si comportano esattamente come prima.
+    /// </summary>
+    public string CarId { get; set; } = "";
+
+    /// <summary>
+    /// Vero se e' una wild card: una gara sola da ospite, fuori dalla propria
+    /// disciplina, che non tocca sedile, gradino ne' contratto.
+    /// </summary>
+    public bool IsWildCard { get; set; }
+
     public bool IsTest => Kind is ScheduledEventKind.EvaluationTest or ScheduledEventKind.ConfirmationTest;
     public bool IsPlanned => Status.Equals(CareerScheduler.StatusPlanned, StringComparison.OrdinalIgnoreCase);
 }

@@ -241,8 +241,9 @@ public sealed partial class MainForm
                     Anomalia("BLOCCO: la sessione preparata non produce nessun referto.");
                     break;
                 }
-                if (career.Races > prima) giorniSenzaGara = 0;
-                RaccontaSessione();
+                var haCorso = career.Races > prima;
+                if (haCorso) giorniSenzaGara = 0;
+                RaccontaSessione(haCorso);
                 continue;
             }
 
@@ -293,9 +294,21 @@ public sealed partial class MainForm
                 // Guardare solo «awaitingResult» faceva scambiare il secondo
                 // caso per una carriera bloccata.
                 var sessioniPrima = career.RaceHistory.Count + career.TestHistory.Count;
+                var garePrima = career.Races;
                 var idAppuntamento = appuntamento.Id;
                 LanciaAppuntamento(appuntamento);
                 var risolta = career.RaceHistory.Count + career.TestHistory.Count > sessioniPrima;
+                // Un appuntamento che si risolve subito, senza passare dal
+                // referto in sospeso, e' comunque una gara corsa.
+                //
+                // Il contatore dei giorni fermi veniva azzerato solo nell'altro
+                // ramo, quello del referto in sospeso: una carriera che correva
+                // regolarmente i propri round veniva segnalata come «270 giorni
+                // senza correre» mentre nel diario, a fianco, c'erano sette
+                // round disputati. L'allarme misurava se stesso, non la
+                // carriera.
+                var haCorsoQui = career.Races > garePrima;
+                if (haCorsoQui) giorniSenzaGara = 0;
                 var chiuso = (career.Schedule ?? []).FirstOrDefault(x => x.Id == idAppuntamento)?.IsPlanned != true;
                 if (!awaitingResult && !risolta && !chiuso)
                 {
@@ -304,7 +317,7 @@ public sealed partial class MainForm
                     // il blocco è già registrato.
                     appuntamento.Status = CareerScheduler.StatusCancelled;
                 }
-                else if (risolta) RaccontaSessione();
+                else if (risolta) RaccontaSessione(haCorsoQui);
                 continue;
             }
 
@@ -373,7 +386,12 @@ public sealed partial class MainForm
         }
         else if (appuntamento.Kind == ScheduledEventKind.Invitation)
         {
-            Riga($"gara su invito · {dove}");
+            // Una wild card e' un invito in agenda ma non e' la stessa cosa:
+            // il banco deve poterle distinguere a colpo d'occhio, perche' una
+            // porta la vettura di qualcun altro e l'altra no.
+            Riga(appuntamento.IsWildCard
+                ? $"wild card · {dove} · auto ospite {appuntamento.CarId}"
+                : $"gara su invito · {dove}");
             LaunchInvitation();
         }
         else
@@ -421,6 +439,14 @@ public sealed partial class MainForm
             OpportunityKind.PaidTest => 60,
             OpportunityKind.EntryRace => 55,
             OpportunityKind.InvitationRace => 50,
+            // La wild card va accettata volentieri: e' gratis, e' una gara
+            // sola e non tocca il sedile. Senza questa riga il banco non
+            // l'avrebbe mai corsa e non avrebbe potuto misurarla.
+            OpportunityKind.WildCard => 75,
+            // Il passo indietro e' l'ultima spiaggia: si accetta solo quando
+            // non c'e' altro, ed e' esattamente cosi' che deve comportarsi
+            // anche chi gioca.
+            OpportunityKind.RelegationSeat => 10,
             OpportunityKind.PromotionalEvent => 40,
             _ => 10
         };
@@ -589,12 +615,26 @@ public sealed partial class MainForm
             simLog.WriteLine($"{career.StoryDate:yyyy-MM-dd}     · avviso: {avvisi[simAvvisiLetti++]}");
     }
 
-    private void RaccontaSessione()
+    /// <summary>
+    /// Che cosa e' appena successo in pista.
+    ///
+    /// Il criterio era la data: si stampava il risultato solo se l'ultima gara
+    /// portava la data di oggi. Ma il diario avanza di un giorno quando la
+    /// sessione si chiude, quindi la data non coincideva quasi mai: su
+    /// quattrocentootto gare corse, il banco ne raccontava trentanove. Tutte le
+    /// altre finivano sul ramo di ripiego e stampavano l'ULTIMO TEST — spesso
+    /// vecchio di anni, con il suo tempo e il suo stato — facendo sembrare che
+    /// un round di campionato avesse prodotto una prova.
+    ///
+    /// Adesso lo dice il chiamante, che ha appena contato le gare prima e dopo:
+    /// e' l'unico che lo sa con certezza.
+    /// </summary>
+    private void RaccontaSessione(bool haCorso)
     {
         var ultima = career.RaceHistory.LastOrDefault();
         var test = career.TestHistory.LastOrDefault();
-        if (ultima != null && ultima.StoryDate.Date == career.StoryDate.Date)
-            Riga($"   → P{ultima.Position} · {ultima.Track} · " +
+        if (haCorso && ultima != null)
+            Riga($"   → P{(ultima.Dnf ? "ritiro" : ultima.Position.ToString())} · {ultima.Track} · {ultima.Car} · " +
                  $"punti {career.Points} · cassa € {career.Cash:N0} · reputazione {career.Reputation}");
         else if (test != null)
             Riga($"   → test: {FormatLap(test.BestLapMilliseconds)} contro {FormatLap(career.EvaluationTargetMilliseconds)} · " +
@@ -732,10 +772,42 @@ public sealed partial class MainForm
         if (career.Cash < 0)
             problemi.Add($"cassa negativa: € {career.Cash:N0}.");
 
-        // 6. Le prove: una per categoria, non un mestiere.
-        var categorieToccate = storico.Select(x => PassoDellaVettura(x.Car)).Where(x => x > 0).Distinct().Count();
-        if (career.TestHistory.Count > categorieToccate + 3)
-            problemi.Add($"{career.TestHistory.Count} prove private per {categorieToccate} categorie: troppe.");
+        // 6. Le prove: una per VETTURA, non un mestiere.
+        //
+        // Il conteggio era per categoria, e misurava una regola che non
+        // esiste. Quella vera e' scritta nel generatore: un test privato si
+        // ha la prima volta che si prende in mano una macchina, ed e' la
+        // giornata in cui le si prendono le misure. Una carriera lunga cambia
+        // vettura molte volte dentro la stessa categoria — un sedile nuovo,
+        // una squadra nuova, un passo indietro e poi il ritorno — quindi
+        // contare per categoria segnalava come eccesso il comportamento
+        // corretto.
+        //
+        // Quello che va sorvegliato e' la prova ripetuta: la stessa macchina
+        // provata due volte significa che la giornata di misure non e'
+        // servita a niente, ed e' esattamente il difetto per cui questo
+        // controllo e' nato — settantasette test in otto anni.
+        // Le prove della valutazione iniziale non contano: quelle si RIPETONO
+        // per costruzione — si riprova finche' non si passa, ed e' l'intero
+        // senso della valutazione rookie. Si riconoscono dalla data: vengono
+        // tutte prima della prima gara della carriera.
+        var primaGara = storico.FirstOrDefault()?.StoryDate ?? DateTime.MaxValue;
+        var proveComprate = career.TestHistory.Where(x => x.StoryDate >= primaGara).ToList();
+        var provePerVettura = proveComprate
+            .GroupBy(x => x.Car ?? "", StringComparer.OrdinalIgnoreCase)
+            .Select(x => (Auto: x.Key, Quante: x.Count()))
+            .Where(x => x.Quante > 1)
+            .OrderByDescending(x => x.Quante)
+            .ToList();
+        if (provePerVettura.Count > 0)
+        {
+            var dettaglio = string.Join(", ", provePerVettura.Take(3).Select(x => $"{x.Auto} x{x.Quante}"));
+            problemi.Add($"prove private ripetute sulla stessa vettura: {dettaglio}.");
+        }
+        // E comunque non possono essere piu' delle vetture guidate.
+        var vettureGuidate = storico.Select(x => x.Car ?? "").Distinct(StringComparer.OrdinalIgnoreCase).Count();
+        if (proveComprate.Count > vettureGuidate)
+            problemi.Add($"{proveComprate.Count} prove private per {vettureGuidate} vetture guidate: troppe.");
 
         // 7. Non si sale ogni anno per diritto: almeno una stagione deve
         //    chiudersi restando dov'era.

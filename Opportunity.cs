@@ -48,7 +48,37 @@ public enum OpportunityKind
     /// esordiente che cambia disciplina ogni tre gare non è Andretti, è una
     /// carriera che oscilla.
     /// </summary>
-    DisciplineSwitch
+    DisciplineSwitch,
+
+    /// <summary>
+    /// Una gara sola in un'altra disciplina, ospite, senza lasciare il sedile.
+    ///
+    /// È l'altra faccia del cambio di disciplina, e serve a chi sta andando
+    /// bene. Un pilota che lotta per il titolo non cambia campionato: ci va a
+    /// correre una gara e torna. Villeneuve alla 24 Ore mentre corre il
+    /// mondiale, Rossi a Daytona — sono wild card, inviti per un weekend.
+    ///
+    /// La differenza con <see cref="DisciplineSwitch"/> è tutta qui: quella è
+    /// un contratto e cambia la carriera, questa è un fine settimana e non
+    /// cambia niente. Auto ospite, gara vera, poi si torna al proprio
+    /// campionato con lo stesso sedile e lo stesso gradino.
+    /// </summary>
+    WildCard,
+
+    /// <summary>
+    /// Un sedile un gradino piu' in basso: il passo indietro dichiarato.
+    ///
+    /// Per molto tempo non e' esistito nessun modo di scendere, ed era una
+    /// difesa: un sedile piu' basso offerto a chiunque faceva rimbalzare la
+    /// carriera fra due categorie per anni. Ma cosi' una carriera poteva solo
+    /// salire o fermarsi, e chi non reggeva piu' il proprio livello restava
+    /// li' a raccogliere ultime posizioni fino al ritiro.
+    ///
+    /// Arriva solo dopo un declino lungo e verificabile, e resta una
+    /// proposta: nessuno retrocede da solo. E' la controparte della wild
+    /// card — una va a chi sta andando bene, l'altro a chi non ci sta piu'.
+    /// </summary>
+    RelegationSeat
 }
 
 /// <summary>
@@ -180,11 +210,27 @@ public sealed class Opportunity
         OpportunityKind.ProfessionalSeat => 60,
         OpportunityKind.ChampionshipStepUp => 90,
         OpportunityKind.DisciplineSwitch => 150,
+        // Pesa come una gara, perche' e' una gara: non muove la carriera, la
+        // arricchisce. Metterla piu' in alto avrebbe fatto sembrare la wild
+        // card una promozione, che e' proprio quello che non e'.
+        OpportunityKind.WildCard => 40,
+        // Un sedile e' un sedile anche quando e' un passo indietro: pesa come
+        // gli altri, perche' impegna una stagione intera.
+        OpportunityKind.RelegationSeat => 45,
         _ => 30
     };
 
-    public bool IsSeat => Kind is OpportunityKind.PayDriverSeat or OpportunityKind.PartiallyFundedSeat or OpportunityKind.ProfessionalSeat or OpportunityKind.ChampionshipStepUp or OpportunityKind.DisciplineSwitch;
-    public bool IsRace => Kind is OpportunityKind.EntryRace or OpportunityKind.InvitationRace or OpportunityKind.SubstituteDrive;
+    public bool IsSeat => Kind is OpportunityKind.PayDriverSeat or OpportunityKind.PartiallyFundedSeat or OpportunityKind.ProfessionalSeat or OpportunityKind.ChampionshipStepUp or OpportunityKind.DisciplineSwitch or OpportunityKind.RelegationSeat;
+    public bool IsRace => Kind is OpportunityKind.EntryRace or OpportunityKind.InvitationRace or OpportunityKind.SubstituteDrive or OpportunityKind.WildCard;
+
+    /// <summary>
+    /// Una gara da ospite: si corre con un'altra vettura e si torna indietro.
+    ///
+    /// Va distinta dalle altre gare in ogni punto che tocca la carriera — la
+    /// vettura del weekend, il conteggio della gavetta, quello che il mercato
+    /// fa dopo il risultato — perche' un ospite non sta cambiando mestiere.
+    /// </summary>
+    public bool IsWildCard => Kind == OpportunityKind.WildCard;
     public bool IsTest => Kind is OpportunityKind.PaidTest or OpportunityKind.FundedTest;
 
     public static string KindLabel(OpportunityKind kind) => kind switch
@@ -199,6 +245,9 @@ public sealed class Opportunity
         OpportunityKind.SubstituteDrive => "Sostituzione",
         OpportunityKind.PromotionalEvent => "Evento promozionale",
         OpportunityKind.ChampionshipStepUp => "Salto di campionato",
+        OpportunityKind.DisciplineSwitch => "Cambio di disciplina",
+        OpportunityKind.WildCard => "Wild card",
+        OpportunityKind.RelegationSeat => "Sedile di categoria inferiore",
         _ => "Proposta di sponsorizzazione"
     };
 

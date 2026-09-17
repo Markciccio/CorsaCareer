@@ -422,6 +422,9 @@ salire di campionato restando nella stessa categoria, e viceversa.
 > «attraversato in 1 gare, senza gavetta» e la carriera arriva in cima anni
 > troppo presto. Chi aggiunge un percorso di promozione **deve** passare da
 > `RacesBeforeStepUp`, e il collaudo va riletto dopo.
+>
+> La settima strada sarebbe stata la wild card, se avesse contato come gara
+> del proprio gradino: per questo `RacesOnCurrentStep()` la esclude.
 
 
 Gare da correre su un gradino prima che arrivi un'offerta per quello sopra:
@@ -439,6 +442,82 @@ Sommate fanno circa 60 gare per arrivare in cima: sei stagioni al banco, dal
 kart del 2005 alla Formula 1 del 2011. È il parametro che decide **quanto ci si
 mette ad arrivare in cima** — non quanto dura la carriera, che ora la decide
 l'età (sotto).
+
+### Chi va bene e chi va male: wild card contro cambio di disciplina
+
+E' la meccanica che da' forma alla carriera dopo il kart, e si regge su **una
+sola misura**, scritta in un posto solo: `StaAndandoBene()` in `Program.cs`.
+
+```
+posizione in classifica <= max(3, iscritti / 2)
+    — e se non c'e' classifica —
+media degli ultimi 6 arrivi validi <= 6.0
+```
+
+Nessun numero inventato: legge `career.Standings` quando esiste e
+`career.RaceHistory` quando non esiste. Il generatore la riceve gia' fatta in
+`OpportunityContext.AndamentoPositivo`.
+
+Da li' il mercato si divide in due rami che **non possono mai arrivare
+insieme** (`OpportunityGenerator.Generate`, ramo `if (context.AndamentoPositivo)`):
+
+**Va bene → `BuildWildCard` (`OpportunityKind.WildCard`).** Un invito per UNA
+gara in un'altra disciplina, da ospite, con la macchina di qualcun altro. Non
+tocca sedile, gradino, contratto ne' campionato: e' Villeneuve che corre la 24
+Ore mentre gioca il mondiale. Condizioni:
+
+| Requisito | Valore |
+|---|---|
+| Gradino minimo | 4 (nel kart non esistono wild card) |
+| Gare sul gradino attuale | `RacesBeforeWildCard = 4` |
+| Prestigio sportivo **o** considerazione stampa | 55 / 50 |
+| Wild card per stagione | `WildCardsPerSeason = 1` |
+| Costo | 0 — **la paga l'ospitante** |
+| Vettura | stesso gradino, `Path` diversa da quella attuale |
+| Pista | `CareerScheduler.PickTrack` filtrata per categoria |
+
+**Va male → `BuildDisciplineSwitch` e `BuildRelegationSeat`.** Il primo e' un
+contratto vero in un'altra disciplina, allo stesso gradino. Il secondo e' il
+**passo indietro dichiarato**: un sedile un gradino sotto, che prima non
+esisteva affatto. Serve un declino lungo e verificabile — `PointlessStreak >= 6`
+e almeno 8 gare sul gradino attuale — e accettandolo scende anche il livello di
+campionato, fino a `ChampionshipLadder.MaxLevelForStep`. Resta una proposta:
+**nessuno retrocede da solo**.
+
+#### Dove si vedono le proposte (schermata nuova)
+
+Portale -> **«Proposte di scuderie e organizzatori»** (`OpenCareerProposals`).
+Mostra tutto cio' che `OpportunityGenerator` produce e che non sia denaro
+puro: sedili, gare su invito, prove, cambi di disciplina, wild card, passi
+indietro.
+
+> Questa schermata **non esisteva**. Le proposte venivano generate, salvate
+> nella carriera e scadevano senza che chi gioca le vedesse mai: l'unica
+> finestra raggiungibile (`SponsorSearchDialog`) mostra soltanto sponsor ed
+> eventi promozionali, e la seconda (`OpenClientRaceChoices`) e' filtrata
+> sulla squadra e sull'auto correnti. Tutto il resto del mercato era
+> visibile solo al banco, che chiama `AcceptOpportunity` direttamente.
+> **Da verificare in pista: e' il primo giro di prova di questa finestra.**
+
+#### Cosa e' cambiato nel formato di salvataggio
+
+`ScheduledEvent` ha due campi nuovi e facoltativi: `CarId` (la vettura del
+weekend, quando non e' quella del sedile) e `IsWildCard`. Le carriere salvate
+prima li leggono vuoti e si comportano esattamente come prima.
+
+`LaunchInvitation` preferisce `invitation.CarId` a `career.Car`, quindi il
+preset di Content Manager, la griglia e il piano di sessione usano davvero la
+macchina ospite. In `MainFormSimulation.ExecuteSimulatedResult` la pista e la
+vettura per tutto cio' che non e' un round di campionato vengono ora dal piano
+archiviato e non dallo stato della carriera: prima una gara su invito veniva
+risolta sulla pista del round successivo.
+
+#### La gavetta non la conta
+
+Nello storico una wild card ha `SessionName = "Wild card"` (costante
+`GaraDaOspite` in `Program.cs`), e `RacesOnCurrentStep()` la salta. Un weekend
+su una GT non e' esperienza della monoposto che si corre tutto l'anno: farla
+valere come tale sarebbe stata la **settima** scorciatoia alla scala.
 
 ### Promozione per conoscenza — `OpportunityGenerator`
 

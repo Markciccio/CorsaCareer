@@ -4631,12 +4631,18 @@ public sealed partial class MainForm : Form
         career.Reputation = reputation.Reputation; career.Races++;
         if (!imported.Dnf && position == 1) career.Wins++;
         if (!imported.Dnf && position <= 3) career.Podiums++;
-        career.Results.Add($"Gara su invito {invitation.TrackName}: {(imported.Dnf ? "ritiro" : $"P{position}")} (nessun punto campionato, premio € {economy.Prize:N0})");
+        career.Results.Add(invitation.IsWildCard
+            ? $"Wild card {invitation.TrackName} con {NomeVettura(imported.Car)}: {(imported.Dnf ? "ritiro" : $"P{position}")} (gara da ospite, nessun punto campionato, premio € {economy.Prize:N0})"
+            : $"Gara su invito {invitation.TrackName}: {(imported.Dnf ? "ritiro" : $"P{position}")} (nessun punto campionato, premio € {economy.Prize:N0})");
         career.RaceHistory.Add(new RaceHistoryEntry
         {
             Season = career.Season, Round = 0, DateUtc = DateTime.UtcNow, StoryDate = invitation.Date,
             Track = imported.Track, Car = imported.Car, Position = position, StartingPosition = imported.StartingPosition,
-            QualificationPosition = imported.QualificationPosition, SessionName = "Gara su invito", Laps = imported.Laps,
+            QualificationPosition = imported.QualificationPosition,
+            // Il nome della sessione e' anche l'etichetta con cui la carriera
+            // ritrova le gare da ospite: la gavetta e il conteggio delle wild
+            // card della stagione si leggono da qui.
+            SessionName = invitation.IsWildCard ? GaraDaOspite : "Gara su invito", Laps = imported.Laps,
             BestLapMilliseconds = imported.BestLapMilliseconds, GapMilliseconds = imported.GapMilliseconds,
             PitStops = imported.PitStops, PenaltySeconds = imported.PenaltySeconds, Damage = imported.Damage,
             Dnf = imported.Dnf, Points = 0, Prize = economy.Prize, PhotoPath = photoPath, ResultFile = resultFile,
@@ -4673,8 +4679,14 @@ public sealed partial class MainForm : Form
         RefreshOpportunities();
         CareerScheduler.Close(career.Schedule, invitation.Id);
         var strongResult = !imported.Dnf && position <= Math.Max(3, (int)Math.Ceiling(fieldSize / 3.0));
-        var kartPromotion = PromoteKartAfterDecentInvitation(position, fieldSize);
-        if (strongResult)
+        // Una wild card non promuove nessuno: si e' ospiti, e il gradino della
+        // propria carriera non si tocca.
+        var kartPromotion = !invitation.IsWildCard && PromoteKartAfterDecentInvitation(position, fieldSize);
+        if (invitation.IsWildCard)
+        {
+            RaccontaWildCard(invitation, imported, position, fieldSize, photoPath);
+        }
+        else if (strongResult)
         {
             career.RookieEvaluationStatus = "Invito sfruttato — mercato interessato";
             if (!career.ContractActive) career.Offers = BuildOffers();
@@ -4727,6 +4739,98 @@ public sealed partial class MainForm : Form
             OpenCareerArticle(career.Events.LastOrDefault(x => x.Type is "INVITATION_BREAKTHROUGH" or "INVITATION_DEBUT" or "INVITATION_SETBACK"));
         }
     }
+    /// <summary>
+    /// Cosa resta di un weekend da ospite.
+    ///
+    /// Tutto quello che una gara su invito fa dopo il risultato — rimettere il
+    /// pilota sul mercato, programmare un test di recupero, riaprire le
+    /// offerte — qui non ha senso: chi corre una wild card un sedile ce l'ha
+    /// gia', e ci torna lunedi'. Quello che resta e' il racconto, e il
+    /// racconto e' diverso a seconda di come e' andata davvero.
+    ///
+    /// I numeri che compaiono sono solo quelli della gara appena corsa.
+    /// </summary>
+    private void RaccontaWildCard(ScheduledEvent invitation, ImportedRaceResult imported, int position, int fieldSize, string photoPath)
+    {
+        var casa = string.IsNullOrWhiteSpace(career.Championship) ? "il suo campionato" : career.Championship;
+        var vettura = NomeVettura(imported.Car);
+        var ospitante = string.IsNullOrWhiteSpace(invitation.ProposedBy) ? "la squadra ospitante" : invitation.ProposedBy;
+        var variante = Math.Abs(StableHash.Of(career.Driver, "wildcard", career.Season, position)) % 3;
+
+        string titolo;
+        int peso;
+        if (imported.Dnf)
+        {
+            titolo = variante switch
+            {
+                0 => $"Wild card a {invitation.TrackName}: {career.Driver} si ferma prima della fine. "
+                     + $"{ospitante} gli aveva affidato {vettura} per un weekend e il weekend e' finito a meta'.",
+                1 => $"Ritiro per {career.Driver} nella sua gara da ospite a {invitation.TrackName}. "
+                     + "Una macchina che non conosceva, una gara sola per conoscerla: non e' bastata.",
+                _ => $"{career.Driver} lascia {invitation.TrackName} senza arrivare in fondo. "
+                     + $"Torna in {casa}, dove sa dove mettere le ruote."
+            };
+            peso = 58;
+        }
+        else if (position == 1)
+        {
+            titolo = variante switch
+            {
+                0 => $"{career.Driver} vince da ospite a {invitation.TrackName}, su {vettura}, contro {Math.Max(0, fieldSize - 1)} piloti che quella macchina la corrono tutto l'anno.",
+                1 => $"Wild card a {invitation.TrackName}: {career.Driver} arriva, sale su {vettura} e vince. {ospitante} non ci aveva davvero sperato.",
+                _ => $"Vittoria da ospite per {career.Driver} a {invitation.TrackName}. In {casa} lo sapevano gia'; adesso lo sa anche il resto del paddock."
+            };
+            peso = 92;
+        }
+        else if (position <= 3)
+        {
+            titolo = variante switch
+            {
+                0 => $"Wild card a {invitation.TrackName}: {career.Driver} chiude P{position} su {fieldSize} con {vettura}, da ospite e alla prima volta.",
+                1 => $"Podio da ospite per {career.Driver} a {invitation.TrackName}: P{position}. Una gara sola per imparare {vettura}, ed e' bastata per stare davanti.",
+                _ => $"{career.Driver} sale sul podio a {invitation.TrackName} in una categoria che non e' la sua. P{position} su {fieldSize}, poi si torna in {casa}."
+            };
+            peso = 84;
+        }
+        else if (position <= Math.Ceiling(fieldSize * 0.5))
+        {
+            titolo = variante switch
+            {
+                0 => $"Wild card a {invitation.TrackName}: P{position} su {fieldSize} per {career.Driver}, nella prima meta' del gruppo con una macchina mai guidata.",
+                1 => $"{career.Driver} chiude P{position} da ospite a {invitation.TrackName}. Nessuno lo aspettava li' davanti, e li' davanti c'e' arrivato.",
+                _ => $"Da ospite a {invitation.TrackName} {career.Driver} finisce P{position} su {fieldSize}: onesto, e {ospitante} lo dice senza giri di parole."
+            };
+            peso = 74;
+        }
+        else
+        {
+            titolo = variante switch
+            {
+                0 => $"Wild card a {invitation.TrackName}: P{position} su {fieldSize}. {vettura} non e' la sua macchina, e in una gara sola non lo e' diventata.",
+                1 => $"{career.Driver} chiude dietro a {invitation.TrackName}, P{position}. Chi corre {vettura} tutto l'anno sa cose che in un weekend non si imparano.",
+                _ => $"Weekend da ospite senza acuti per {career.Driver}: P{position} su {fieldSize} a {invitation.TrackName}. Lunedi' si torna in {casa}, dove la macchina la conosce."
+            };
+            peso = 62;
+        }
+
+        // Lo stato mostrato a schermo deve dire cosa e' appena successo. Senza
+        // questa riga restava quello dell'ultima gara su invito — «mercato
+        // interessato», «serve un test di recupero» — cioe' il linguaggio di
+        // chi sta cercando un sedile, detto a uno che il sedile ce l'ha.
+        career.RookieEvaluationStatus = imported.Dnf
+            ? $"Wild card a {invitation.TrackName}: ritiro. Si torna al proprio campionato."
+            : $"Wild card a {invitation.TrackName}: P{position} su {fieldSize} da ospite. Il sedile resta quello.";
+
+        career.Headline = titolo;
+        career.Events.Add(new CareerEventRecord
+        {
+            DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "WILDCARD",
+            Headline = titolo, Track = imported.Track, Importance = peso,
+            PhotoPath = photoPath, PhotoView = string.IsNullOrWhiteSpace(photoPath) ? "" : PhotoSource.View(photoPath)
+        });
+        CareerLog.Info("carriera", $"wild card chiusa: {invitation.TrackName} · {(imported.Dnf ? "ritiro" : "P" + position)} · auto {imported.Car} · sedile invariato ({career.Car})");
+    }
+
     private void RecordTest(ImportedRaceResult imported, string photoPath, string resultFile)
     {
         career.TestHistory ??= new List<TestSessionRecord>();
@@ -5567,7 +5671,16 @@ public sealed partial class MainForm : Form
             }
         }
         var installedCars = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).Select(x => x.Id).ToArray();
-        var car = installedCars.Contains(career.Car, StringComparer.OrdinalIgnoreCase) ? career.Car : installedCars.FirstOrDefault() ?? "";
+        // La vettura del weekend: quella dell'appuntamento se ne porta una —
+        // e' il caso della wild card, dove si corre da ospite su una macchina
+        // che non e' la propria — altrimenti quella del sedile.
+        var ospite = !string.IsNullOrWhiteSpace(invitation.CarId)
+                     && installedCars.Contains(invitation.CarId, StringComparer.OrdinalIgnoreCase)
+            ? invitation.CarId
+            : "";
+        var car = ospite != ""
+            ? ospite
+            : installedCars.Contains(career.Car, StringComparer.OrdinalIgnoreCase) ? career.Car : installedCars.FirstOrDefault() ?? "";
         var selectedCar = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(car, StringComparison.OrdinalIgnoreCase));
         // Rete di sicurezza: la schermata non offre "corri" senza i soldi, ma
         // questo percorso puo essere raggiunto anche da altrove.
@@ -6097,12 +6210,31 @@ public sealed partial class MainForm : Form
         return Math.Clamp(eta, 10, 80);
     }
 
+    /// <summary>
+    /// Come si chiama nello storico una gara corsa da ospite.
+    ///
+    /// E' l'unico modo che ha la carriera di riconoscerle dopo, ed e' scritto
+    /// qui una volta sola perche' tre punti diversi devono concordare: il
+    /// conteggio delle wild card della stagione, la gavetta sul gradino e
+    /// quello che il diario racconta.
+    /// </summary>
+    private const string GaraDaOspite = "Wild card";
+
+    /// <summary>
+    /// Le gare corse sul gradino attuale: la gavetta.
+    ///
+    /// Le wild card non contano. Sono gare vere e restano nello storico, ma
+    /// sono corse da ospite in un'altra disciplina: un weekend su una GT non
+    /// e' esperienza della monoposto che si corre tutto l'anno, e farlo valere
+    /// come tale avrebbe aperto la sesta scorciatoia alla scala di carriera.
+    /// </summary>
     private int RacesOnCurrentStep()
     {
         var passo = CareerLadder.Current(career, contentIndex.Cars).Step;
         var conto = 0;
         foreach (var gara in career.RaceHistory ?? [])
         {
+            if (gara.SessionName == GaraDaOspite) continue;
             var auto = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(gara.Car, StringComparison.OrdinalIgnoreCase));
             if (auto == null) continue;
             if (CareerLadder.ForCar(auto.Category, auto.PowerHp, auto.MassKg).Step == passo) conto++;
@@ -6142,6 +6274,11 @@ public sealed partial class MainForm : Form
             LadderStep = CareerLadder.Current(career, contentIndex.Cars).Step,
             RacesAtStep = RacesOnCurrentStep(),
             CurrentCarId = career.Car ?? "",
+            // La stessa misura che decide il mercato in ogni altro punto: chi
+            // va bene resta dov'e' e riceve una wild card, chi va male riceve
+            // proposte per cambiare aria. Una definizione sola, letta da tutti.
+            AndamentoPositivo = StaAndandoBene(),
+            WildCardsThisSeason = seasonRaces.Count(x => x.SessionName == GaraDaOspite),
             VittorieDiFila = career.RaceHistory.AsEnumerable().Reverse()
                 .TakeWhile(x => !x.Dnf && x.Position == 1).Count(),
             PodiDiFila = career.RaceHistory.AsEnumerable().Reverse()
@@ -6250,6 +6387,33 @@ public sealed partial class MainForm : Form
     }
 
     /// <summary>
+    /// Le proposte che riguardano la carriera, tutte in una schermata.
+    ///
+    /// Sedili, gare su invito, prove pagate, cambi di disciplina, wild card e
+    /// passi indietro: tutto quello che <c>OpportunityGenerator</c> produce e
+    /// che non sia denaro puro. Restano fuori sponsor ed eventi promozionali,
+    /// che hanno la loro pagina.
+    ///
+    /// Prima questa schermata non esisteva. Le proposte venivano generate,
+    /// salvate nella carriera e scadevano senza che chi giocava le vedesse:
+    /// l'unica finestra raggiungibile mostrava le sole proposte commerciali, e
+    /// una seconda — la rosa delle gare del proprio team — era filtrata sulla
+    /// squadra e sull'auto correnti. Tutto il resto del mercato era visibile
+    /// soltanto al banco di collaudo, che chiama il metodo di accettazione
+    /// senza passare da nessuna finestra.
+    /// </summary>
+    private void OpenCareerProposals()
+    {
+        if (BlockIfPending("le proposte")) return;
+        RefreshOpportunities();
+        using var dialog = new OpportunityDialog(
+            career, AcceptOpportunity, DeclineOpportunity,
+            x => !SponsorSearchDialog.IsCommercial(x.Kind));
+        dialog.ShowDialog(this);
+        SaveCareer(); RefreshUi();
+    }
+
+    /// <summary>
     /// Accetta una proposta: paga il costo, applica le conseguenze e la traduce in
     /// un appuntamento reale in agenda o in un contratto.
     /// </summary>
@@ -6304,7 +6468,15 @@ public sealed partial class MainForm : Form
                 Objective = opportunity.Objective,
                 EntryFee = opportunity.NetCost,
                 EntryFeePaid = true,
-                ProposedBy = opportunity.ProposedBy
+                ProposedBy = opportunity.ProposedBy,
+                // La vettura viaggia con l'appuntamento.
+                //
+                // Finora l'agenda non portava con se' nessuna macchina e la
+                // gara usava sempre quella del sedile: una wild card a Le Mans
+                // si sarebbe corsa con la monoposto di Formula 1. Resta vuota
+                // per tutto il resto, dove si corre con la propria.
+                CarId = opportunity.IsWildCard ? opportunity.CarId : "",
+                IsWildCard = opportunity.IsWildCard
             });
             rounds = ChampionshipRoundsView();
         }
@@ -6350,6 +6522,30 @@ public sealed partial class MainForm : Form
                     career.LivelloPrimaDelSalto = da;
                     career.SquadraPrimaDelSalto = career.Team ?? "";
                     MostraChiamata(opportunity, da);
+                }
+            }
+            // Scendere di categoria porta giu' anche il campionato.
+            //
+            // Il livello di campionato e il gradino della scala sono due cose
+            // diverse, ma non indipendenti: un mondiale non si corre con la
+            // vettura di una categoria nazionale. Accettando un passo
+            // indietro dichiarato, il livello si adegua al gradino — e va
+            // scritto, perche' e' meta' di quello che il pilota ha accettato.
+            if (opportunity.Kind == OpportunityKind.RelegationSeat)
+            {
+                var tetto = ChampionshipLadder.MaxLevelForStep(gradinoSedile);
+                if (tetto < career.ChampionshipLevel)
+                {
+                    var da = career.ChampionshipLevel;
+                    career.ChampionshipLevel = ChampionshipLadder.Clamp(tetto);
+                    var discesa = $"{career.Driver} accetta il sedile di {opportunity.ProposedBy} e scende a «{ChampionshipLadder.Name(career.ChampionshipLevel)}»: un passo indietro deciso da lui, non subito.";
+                    career.News.Add(discesa);
+                    career.Events.Add(new CareerEventRecord
+                    {
+                        DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "CHAMPIONSHIP_STEP_DOWN",
+                        Headline = discesa, Track = ChampionshipLadder.Name(career.ChampionshipLevel), Importance = 80
+                    });
+                    CareerLog.Info("carriera", $"passo indietro accettato: livello {da} → {career.ChampionshipLevel}, gradino {gradinoSedile}");
                 }
             }
             career.Championship = ChampionshipLadder.Name(career.ChampionshipLevel);

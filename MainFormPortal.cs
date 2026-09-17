@@ -856,7 +856,7 @@ public sealed partial class MainForm
 
         var sectionsCard = UiTheme.Card("sezioni del portale", out var sections, UiTheme.Info);
         sectionsCard.Dock = DockStyle.Top;
-        sectionsCard.Height = 256;
+        sectionsCard.Height = 296;
         foreach (var (text, action) in new (string, Action)[]
         {
             ("Calendario e classifica", OpenCalendar),
@@ -868,7 +868,14 @@ public sealed partial class MainForm
             // della carriera, e poi non si sapeva piu' dove ritrovarla —
             // proprio quando serve di piu', cioe' dopo aver installato auto
             // nuove e volendo sapere quali gradini si sono riempiti.
-            ("Auto, categorie e carriera possibile", OpenCareerMap)
+            ("Auto, categorie e carriera possibile", OpenCareerMap),
+            // Le proposte che riguardano la carriera — sedili, gare su
+            // invito, wild card, cambi di disciplina — non avevano NESSUNA
+            // schermata. Il generatore le produceva, la carriera le salvava,
+            // il banco di collaudo le accettava chiamando il metodo
+            // direttamente, e chi giocava non le vedeva mai: l'unica finestra
+            // che esisteva mostrava soltanto sponsor ed eventi promozionali.
+            ("Proposte di scuderie e organizzatori", OpenCareerProposals)
         })
         {
             var button = UiTheme.SecondaryButton(text);

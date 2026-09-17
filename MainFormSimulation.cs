@@ -63,8 +63,22 @@ public sealed partial class MainForm
 
         var isTest = pendingMode.Equals("test", StringComparison.OrdinalIgnoreCase);
         var plan = CurrentSessionPlan(isTest ? "test" : pendingMode);
-        var track = career.Round < rounds.Count ? rounds[career.Round].Track : plan?.Track ?? "";
-        var car = string.IsNullOrWhiteSpace(career.Car) ? plan?.Car ?? "" : career.Car;
+        // Il weekend preparato batte lo stato della carriera.
+        //
+        // Prima la pista veniva dal calendario del campionato e la vettura da
+        // career.Car anche per un invito: una gara su invito veniva risolta
+        // sulla pista del round successivo, e una wild card — che per
+        // definizione si corre con la macchina di qualcun altro — sarebbe
+        // stata risolta con la propria. Il piano archiviato all'avvio dice
+        // esattamente cosa e' stato preparato: per tutto cio' che non e' un
+        // round di campionato, e' lui la fonte.
+        var roundDiCampionato = pendingMode.Equals("race", StringComparison.OrdinalIgnoreCase);
+        var track = roundDiCampionato && career.Round < rounds.Count
+            ? rounds[career.Round].Track
+            : plan?.Track ?? (career.Round < rounds.Count ? rounds[career.Round].Track : "");
+        var car = !roundDiCampionato && !string.IsNullOrWhiteSpace(plan?.Car)
+            ? plan!.Car
+            : string.IsNullOrWhiteSpace(career.Car) ? plan?.Car ?? "" : career.Car;
         var imported = BuildSimulatedResult(isTest, track, car, plan, bias);
 
         pendingSourceKind = ResultProvenance.Simulated;
