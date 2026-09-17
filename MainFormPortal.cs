@@ -34,7 +34,7 @@ public sealed partial class MainForm
     private BudgetPanel budgetPanel = new();
 
     // Colonna azioni.
-    private Button continueStory = new(), launch = new(), briefing = new(), nextSeason = new(), activities = new(), opportunities = new(), simulate = new(), phaseAdvance = new();
+    private Button continueStory = new(), launch = new(), briefing = new(), nextSeason = new(), activities = new(), dailyAgenda = new(), opportunities = new(), simulate = new(), phaseAdvance = new();
     /// <summary>Il comando principale della card «ADESSO», distinto da quello del pannello sezioni.</summary>
     private Button homeContinue = new();
     private Button simulateGood = new(), simulateBad = new();
@@ -851,6 +851,8 @@ public sealed partial class MainForm
         briefing.Click += (_, _) => Briefing();
         activities = UiTheme.SecondaryButton("Agenda");
         activities.Click += (_, _) => OpenActivities();
+        dailyAgenda = UiTheme.SecondaryButton("GIORNATA DEL PILOTA");
+        dailyAgenda.Click += (_, _) => OpenDailyAgenda();
         nextSeason = UiTheme.SecondaryButton("Avanza stagione");
         nextSeason.Click += (_, _) =>
         {
@@ -886,6 +888,7 @@ public sealed partial class MainForm
         weekend.Controls.Add(nextSeason);
         weekend.Controls.Add(phaseAdvance);
         weekend.Controls.Add(opportunities);
+        weekend.Controls.Add(dailyAgenda);
         weekend.Controls.Add(activities);
         weekend.Controls.Add(briefing);
         weekend.Controls.Add(launch);
@@ -1316,6 +1319,9 @@ public sealed partial class MainForm
         for (var i = 0; i < days; i++)
         {
             var day = DriverDay.EnsureToday(career);
+            // Le assenze quotidiane non svaniscono quando si fa scorrere il
+            // calendario: scuola e allenamento vengono registrati come saltati.
+            LifeCalendar.ResolveUnfinished(career, contentIndex);
             career.Today = DayEngine.Advance(career, day);
         }
 
@@ -1362,11 +1368,20 @@ public sealed partial class MainForm
 
     private void RefreshCareerHome()
     {
-        var phase = CareerPhases.Current(career);
+        if (pendingPhase != null)
+        {
+            homeKicker.Text = "TRANSIZIONE DISPONIBILE";
+            homeTitle.Text = "La giornata è archiviata";
+            homeObjective.Text = "La prossima fase della carriera è pronta, ma non parte da sola.\n\nPremi «VAI ALLA FASE SUCCESSIVA» quando vuoi leggere la scena e aprire il nuovo capitolo.";
+        }
+        else
+        {
+            var phase = CareerPhases.Current(career);
+            homeKicker.Text = phase.Flash.ToUpperInvariant();
+            homeTitle.Text = phase.Title;
+            homeObjective.Text = phase.Objective + "\n\n" + phase.Stake;
+        }
         var next = NextScheduled();
-        homeKicker.Text = phase.Flash.ToUpperInvariant();
-        homeTitle.Text = phase.Title;
-        homeObjective.Text = phase.Objective + "\n\n" + phase.Stake;
         RenderStepBriefing(next);
         // Le tavole seguono il passo: quando questo cambia va rifatta la
         // sequenza, altrimenti la Home resta illustrata come il momento
@@ -2179,6 +2194,11 @@ public sealed partial class MainForm
         }
         if (!evaluation) briefing.Enabled = !seasonOver && string.IsNullOrWhiteSpace(missingContent) && scheduled != null;
         activities.Enabled = !awaitingResult;
+        var commitments = LifeCalendar.Today(career, contentIndex);
+        var openCommitments = commitments.Count(x => x.Status is "planned" or "active");
+        dailyAgenda.Enabled = !awaitingResult;
+        dailyAgenda.Text = openCommitments > 0 ? $"GIORNATA DEL PILOTA · {openCommitments} IMPEGNI" : "GIORNATA DEL PILOTA · COMPLETATA";
+        dailyAgenda.ForeColor = openCommitments > 0 ? UiTheme.Warning : UiTheme.Positive;
         if (!evaluation) activities.Text = $"Agenda · {Math.Max(0, career.DaysUntilNextRound)} giorni";
         var openOffers = (career.Opportunities ?? []).Count(x => x.IsOpen);
         var openPromises = (career.Promises ?? []).Count(x => x.IsOpen);

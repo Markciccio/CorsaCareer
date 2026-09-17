@@ -235,6 +235,8 @@ public sealed class CareerState
     /// mancavano.
     /// </summary>
     public DayPlan? Today { get; set; }
+    /// <summary>Scuola e allenamenti fissati fra due appuntamenti sportivi.</summary>
+    public List<DailyCommitment> DailyCommitments { get; set; } = [];
 
     /// <summary>
     /// Le capacita di Haru Senda. Migliorano lavorando, e cambiano l'esito di
@@ -1118,7 +1120,7 @@ public sealed partial class MainForm : Form
             {
                 try { using var pendingDoc = JsonDocument.Parse(File.ReadAllText(pendingPath)); pendingMode = pendingDoc.RootElement.TryGetProperty("mode", out var mode) ? mode.GetString() ?? "race" : "race"; } catch { pendingMode = "race"; }
             }
-            var sessionType = pendingMode.Equals("test", StringComparison.OrdinalIgnoreCase) ? 1 : 3;
+            var sessionType = pendingMode is "test" or "training" ? 1 : 3;
             if (!RaceResultParser.TryParse(json, out var imported, sessionType, career.Driver))
             {
                 var invalidSignature = $"invalid:{File.GetLastWriteTimeUtc(resultFile):O}";
@@ -1197,6 +1199,23 @@ public sealed partial class MainForm : Form
                 { CompletePendingWeekend(); return; }
                 CompletePendingWeekend();
                 RecordSelectionDay(trial, day, imported, archivedResultFile, importedHash, simulated: false);
+                return;
+            }
+            if (pendingMode.Equals("training", StringComparison.OrdinalIgnoreCase))
+            {
+                CompletePendingWeekend();
+                var commitment = LifeCalendar.Today(career, contentIndex)
+                    .FirstOrDefault(x => x.Kind == "track-training" && x.Status == "active");
+                if (commitment != null)
+                {
+                    if (imported.BestLapMilliseconds > 0) LifeCalendar.Complete(career, commitment);
+                    else LifeCalendar.Skip(career, commitment);
+                }
+                SaveCareer(); RefreshUi();
+                CareerMessages.Show(null, imported.BestLapMilliseconds > 0
+                    ? $"Allenamento importato: miglior giro {FormatLap(imported.BestLapMilliseconds)}. Forma +6, nessun risultato di gara assegnato."
+                    : "Allenamento chiuso senza giro valido: resta segnato come saltato.",
+                    "CorsaCareer — allenamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             var alreadyRecorded = pendingMode.Equals("test", StringComparison.OrdinalIgnoreCase)
@@ -1295,6 +1314,16 @@ public sealed partial class MainForm : Form
     private void AbandonPendingSession()
     {
         if (!awaitingResult) return;
+        if (pendingMode.Equals("training", StringComparison.OrdinalIgnoreCase))
+        {
+            var training = LifeCalendar.Today(career, contentIndex).FirstOrDefault(x => x.Kind == "track-training" && x.Status == "active");
+            if (training != null) LifeCalendar.Skip(career, training);
+            try { File.Delete(Path.Combine(saveDir, "pending_weekend.json")); } catch { }
+            awaitingResult = false; pendingMode = ""; pendingResultHash = "";
+            SaveCareer(); RefreshUi();
+            CareerMessages.Show(null, "Allenamento annullato: forma -5 e livello influencer -2.", "CorsaCareer — allenamento", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
         var scheduled = NextScheduled();
         var track = scheduled?.TrackName ?? scheduled?.TrackId ?? "sessione in corso";
         var profile = career.ReputationProfile ??= new ReputationProfile();
@@ -1303,7 +1332,8 @@ public sealed partial class MainForm : Form
         profile.TeamTrust = Math.Clamp(profile.TeamTrust - 5, 0, 100);
         profile.SyncLegacyFields(career);
         career.Fatigue = Math.Clamp(career.Fatigue + 4, 0, 100);
-        if (scheduled != null) RaceChoice.ApplySkip(career, scheduled);
+        // L'abbandono applica già qui un costo esplicito: non sommare anche la
+        // penalità di una gara saltata, altrimenti la stessa scelta colpisce due volte.
         career.Results.Add($"Sessione abbandonata: {track}");
         career.Events.Add(new CareerEventRecord
         {
@@ -5722,6 +5752,56 @@ public sealed partial class MainForm : Form
         using var dialog = new ActivitiesDialog(career, PerformActivity, OpenActivityArticle, OpenSponsorSearch, OpenActivityAnimeScene);
         dialog.ShowDialog(this);
         SaveCareer(); RefreshUi();
+    }
+
+    /// <summary>Scuola e allenamenti mostrati come impegni veri del giorno.</summary>
+    private void OpenDailyAgenda()
+    {
+        if (BlockIfPending("la giornata del pilota")) return;
+        using var dialog = new DailyAgendaDialog(career, contentIndex, LaunchDailyTrackTraining, () => SaveCareer(createVersionedBackup: false));
+        dialog.ShowDialog(this);
+        SaveCareer(createVersionedBackup: false);
+        RefreshUi();
+    }
+
+    /// <summary>
+    /// L'allenamento libero usa Assetto Corsa, ma non è una gara né consuma un
+    /// tentativo di valutazione: al rientro modifica soltanto la condizione.
+    /// </summary>
+    private void LaunchDailyTrackTraining()
+    {
+        if (awaitingResult) return;
+        var commitment = LifeCalendar.Today(career, contentIndex).FirstOrDefault(x => x.Kind == "track-training" && x.Status == "active");
+        if (commitment == null) return;
+        var car = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase))
+                  ?? contentIndex.Cars.FirstOrDefault(ContentCategoryRules.IsRaceable);
+        if (car == null || string.IsNullOrWhiteSpace(commitment.TrackId))
+        {
+            LifeCalendar.Skip(career, commitment); SaveCareer(); RefreshUi(); return;
+        }
+        var plan = BuildSessionPlan(commitment.TrackId, car.Id, mixedGrid: false, testSession: true);
+        var presetJson = ContentManagerPresetBuilder.BuildTest(car.Id, commitment.TrackId, plan);
+        var presetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AcTools Content Manager", "Presets", "Quick Drive");
+        Directory.CreateDirectory(presetDir);
+        var presetPath = Path.Combine(presetDir, $"CorsaCareer - Allenamento {career.StoryDate:yyyyMMdd} {commitment.TrackId}.cmpreset");
+        File.WriteAllText(presetPath, presetJson);
+        if (!ContentManagerPresetValidator.TryValidate(presetPath, out var error))
+        {
+            CareerMessages.Show(null, $"Il preset dell'allenamento non è valido: {error}", "CorsaCareer — allenamento", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        pendingMode = "training"; awaitingResult = true; launchTimeUtc = DateTime.UtcNow;
+        pendingResultHash = HashFile(AssettoCorsaResultLocator.FindLatestExisting());
+        ArchiveSessionPlan(plan, "training", commitment.TrackId, car.Id);
+        File.WriteAllText(Path.Combine(saveDir, "pending_weekend.json"), JsonSerializer.Serialize(new { mode = "training", car = car.Id, track = commitment.TrackId, preset = presetPath, launchUtc = launchTimeUtc, driver = career.Driver, format = plan.FormatLabel }, new JsonSerializerOptions { WriteIndented = true }));
+        var cmPath = LocateContentManager();
+        if (string.IsNullOrWhiteSpace(cmPath))
+        {
+            CareerMessages.Show(null, "Content Manager non è disponibile: l'allenamento resta in agenda.", "CorsaCareer — allenamento", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            return;
+        }
+        try { OpenContentManagerPreset(cmPath, presetPath); RefreshUi(); }
+        catch (Exception ex) { CareerMessages.Show(null, $"Impossibile aprire l'allenamento: {ex.Message}", "CorsaCareer — allenamento", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
 
     /// <summary>

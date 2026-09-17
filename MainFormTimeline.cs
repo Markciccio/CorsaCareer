@@ -46,6 +46,9 @@ public sealed partial class MainForm
         // Una fase nuova non deve aprirsi da sola sopra la Home: resta visibile
         // come azione esplicita, così il giocatore decide quando leggerla.
         pendingPhase = phase;
+        // RefreshUi ha già calcolato i pulsanti prima di arrivare qui: senza
+        // questo aggiornamento il comando comparirebbe solo al clic seguente.
+        RefreshWeekendControls();
         CareerLog.Info("fase", $"fase pronta per la presentazione: «{phase.Title}» ({phase.Id})");
     }
 
