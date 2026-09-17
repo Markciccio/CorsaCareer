@@ -145,6 +145,16 @@ public sealed class DayPlan
     /// </summary>
     public int OraDelPilota { get; set; } = 14;
     public int OraDiHaru { get; set; } = 15;
+
+    /// <summary>
+    /// Che cosa e' stato messo in ogni fascia, nell'ordine delle fasce.
+    ///
+    /// Stringa vuota = fascia ancora libera. Serve a far vedere la giornata
+    /// tutta insieme, con quello che e' gia' stato deciso al suo posto: una
+    /// riga che si riempie invece di un contatore che scende.
+    /// </summary>
+    public List<string> FascePilota { get; set; } = [];
+    public List<string> FasceHaru { get; set; } = [];
 }
 
 /// <summary>
@@ -231,9 +241,21 @@ public static class DriverDay
         return blocchi;
     }
 
-    /// <summary>Le ore che restano davvero da decidere, oggi.</summary>
+    /// <summary>
+    /// Le ore che restano davvero da decidere, oggi.
+    ///
+    /// Le danno le fasce, non una sottrazione a parte. Erano due conti
+    /// paralleli — le ventiquattro meno i blocchi fissi da una parte, la somma
+    /// delle fasce dall'altra — e due conti paralleli prima o poi non
+    /// tornano: si sarebbero potute avere ore in tasca e nessuna fascia in cui
+    /// spenderle, o il contrario.
+    /// </summary>
     public static int OreLibere(DateTime giorno, int eta, bool ripetente = false) =>
-        OreDelGiorno - BlocchiFissi(giorno, eta, ripetente).Sum(x => x.Ore);
+        DaySlots.Pilota(giorno, eta, ripetente).Where(x => !x.Fissa).Sum(x => x.Ore);
+
+    /// <summary>Le ore di Haru, sempre dalle sue fasce.</summary>
+    public static int OreDiHaruOggi(DateTime giorno) =>
+        DaySlots.Haru(giorno).Where(x => !x.Fissa).Sum(x => x.Ore);
 
     /// <summary>
     /// A che ora comincia il tempo che si decide.
@@ -274,14 +296,25 @@ public static class DriverDay
             {
                 Date = career.StoryDate,
                 DriverHoursLeft = libere, DriverHoursTotal = libere,
-                AgentHoursLeft = AgentHours, AgentHoursTotal = AgentHours,
-                OraDelPilota = prima, OraDiHaru = prima + 1
+                AgentHoursLeft = OreDiHaruOggi(career.StoryDate), AgentHoursTotal = OreDiHaruOggi(career.StoryDate),
+                OraDelPilota = prima, OraDiHaru = prima + 1,
+                FascePilota = [.. DaySlots.Pilota(career.StoryDate, eta, career.RepeatingYear).Select(_ => "")],
+                FasceHaru = [.. DaySlots.Haru(career.StoryDate).Select(_ => "")]
             };
         }
         // Una carriera salvata prima di questo campo lo legge a zero: si
         // ricostruisce dal residuo, che e' il solo dato che c'era.
         if (career.Today.DriverHoursTotal <= 0) career.Today.DriverHoursTotal = Math.Max(career.Today.DriverHoursLeft, DriverHours);
         if (career.Today.AgentHoursTotal <= 0) career.Today.AgentHoursTotal = Math.Max(career.Today.AgentHoursLeft, AgentHours);
+        // Le carriere salvate prima delle fasce hanno le liste vuote: si
+        // riempiono di fasce libere, senza perdere le ore gia' spese.
+        var etaOra = career.BirthYear <= 0 ? 12 : Math.Max(10, career.StoryDate.Year - career.BirthYear);
+        var quantePilota = DaySlots.Pilota(career.StoryDate, etaOra, career.RepeatingYear).Count;
+        var quanteHaru = DaySlots.Haru(career.StoryDate).Count;
+        career.Today.FascePilota ??= [];
+        career.Today.FasceHaru ??= [];
+        while (career.Today.FascePilota.Count < quantePilota) career.Today.FascePilota.Add("");
+        while (career.Today.FasceHaru.Count < quanteHaru) career.Today.FasceHaru.Add("");
         return career.Today;
     }
 

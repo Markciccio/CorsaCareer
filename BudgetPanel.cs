@@ -161,34 +161,38 @@ public sealed class BudgetPanel : Panel
     /// Un simbolo si riconosce prima di leggere, ed e' tutto quello che serve
     /// a un cruscotto.
     /// </summary>
+    /// <summary>
+    /// L'intestazione di un riquadro: l'icona e il titolo.
+    ///
+    /// Un controllo solo, con l'immagine dentro l'etichetta. La prima versione
+    /// metteva icona e testo in due celle di una tabella annidata, e in una
+    /// riga alta ventidue pixel il titolo spariva del tutto: restava un
+    /// frammento d'icona e un riquadro senza nome. Un'etichetta con la sua
+    /// immagine non ha niente da impaginare e non puo' rompersi cosi'.
+    /// </summary>
     private static Control Intestazione(string titolo, string fileIcona, Color accento)
     {
-        var riga = new TableLayoutPanel
-        {
-            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
-            BackColor = Color.Transparent, Margin = new Padding(0), Padding = new Padding(0)
-        };
-        riga.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 22));
-        riga.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-
-        var icona = new PictureBox
-        {
-            Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom,
-            BackColor = Color.Transparent, Margin = new Padding(0, 1, 6, 1)
-        };
-        // L'icona e' un di piu': se il file non c'e', resta il titolo e il
-        // riquadro funziona esattamente come prima.
-        var percorso = AssetPaths.File("ui-icons", fileIcona);
-        try { if (System.IO.File.Exists(percorso)) icona.Image = Image.FromFile(percorso); }
-        catch { }
-
-        riga.Controls.Add(icona, 0, 0);
-        riga.Controls.Add(new Label
+        var etichetta = new Label
         {
             Text = titolo, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accento,
-            AutoEllipsis = true, UseMnemonic = false, TextAlign = ContentAlignment.MiddleLeft
-        }, 1, 0);
-        return riga;
+            AutoEllipsis = true, UseMnemonic = false,
+            TextAlign = ContentAlignment.MiddleLeft, ImageAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(0), BackColor = Color.Transparent
+        };
+        // L'icona e' un di piu': se il file non c'e' o non si apre, resta il
+        // titolo e il riquadro funziona esattamente come prima.
+        try
+        {
+            var percorso = AssetPaths.File("ui-icons", fileIcona);
+            if (System.IO.File.Exists(percorso))
+            {
+                using var originale = Image.FromFile(percorso);
+                etichetta.Image = new Bitmap(originale, new Size(16, 16));
+                etichetta.Padding = new Padding(20, 0, 0, 0);
+            }
+        }
+        catch { }
+        return etichetta;
     }
 
     private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true, string icona = "")

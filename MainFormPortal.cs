@@ -375,18 +375,18 @@ public sealed partial class MainForm
         evento.IsWildCard ? "Wild card" : CareerScheduler.KindLabel(evento);
 
     /// <summary>
-    /// Ricostruisce il pannello «OGGI»: le ore della giornata, gli impegni con
-    /// un orario e i pulsanti per spendere le ore libere.
+    /// Ricostruisce il pannello «OGGI»: la giornata divisa in fasce, su due
+    /// colonne — il pilota e Haru.
     ///
-    /// E' la parte con cui si gioca fra un weekend e l'altro, e fino a ieri era
-    /// un'etichetta di sola lettura: diceva che c'erano due ore di riposo e
-    /// famiglia alle sedici, e per farne qualcosa bisognava aprire un'altra
-    /// finestra. Le cose che si possono fare in una giornata qualunque devono
-    /// stare dove si legge la giornata.
+    /// Prima era un monte ore con venti pulsanti in fila, e un monte ore non si
+    /// vive: si consuma. Una giornata vera è fatta di fasce, e ogni fascia è
+    /// una scelta sola. Vederle tutte insieme — quelle già decise, quella
+    /// libera, quella che non c'è più — è il modo in cui si capisce a colpo
+    /// d'occhio che cosa resta di oggi.
     ///
-    /// La schermata grande — «OGGI · LA GIORNATA» — resta, e serve quando si
-    /// vuole leggere per intero che cosa promette un'attività. Qui c'è il
-    /// mestiere di tutti i giorni: guardo quante ore ho, premo, vado avanti.
+    /// Due colonne perché sono due persone: quello che fa Haru un pomeriggio
+    /// non toglie niente al pilota. La scuola è fissa e non si sceglie, e sta
+    /// lì proprio per quello: è la ragione per cui il pomeriggio è corto.
     /// </summary>
     private void AggiornaPannelloDiOggi()
     {
@@ -394,82 +394,139 @@ public sealed partial class MainForm
         foreach (Control c in situationLine.Controls) c.Dispose();
         situationLine.Controls.Clear();
 
-        var larghezza = Math.Max(320, situationLine.ClientSize.Width - 20);
         var giorno = DriverDay.EnsureToday(career);
         var eta = EtaPilota();
+        var larghezza = Math.Max(360, situationLine.ClientSize.Width - 24);
+        var mezza = (larghezza - 16) / 2;
 
-        // --- dove finiscono le ventiquattro ore
-        var fisse = string.Join("  ·  ", DriverDay.BlocchiFissi(career.StoryDate, eta, career.RepeatingYear)
-            .Select(x => $"{x.Fascia} {x.Nome.ToLowerInvariant()}"));
-        situationLine.Controls.Add(Etichetta(
-            $"LA GIORNATA · {fisse}  ·  {giorno.DriverHoursTotal}h LIBERE"
-            + (career.RepeatingYear ? "  ·  RIPETENTE: DUE ORE DI RECUPERO" : ""),
-            UiTheme.Kicker, career.RepeatingYear ? UiTheme.Accent : UiTheme.TextMuted, larghezza));
         var scuola = eta <= 17
             ? career.SchoolPerformance >= LifeCalendar.SogliaDiPromozione
-                ? $"  ·  Scuola {career.SchoolPerformance}/100: sei sopra la soglia."
-                : $"  ·  Scuola {career.SchoolPerformance}/100: sotto {LifeCalendar.SogliaDiPromozione} a giugno si ripete l'anno."
+                ? $"  ·  SCUOLA {career.SchoolPerformance}/100"
+                : $"  ·  SCUOLA {career.SchoolPerformance}/100 — SOTTO {LifeCalendar.SogliaDiPromozione} SI RIPETE L'ANNO"
             : "";
         situationLine.Controls.Add(Etichetta(
-            (giorno.DriverHoursLeft > 0
-                ? $"Dalle {giorno.OraDelPilota:00}:00 ti restano {giorno.DriverHoursLeft} ore su {giorno.DriverHoursTotal}. Haru ne ha {giorno.AgentHoursLeft} su {giorno.AgentHoursTotal}."
-                : $"Le tue ore sono finite. Haru ne ha ancora {giorno.AgentHoursLeft}.") + scuola,
-            UiTheme.BodyStrong, giorno.DriverHoursLeft > 0 ? UiTheme.Positive : UiTheme.TextMuted, larghezza));
+            $"{career.StoryDate:dddd d MMMM yyyy}".ToUpperInvariant()
+            + (career.RepeatingYear ? "  ·  RIPETENTE: RECUPERO FINO ALLE 18" : "") + scuola,
+            UiTheme.Kicker,
+            career.RepeatingYear || (eta <= 17 && career.SchoolPerformance < LifeCalendar.SogliaDiPromozione)
+                ? UiTheme.Accent : UiTheme.TextMuted,
+            larghezza));
 
-        // --- gli impegni con un orario
-        var impegni = LifeCalendar.Today(career, contentIndex)
-            .Where(x => x.Status is "planned" or "active")
-            .OrderBy(x => x.StartTime).ToList();
-        foreach (var item in impegni)
+        var colonne = new TableLayoutPanel
         {
-            var fine = (int.Parse(item.StartTime.Split(':')[0]) + item.Hours) % 24;
-            var etichetta = $"{item.StartTime}–{fine:00}:00 · {item.Title.ToUpperInvariant()}"
-                            + (item.Required ? " · OBBLIGATORIO" : "");
-            var b = PulsanteDiOggi(etichetta, item.Required ? UiTheme.Warning : UiTheme.TextPrimary, 300);
-            oggiTip.SetToolTip(b, item.Detail);
-            b.Click += (_, _) =>
-            {
-                if (item.Kind == "track-training") { item.Status = "active"; SaveCareer(createVersionedBackup: false); LaunchDailyTrackTraining(); return; }
-                LifeCalendar.Complete(career, item);
-                SaveCareer(createVersionedBackup: false);
-                RefreshUi();
-            };
-            situationLine.Controls.Add(b);
-        }
-
-        // --- le ore libere: prima il pilota, poi Haru
-        foreach (var attivita in DayActivityCatalog.ForDriver().Concat(DayActivityCatalog.ForAgent()))
-        {
-            if (!DriverDay.CanDo(giorno, attivita, career.Cash, out _)) continue;
-            var diHaru = attivita.Actor == DayActor.Agent;
-            // La fascia che occuperebbe se la scegliessi adesso: le attivita' si
-            // incastrano una dopo l'altra e la giornata si legge in ordine.
-            var inizio = diHaru ? giorno.OraDiHaru : giorno.OraDelPilota;
-            var b = PulsanteDiOggi(
-                $"{inizio % 24:00}:00–{(inizio + attivita.Hours) % 24:00}:00 · {attivita.Name.ToUpperInvariant()}"
-                + (attivita.Cost > 0 ? $" · € {attivita.Cost:N0}" : ""),
-                diHaru ? UiTheme.Info : UiTheme.TextPrimary, 300);
-            oggiTip.SetToolTip(b, attivita.Promise
-                + (diHaru ? "\n\nOre di Haru: non tolgono niente alla tua giornata." : "")
-                + (attivita.IsCertain ? "\nEsito sicuro." : "\nEsito incerto: dipende da chi sei adesso."));
-            var scelta = attivita;
-            b.Click += (_, _) => EseguiAttivitaDiOggi(scelta);
-            situationLine.Controls.Add(b);
-        }
-
-        if (situationLine.Controls.Count <= 2)
-            situationLine.Controls.Add(Etichetta(
-                "Niente da fare oggi: non restano ore libere né a te né a Haru. Vai a domani.",
-                UiTheme.Prose, UiTheme.TextMuted, larghezza));
-
+            Width = larghezza, ColumnCount = 2, RowCount = 1, AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent,
+            Margin = new Padding(0), Padding = new Padding(0)
+        };
+        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        colonne.Controls.Add(Colonna(
+            $"IO · {career.Driver?.Split(' ').FirstOrDefault()?.ToUpperInvariant()}",
+            DaySlots.Pilota(career.StoryDate, eta, career.RepeatingYear),
+            giorno.FascePilota, DayActor.Driver, giorno, mezza), 0, 0);
+        colonne.Controls.Add(Colonna(
+            "HARU SENDA",
+            DaySlots.Haru(career.StoryDate),
+            giorno.FasceHaru, DayActor.Agent, giorno, mezza), 1, 0);
+        situationLine.Controls.Add(colonne);
         situationLine.ResumeLayout();
     }
 
+    /// <summary>Una colonna della giornata: il titolo e le sue fasce, in ordine.</summary>
+    private Control Colonna(string titolo, IReadOnlyList<FasciaDelGiorno> fasce, List<string> occupate,
+                            DayActor chi, DayPlan giorno, int larghezza)
+    {
+        var colonna = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = larghezza,
+            BackColor = Color.Transparent, Margin = new Padding(0, 0, 8, 0), Padding = new Padding(0)
+        };
+        colonna.Controls.Add(Etichetta(titolo, UiTheme.Kicker,
+            chi == DayActor.Agent ? UiTheme.Info : UiTheme.Warning, larghezza - 8));
+
+        for (var i = 0; i < fasce.Count; i++)
+            colonna.Controls.Add(Fascia(fasce[i], i, occupate, chi, giorno, larghezza - 8));
+        return colonna;
+    }
+
     /// <summary>
-    /// Svolge un'attività dalla Home. Passa dallo stesso motore della schermata
-    /// grande: le ore, il denaro e gli effetti sono decisi in un posto solo.
+    /// Una fascia: fissa, libera o già usata.
+    ///
+    /// Una fascia usata resta al suo posto e cambia colore invece di sparire:
+    /// se sparisse, la giornata si accorcerebbe sotto gli occhi e non si
+    /// capirebbe più che cosa si è scelto di fare. Quello che sparisce è la
+    /// possibilità, non l'ora.
     /// </summary>
-    private void EseguiAttivitaDiOggi(DayActivity attivita)
+    private Control Fascia(FasciaDelGiorno fascia, int indice, List<string> occupate,
+                           DayActor chi, DayPlan giorno, int larghezza)
+    {
+        var gia = indice < occupate.Count ? occupate[indice] : "";
+
+        if (fascia.Fissa)
+        {
+            var fisso = PulsanteDiOggi($"{fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.TextMuted, larghezza);
+            fisso.Enabled = false;
+            fisso.BackColor = UiTheme.Surface;
+            oggiTip.SetToolTip(fisso, "Obbligatoria: non si sceglie. È la ragione per cui il pomeriggio è corto.");
+            return fisso;
+        }
+
+        if (gia.Length > 0)
+        {
+            var fatta = PulsanteDiOggi($"{fascia.Orario} · {gia.ToUpperInvariant()}", UiTheme.Positive, larghezza);
+            fatta.Enabled = false;
+            fatta.BackColor = UiTheme.Surface;
+            oggiTip.SetToolTip(fatta, "Già fatto. Questa fascia della giornata è passata.");
+            return fatta;
+        }
+
+        // Quello che ci sta dentro: un'attività non può durare più della fascia.
+        var possibili = (chi == DayActor.Agent ? DayActivityCatalog.ForAgent() : DayActivityCatalog.ForDriver())
+            .Where(x => x.Hours <= fascia.Ore)
+            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, out _))
+            .ToList();
+
+        if (possibili.Count == 0)
+        {
+            var vuota = PulsanteDiOggi($"{fascia.Orario} · niente da fare", UiTheme.TextMuted, larghezza);
+            vuota.Enabled = false;
+            return vuota;
+        }
+
+        var libera = PulsanteDiOggi($"{fascia.Orario} · SCEGLI ({possibili.Count})",
+            chi == DayActor.Agent ? UiTheme.Info : UiTheme.TextPrimary, larghezza);
+        oggiTip.SetToolTip(libera, $"{possibili.Count} cose possibili in questa fascia. Premi per vederle.");
+        libera.Click += (_, _) =>
+        {
+            var menu = new ContextMenuStrip
+            {
+                BackColor = UiTheme.SurfaceRaised, ForeColor = UiTheme.TextPrimary,
+                Font = UiTheme.Body, ShowImageMargin = false
+            };
+            foreach (var attivita in possibili)
+            {
+                var voce = new ToolStripMenuItem(
+                    $"{attivita.Name}  ·  {attivita.Hours}h"
+                    + (attivita.Cost > 0 ? $"  ·  € {attivita.Cost:N0}" : ""))
+                {
+                    ToolTipText = attivita.Promise,
+                    BackColor = UiTheme.SurfaceRaised, ForeColor = UiTheme.TextPrimary
+                };
+                var scelta = attivita;
+                voce.Click += (_, _) => EseguiNellaFascia(scelta, indice, occupate);
+                menu.Items.Add(voce);
+            }
+            menu.Show(libera, new Point(0, libera.Height));
+        };
+        return libera;
+    }
+
+    /// <summary>
+    /// Svolge un'attività dentro una fascia. Passa dallo stesso motore di tutte
+    /// le altre schermate: ore, denaro ed effetti sono decisi in un posto solo.
+    /// </summary>
+    private void EseguiNellaFascia(DayActivity attivita, int indice, List<string> occupate)
     {
         if (BlockIfPending("le attività della giornata")) return;
         var report = DayEngine.Perform(career, DriverDay.EnsureToday(career), attivita);
@@ -478,6 +535,8 @@ public sealed partial class MainForm
             CareerMessages.Show(this, report.Refusal, "CorsaCareer — non si può", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
+        while (occupate.Count <= indice) occupate.Add("");
+        occupate[indice] = attivita.Name;
         SaveCareer(createVersionedBackup: false);
         ShowDayScene(report);
         RefreshUi();
@@ -490,7 +549,7 @@ public sealed partial class MainForm
         b.Width = larghezza; b.Height = 30;
         b.Font = UiTheme.Small;
         b.ForeColor = colore;
-        b.Margin = new Padding(0, 0, 8, 6);
+        b.Margin = new Padding(0, 0, 0, 5);
         b.Padding = new Padding(8, 0, 4, 0);
         return b;
     }
