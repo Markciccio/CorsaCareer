@@ -13,6 +13,9 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
 {
     private readonly ContentIndexRecord index;
     private readonly Label choice = new() { AutoSize = false, Height = 42, ForeColor = Color.Gainsboro, Font = new Font("Segoe UI", 11, FontStyle.Bold) };
+    private Button? sceltaMonoposto;
+    private Button? sceltaTurismo;
+    private Button? conferma;
     public string SelectedPath { get; private set; } = "";
     public bool ContentChanged { get; private set; }
 
@@ -40,13 +43,36 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         var closed = CareerPanel("UTILITARIE → TURISMO · GT · ENDURANCE", "Track day, trofei e turismo prima di GT4, GT3, prototipi e mondiale endurance. È una carriera distinta.", cars, false);
         closed.Left = 714; closed.Top = 196; Controls.Add(closed);
 
-        choice.Left = 40; choice.Top = 820; choice.Width = 780;
+        // Il bivio deve sembrare un bivio.
+        //
+        // I due pulsanti stavano in fondo a destra, stretti, grigi e di misura
+        // diversa fra loro, in mezzo ad altri comandi: sembravano due opzioni
+        // fra le tante e non la domanda a cui il programma sta aspettando una
+        // risposta. Si poteva premere «conferma e continua» senza aver scelto
+        // niente, e la carriera partiva con una direzione decisa da nessuno.
+        //
+        // Adesso sono due, grandi, larghi quanto la colonna che descrivono e
+        // messi esattamente sotto di essa: il pulsante sta sotto le sette
+        // caselle della carriera che sceglie. E finche' non se ne preme uno non
+        // si va avanti — che e' il modo piu' chiaro di dire che e' obbligatorio.
+        sceltaMonoposto = PulsanteDelBivio("▸  SCEGLI: KART → MONOPOSTO", 38, 644,
+            () => Select("SingleSeater", "Hai scelto KART → MONOPOSTO. La rookie evaluation partirà dal kart installato più adatto; Formula sarà la tua direzione."));
+        sceltaTurismo = PulsanteDelBivio("▸  SCEGLI: UTILITARIE → TURISMO", 714, 644,
+            () => Select("ClosedWheel", "Hai scelto UTILITARIE → TURISMO. La rookie evaluation partirà dall’auto stradale/track day installata più adatta."));
+        Controls.Add(sceltaMonoposto);
+        Controls.Add(sceltaTurismo);
+
+        choice.Left = 40; choice.Top = 872; choice.Width = 1040;
         Controls.Add(choice);
-        Controls.Add(ChoiceButton("INIZIO CON KART → MONOPOSTO", 845, 225, () => Select("SingleSeater", "Hai scelto KART → MONOPOSTO. La rookie evaluation partirà dal kart installato più adatto; Formula sarà la tua direzione.")));
-        Controls.Add(ChoiceButton("INIZIO CON UTILITARIE → TURISMO", 1085, 285, () => Select("ClosedWheel", "Hai scelto UTILITARIE → TURISMO. La rookie evaluation partirà dall’auto stradale/track day installata più adatta.")));
-        var continueButton = new Button { Text = "CONFERMA E CONTINUA", Left = 1120, Top = 875, Width = 258, Height = 38, BackColor = Color.FromArgb(224, 24, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        continueButton.Click += (_, _) => { DialogResult = DialogResult.OK; Close(); };
-        Controls.Add(continueButton);
+
+        conferma = new Button
+        {
+            Text = "CONFERMA E CONTINUA", Left = 1120, Top = 872, Width = 258, Height = 44,
+            BackColor = Color.FromArgb(224, 24, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10, FontStyle.Bold)
+        };
+        conferma.Click += (_, _) => { DialogResult = DialogResult.OK; Close(); };
+        Controls.Add(conferma);
         Select(SelectedPath, string.IsNullOrWhiteSpace(SelectedPath) ? "Scegli adesso: la prima auto e i primi test seguiranno questa carriera. Più avanti sponsor e team potranno proporti un cambio di specialità, che potrai accettare o rifiutare." : "Direzione già scelta: puoi confermarla o cambiarla qui. Sponsor e team potranno comunque proporti un passaggio all’altra carriera.");
     }
 
@@ -162,14 +188,59 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         return tile;
     }
 
-    private Button ChoiceButton(string text, int left, int width, Action action)
+    /// <summary>Un pulsante del bivio: largo quanto la carriera che sceglie.</summary>
+    private Button PulsanteDelBivio(string testo, int left, int width, Action azione)
     {
-        var button = new Button { Text = text, Left = left, Top = 825, Width = width, Height = 42, BackColor = Color.FromArgb(50, 62, 82), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        button.Click += (_, _) => action();
+        var button = new Button
+        {
+            Text = testo, Left = left, Top = 806, Width = width, Height = 56,
+            BackColor = Color.FromArgb(38, 46, 62), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 13, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter
+        };
+        button.FlatAppearance.BorderSize = 2;
+        button.FlatAppearance.BorderColor = Color.FromArgb(245, 190, 65);
+        button.Click += (_, _) => azione();
         return button;
     }
 
-    private void Select(string path, string message) { SelectedPath = path ?? ""; choice.Text = message; }
+    /// <summary>
+    /// Registra la scelta e la fa vedere.
+    ///
+    /// Vedere quale dei due si e' premuto e' meta' della decisione: prima i due
+    /// pulsanti restavano identici dopo il clic e l'unico segnale era una frase
+    /// in fondo allo schermo, che nessuno guarda.
+    /// </summary>
+    private void Select(string path, string message)
+    {
+        SelectedPath = path ?? "";
+        choice.Text = message;
+        AggiornaBivio();
+    }
+
+    private void AggiornaBivio()
+    {
+        var monoposto = SelectedPath.Equals("SingleSeater", StringComparison.OrdinalIgnoreCase);
+        var turismo = SelectedPath.Equals("ClosedWheel", StringComparison.OrdinalIgnoreCase);
+        Vesti(sceltaMonoposto, monoposto, "KART → MONOPOSTO");
+        Vesti(sceltaTurismo, turismo, "UTILITARIE → TURISMO");
+        if (conferma == null) return;
+        // Finche' non si e' scelto non si va avanti: e' il modo piu' chiaro di
+        // dire che la scelta e' obbligatoria, e toglie il caso in cui la
+        // carriera partiva con una direzione decisa da nessuno.
+        var scelto = monoposto || turismo;
+        conferma.Enabled = scelto;
+        conferma.Text = scelto ? "CONFERMA E CONTINUA" : "SCEGLI UNA DELLE DUE";
+        conferma.BackColor = scelto ? Color.FromArgb(224, 24, 58) : Color.FromArgb(58, 62, 72);
+    }
+
+    private static void Vesti(Button? pulsante, bool attivo, string nome)
+    {
+        if (pulsante == null) return;
+        pulsante.Text = attivo ? $"✓  {nome}" : $"▸  SCEGLI: {nome}";
+        pulsante.BackColor = attivo ? Color.FromArgb(60, 215, 145) : Color.FromArgb(38, 46, 62);
+        pulsante.ForeColor = attivo ? Color.FromArgb(12, 24, 18) : Color.White;
+        pulsante.FlatAppearance.BorderColor = attivo ? Color.FromArgb(60, 215, 145) : Color.FromArgb(245, 190, 65);
+    }
     private static bool IsBase(ContentCarRecord car) { var rung = CareerLadder.ForCar(car.Category, car.PowerHp, car.MassKg); return rung.Path == LadderPath.Karting || rung.Id == CareerLadder.RoadRookie; }
     private static bool IsKart(ContentCarRecord car) => CareerLadder.ForCar(car.Category, car.PowerHp, car.MassKg).Path == LadderPath.Karting;
     private static bool IsUtility(ContentCarRecord car) => CareerLadder.ForCar(car.Category, car.PowerHp, car.MassKg).Id == CareerLadder.RoadRookie;
