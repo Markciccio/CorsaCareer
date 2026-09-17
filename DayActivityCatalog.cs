@@ -431,29 +431,14 @@ public static class DayActivityCatalog
         // vista da fuori, dove due persone che non c'entrano niente col
         // paddock ti dicono come stai andando. E ha effetti veri: andarci
         // riposa la testa, saltarla per allenarsi ha un prezzo.
-        new()
-        {
-            Id = "scuola", Name = "Scuola", Actor = DayActor.Driver, Focus = DayFocus.Altro, Hours = 4,
-            Promise = "Una mattinata normale, in classe con Sae e Tooru. Non allena niente, ma stacca la testa dalle gare.",
-            Outcomes =
-            [
-                new()
-                {
-                    Line = "Quattro ore di lezione. Due le hai seguite, una l'hai passata a disegnare traiettorie sul quaderno.",
-                    Effects = [new(DayEffectKind.SportingReputation, 1)]
-                },
-                new()
-                {
-                    Line = "Interrogazione a sorpresa. Te la cavi, e ti accorgi che studiare martedi' sera e' servito a qualcosa.",
-                    Effects = [new(DayEffectKind.SportingReputation, 1)]
-                },
-                new()
-                {
-                    Line = "Il professore ti chiede come e' andata domenica. Non se lo ricorda nessun altro in tutta la scuola.",
-                    Effects = [new(DayEffectKind.SportingReputation, 1)]
-                }
-            ]
-        },
+        // «Scuola» non e' piu' un'attivita' che si sceglie.
+        //
+        // Era una voce del catalogo come le altre, da quattro ore, e da quando
+        // la giornata e' divisa in fasce il generatore poteva proporla in una
+        // fascia lunga — cioe' offrire di ANDARE A SCUOLA il giorno di
+        // Capodanno, quando la scuola e' chiusa. La scuola adesso e' un blocco
+        // fisso della giornata, gestito dal calendario: non si sceglie, e chi
+        // vuole guadagnarci qualcosa studia.
         new()
         {
             Id = "scuola-sae", Name = "Allenarti con Sae", Actor = DayActor.Driver, Focus = DayFocus.Fisico, Hours = 2,

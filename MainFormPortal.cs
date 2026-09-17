@@ -207,6 +207,21 @@ public sealed partial class MainForm
         tools.Controls.Add(narrationControl);
         tools.Controls.Add(soundtrackButton);
         tools.Controls.Add(careerHub);
+        // La mappa della carriera sta nella barra in alto, accanto ai
+        // contenuti, e non se ne va mai.
+        //
+        // C'era gia' una voce, ma dentro la scheda «sezioni del portale»: in
+        // fondo a una colonna, sotto altri sei pulsanti, in una scheda alta
+        // 296 pixel dove sette pulsanti da 42 non ci stanno. Cioe' c'era e non
+        // si trovava, che per una mappa e' il difetto peggiore possibile.
+        //
+        // E' la schermata che risponde alla domanda «dove puo' arrivare questa
+        // carriera con le auto che ho»: si guarda all'inizio, e si riguarda
+        // ogni volta che si installa qualcosa di nuovo. Deve stare dove si
+        // vede sempre, accanto ai contenuti che e' quello che la cambia.
+        var mapButton = UiTheme.GhostButton("◈  MAPPA CARRIERA", 178);
+        mapButton.Click += (_, _) => OpenCareerMap();
+        tools.Controls.Add(mapButton);
         var contentsButton = UiTheme.GhostButton("▣  CONTENUTI", 132);
         contentsButton.Click += (_, _) => RefreshContents();
         tools.Controls.Add(contentsButton);
@@ -339,13 +354,18 @@ public sealed partial class MainForm
     /// deve ancora guadagnarsi un sedile — la riga lo dice, perche' «nessun
     /// appuntamento» e' un'informazione, non un vuoto.
     /// </summary>
-    private string TestataDellaGiornata(DateTime oggi)
-    {
-        var prossimo = CareerScheduler.NextPlanned(career.Schedule ?? []);
-        if (prossimo == null)
-            return $"NESSUN APPUNTAMENTO IN AGENDA · {oggi:dddd d MMMM yyyy}".ToUpperInvariant();
-        return $"{QuandoSuccede(prossimo.Date, oggi)} · {EtichettaAppuntamento(prossimo)} · {CareerScheduler.TrackLabel(prossimo)}".ToUpperInvariant();
-    }
+    /// <summary>
+    /// La riga grande sopra il pannello della giornata: e' il giorno, e basta.
+    ///
+    /// Per un po' ci ho messo il prossimo appuntamento — «fra tre giorni ·
+    /// prova di valutazione» — ma quella e' un'altra informazione e ha gia' il
+    /// suo posto: la scheda grande al centro dello schermo, che dice quando,
+    /// dove, con che macchina e con che obiettivo. Ripeterla qui sopra voleva
+    /// dire avere due volte la stessa cosa e nessuna delle due in casa
+    /// propria. Questo riquadro e' OGGI: ci va oggi.
+    /// </summary>
+    private string TestataDellaGiornata(DateTime oggi) =>
+        $"OGGI · {oggi:dddd d MMMM yyyy}".ToUpperInvariant();
 
     /// <summary>
     /// Fra quanto succede una cosa, detto come lo direbbe una persona.
@@ -1229,7 +1249,11 @@ public sealed partial class MainForm
 
         var sectionsCard = UiTheme.Card("sezioni del portale", out var sections, UiTheme.Info);
         sectionsCard.Dock = DockStyle.Top;
-        sectionsCard.Height = 296;
+        // Sette pulsanti da 36 pixel piu' 6 di margine fanno 294, e la scheda
+        // ne dichiarava 296 senza contare la propria intestazione: gli ultimi
+        // due finivano fuori e non si vedevano. Adesso l'altezza la decide il
+        // numero di pulsanti, cosi' aggiungerne uno non ne nasconde un altro.
+        sectionsCard.Height = 58 + 7 * 42;
         foreach (var (text, action) in new (string, Action)[]
         {
             ("Calendario e classifica", OpenCalendar),
