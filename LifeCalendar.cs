@@ -44,7 +44,9 @@ public static class LifeCalendar
         if (giornoDiScuola) Scuola.PassaUnGiornoDiLezione(career);
         Scuola.AnnunciaLAnnoScolastico(career);
 
-        if (Age(career) <= 17 && giornoDiScuola)
+        // Stessa soglia di Scuola.Riguarda: sotto, l'impegno "Scuola" non nasce
+        // nemmeno, perche' il vincolo non esiste piu' per questo pilota.
+        if (Scuola.Riguarda(career) && giornoDiScuola)
             Add(career, result, new DailyCommitment
             {
                 Id = $"school-{date:yyyyMMdd}", Date = date, Kind = "school",
@@ -76,7 +78,13 @@ public static class LifeCalendar
         // girare, per quanta voglia si abbia.
         var trainingDay = date.DayOfWeek is DayOfWeek.Wednesday or DayOfWeek.Friday
                           && !CalendarioGiapponese.PaeseFermo(date);
-        if (trainingDay && !hasRaceToday && (next == null || (next.Date.Date - date).Days >= 2))
+        // Se la scuola vieta la pista, non si propone nemmeno l'allenamento.
+        //
+        // Senza questo la sessione compariva lo stesso, "APRI L'ALLENAMENTO"
+        // in bella vista, e cliccandola tornava indietro con l'avviso del
+        // divieto: un pulsante che promette una cosa e ne fa un'altra. Il
+        // divieto vale per tutta la pista, quindi vale anche qui.
+        if (trainingDay && !hasRaceToday && (next == null || (next.Date.Date - date).Days >= 2) && !Scuola.Vieta(career))
         {
             var car = content.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase))
                       ?? content.Cars.FirstOrDefault(ContentCategoryRules.IsRaceable);

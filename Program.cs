@@ -6218,9 +6218,28 @@ public sealed partial class MainForm : Form
         profile.TeamTrust = Math.Clamp(profile.TeamTrust + outcome.Effect.TeamRelation, 0, 100);
         profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal + outcome.Effect.SponsorRelation, 0, 100);
         profile.SyncLegacyFields(career);
-        career.StoryDate = career.StoryDate.AddDays(definition.DurationDays);
-        // Le attività fuori pista possono far avanzare più giorni: il piano
-        // precedente non deve sopravvivere alla nuova data.
+        // I giorni passano UNO ALLA VOLTA, non tutti insieme.
+        //
+        // Qui la data saltava avanti in un colpo solo — AddDays(definition.
+        // DurationDays) — e i giorni in mezzo sparivano senza lasciare
+        // traccia: la scuola non calava, gli impegni del calendario (lezioni,
+        // allenamento in pista, la visita di Haru) non venivano ne' svolti ne'
+        // segnati come saltati. Un incontro con i tifosi di due giorni
+        // costava zero in termini di scuola, mentre camminare quegli stessi
+        // due giorni con «vai a domani» ne costava due. Due strade per lo
+        // stesso tempo che facevano pagare prezzi diversi: esattamente
+        // l'incoerenza che rende una carriera non credibile.
+        //
+        // Adesso questa attivita' attraversa i suoi giorni con lo stesso
+        // passo di «vai a domani»: ogni giorno chiude gli impegni rimasti
+        // aperti (e la scuola, dentro LifeCalendar.Today, cala per quello) e
+        // poi si passa al successivo.
+        for (var i = 0; i < definition.DurationDays; i++)
+        {
+            DriverDay.EnsureToday(career);
+            LifeCalendar.ResolveUnfinished(career, contentIndex);
+            career.StoryDate = career.StoryDate.AddDays(1);
+        }
         DriverDay.EnsureToday(career);
 
         career.ActivityHistory.Add(new ActivityRecord

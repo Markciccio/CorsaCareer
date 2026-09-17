@@ -58,7 +58,15 @@ public static class DaySlots
     /// </summary>
     public static IReadOnlyList<FasciaDelGiorno> Pilota(DateTime giorno, int eta, bool ripetente)
     {
-        if (eta <= 17 && Feriale(giorno))
+        // La soglia e' la stessa di Scuola.EtaDiFine: qui era diciassette,
+        // scritta a mano quando la scuola finiva a diciotto anni. Quando la
+        // soglia vera e' scesa a sedici (la scuola dell'obbligo giapponese)
+        // questa e' rimasta com'era: un pilota di sedici o diciassette anni
+        // non vedeva piu' il livello scolastico, non poteva piu' essere
+        // sospeso dalle gare, ma continuava a trovarsi le mattine bloccate
+        // da un blocco «Scuola» obbligatorio di sette ore. Due regole
+        // sulla stessa cosa, in disaccordo.
+        if (eta < Scuola.EtaDiFine && Feriale(giorno))
         {
             var fine = ripetente ? ScuolaAlle + 3 : ScuolaAlle;
             var fasce = new List<FasciaDelGiorno>

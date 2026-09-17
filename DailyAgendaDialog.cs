@@ -72,15 +72,19 @@ public sealed class DailyAgendaDialog : CareerDialog
                 + "ma il tempo passa lo stesso, e quello che si fa a casa conta.",
                 UiTheme.Prose, UiTheme.Accent, 12));
 
-        if (Eta <= 17)
+        // La soglia e' Scuola.Riguarda, non un diciassette scritto qui a mano:
+        // erano due numeri diversi (17 contro Scuola.EtaDiFine, sedici) per la
+        // stessa domanda, e un pilota di sedici o diciassette anni vedeva
+        // ancora il livello scolastico anche se il vincolo era gia' finito.
+        if (Scuola.Riguarda(career))
             flow.Controls.Add(Riga(
                 career.RepeatingYear
-                    ? $"Scuola {career.SchoolPerformance}/100 — stai ripetendo l'anno: il recupero arriva fino alle diciotto e ti mangia la prima fascia del pomeriggio."
-                    : career.SchoolPerformance >= LifeCalendar.SogliaDiPromozione
-                        ? $"Scuola {career.SchoolPerformance}/100 — sei sopra la soglia. A giugno serve almeno {LifeCalendar.SogliaDiPromozione}."
-                        : $"Scuola {career.SchoolPerformance}/100 — sotto {LifeCalendar.SogliaDiPromozione}, e a giugno si ripete l'anno.",
+                    ? $"{Scuola.Etichetta(career)} — stai ripetendo l'anno: il recupero arriva fino alle diciotto e ti mangia la prima fascia del pomeriggio."
+                    : Scuola.ARischio(career)
+                        ? $"{Scuola.Etichetta(career)} — sotto {Scuola.SogliaDiPromozione}, e a giugno si ripete l'anno."
+                        : $"{Scuola.Etichetta(career)} — sei sopra la soglia. A giugno serve almeno {Scuola.SogliaDiPromozione}.",
                 UiTheme.Prose,
-                career.RepeatingYear || career.SchoolPerformance < LifeCalendar.SogliaDiPromozione ? UiTheme.Accent : UiTheme.TextSecondary,
+                career.RepeatingYear || Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.TextSecondary,
                 14));
 
         Colonna("LA TUA GIORNATA", DaySlots.Pilota(career.StoryDate, Eta, career.RepeatingYear),

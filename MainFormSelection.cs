@@ -126,6 +126,11 @@ public sealed partial class MainForm
     {
         var uiAutomation = Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1";
         if (awaitingResult) return;
+        // Un giorno di prova con la squadra e' pista quanto una gara: se la
+        // scuola vieta di scendere in pista, vieta anche questo. Era rimasto
+        // fuori dal controllo aggiunto per gli altri quattro modi di guidare,
+        // ed era l'unico varco rimasto aperto.
+        if (!PuoScendereInPista()) return;
         if (string.IsNullOrWhiteSpace(trial.TrackId) || string.IsNullOrWhiteSpace(trial.CarId))
         {
             CareerMessages.Show(null, "La selezione non ha una sede o una vettura valide fra i contenuti installati.",

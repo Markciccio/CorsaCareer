@@ -182,7 +182,7 @@ public sealed class DriverDayDialog : CareerDialog
     {
         var day = career.Today!;
         header.Text = NarrativeCalendar.Format(day.Date);
-        driverHours.Text = $"◉  PILOTA   {day.DriverHoursLeft} / {DriverDay.DriverHours} ORE LIBERE";
+        driverHours.Text = $"◉  PILOTA   {day.DriverHoursLeft} / {day.DriverHoursTotal} ORE LIBERE";
 
         var profile = career.ReputationProfile ?? new ReputationProfile();
         indices.Text = $"FORMA  {career.Fitness}/100     FIDUCIA FOLLOWERS  {career.TeamRelation}/100     APPEAL SPONSOR  {career.SponsorRelation}/100";

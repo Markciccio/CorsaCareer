@@ -103,7 +103,11 @@ public sealed class SponsorDayDialog : CareerDialog
     {
         var day = career.Today!;
         header.Text = NarrativeCalendar.Format(day.Date);
-        hours.Text = $"◉  HARU SENDA   {day.AgentHoursLeft} / {DriverDay.AgentHours} ORE LIBERE    ·    BUDGET € {career.Cash:N0}";
+        // Il totale era la costante DriverDay.AgentHours (tre), sempre la
+        // stessa: nel fine settimana le fasce di Haru sommano di piu' (le
+        // ore vere le danno DaySlots.Haru), e l'etichetta diceva "5 / 3",
+        // un totale piu' basso di quante ore restavano davvero.
+        hours.Text = $"◉  HARU SENDA   {day.AgentHoursLeft} / {day.AgentHoursTotal} ORE LIBERE    ·    BUDGET € {career.Cash:N0}";
         skills.Text = career.Agent!.Describe();
 
         list.SuspendLayout();

@@ -141,20 +141,29 @@ public static class DayEngine
     /// Passa al giorno successivo. La notte recupera un po' di stanchezza, ma
     /// non azzera: chi si consuma per una settimana arriva consumato alla gara.
     /// </summary>
+    /// <summary>
+    /// Fa passare un giorno.
+    ///
+    /// La nuova giornata nasceva qui con le ore vecchie — le due costanti
+    /// <c>DriverDay.DriverHours</c> e <c>AgentHours</c>, sempre le stesse — e
+    /// non con quelle vere della data che si sta per vivere. Un sabato veniva
+    /// trattato come un lunedi' di scuola: meno ore libere di quante ne
+    /// avrebbe dovute avere, e le fasce del pannello OGGI non coincidevano con
+    /// il numero mostrato qui sopra.
+    ///
+    /// Adesso questo metodo non costruisce piu' un DayPlan per conto suo: fa
+    /// scoccare la mezzanotte e lascia che sia <see cref="DriverDay.EnsureToday"/>
+    /// — l'unico posto che sa come e' fatta una giornata — a costruire quella
+    /// nuova.
+    /// </summary>
     public static DayPlan Advance(CareerState career, DayPlan today)
     {
         career.Fatigue = Math.Clamp(career.Fatigue - NightRecovery, 0, DriverDay.MaxFatigue);
         career.StoryDate = today.Date.AddDays(1);
         if (career.DaysUntilNextRound > 0) career.DaysUntilNextRound--;
 
-        var next = new DayPlan
-        {
-            Date = career.StoryDate,
-            DriverHoursLeft = DriverDay.DriverHours,
-            AgentHoursLeft = DriverDay.AgentHours
-        };
-        career.Today = next;
-        return next;
+        career.Today = null;
+        return DriverDay.EnsureToday(career);
     }
 
     /// <summary>Stanchezza recuperata dormendo. Non basta a compensare una giornata piena.</summary>

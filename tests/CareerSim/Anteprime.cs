@@ -128,6 +128,17 @@ internal static class Anteprime
             ]
         };
         Scatta("mappa-contenuti", () => new InstalledCareerAnalysisDialog(indice, indice.Cars[0]));
+        Scatta("mappa-contenuti-sola-lettura", () => new InstalledCareerAnalysisDialog(indice, indice.Cars[0], "SingleSeater", soloLettura: true));
+
+        // 5. La giornata del pilota, il pannello che cambia piu' spesso di
+        //    tutti: un ragazzo di dodici anni, un giorno feriale con scuola,
+        //    con un impegno gia' fissato e delle ore ancora libere.
+        var studente = CarrieraStudente();
+        Scatta("giornata-feriale", () => new DailyAgendaDialog(studente, indice, () => { }, () => { }));
+        var ripetente = CarrieraStudente();
+        ripetente.RepeatingYear = true;
+        ripetente.SchoolPerformance = 18;
+        Scatta("giornata-ripetente-a-rischio", () => new DailyAgendaDialog(ripetente, indice, () => { }, () => { }));
         Scatta("auto-equivalente", () => new EquivalentCarPickerDialog(
             indice.Cars, "Formula nazionale", CareerLadder.Rungs.First(x => x.Step == 5)));
         Scatta("stacco", () => new PortalTransitionOverlay(
@@ -148,6 +159,36 @@ internal static class Anteprime
             return 1;
         }
         return 0;
+    }
+
+    /// <summary>
+    /// Un pilota di dodici anni, in un giorno feriale qualunque: e' lo stato
+    /// su cui vive il pannello della giornata, che e' cambiato piu' di ogni
+    /// altra schermata in questa fase e non era mai stato visto in anteprima.
+    /// </summary>
+    private static CareerState CarrieraStudente()
+    {
+        var c = new CareerState
+        {
+            Driver = "Akira Sanada",
+            Team = "",
+            Championship = "Campionato di zona",
+            ChampionshipLevel = 1,
+            Car = "kart_4t",
+            Tier = "Rookie",
+            Sponsor = "",
+            StoryDate = new DateTime(2003, 5, 6), // martedi'
+            CareerStart = new DateTime(2003, 1, 11),
+            BirthYear = 1991,
+            Season = 1,
+            Races = 8,
+            Cash = 4200,
+            Fitness = 55,
+            Fatigue = 30,
+            SchoolPerformance = 62
+        };
+        c.ReputationProfile = new ReputationProfile { PublicPopularity = 12 };
+        return c;
     }
 
     private static CareerState CarrieraDiProva()
