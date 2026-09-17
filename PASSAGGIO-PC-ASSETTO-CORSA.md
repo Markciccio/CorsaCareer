@@ -663,6 +663,34 @@ Assetto Corsa.
 
 ---
 
+### Percorrere una carriera in fretta, a mano — F5 / F6 / F7
+
+Dentro il portale, tre tasti risolvono la sessione preparata senza
+guidare e **senza chiedere conferma**:
+
+| Tasto | Cosa fa |
+|---|---|
+| `F5` | giornata buona — il pilota va davanti |
+| `F6` | giornata storta, con possibilita' di ritiro |
+| `F7` | come viene: decide lo stato reale della carriera |
+
+Sono gli stessi tre pulsanti che stanno nel portale (`PROVA · esito
+positivo` e compagni), ma senza la finestra di conferma: serviva
+chiuderla a ogni domenica, e percorrere una carriera intera diventava
+impraticabile.
+
+> **Il risultato non e' inventato a mano.** Passa dal simulatore vero con
+> lo stato vero della carriera; l'unica forzatura e' un bonus di passo
+> (`RaceSimulator.BiasShift`, 14 punti) che mette il pilota davanti senza
+> garantirgli la vittoria: la dispersione degli avversari resta quella di
+> sempre. Ogni sessione risolta cosi' e' marcata **SIMULATA** nello
+> storico e segnalata nel portale.
+
+Sul PC di sviluppo c'e' `Desktop\CorsaCareer - PROVA.bat`, che apre il
+programma su una carriera separata (`CORSACAREER_HOME` puntata a
+`Documenti\Assetto Corsa\CorsaCareer-PROVA`) e chiede se ricominciare da
+zero o continuare. I salvataggi veri non vengono mai toccati.
+
 ## 11. Il banco di misura
 
 ### `--anteprime`: vedere le schermate senza aprirle

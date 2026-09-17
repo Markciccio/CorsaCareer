@@ -20,7 +20,35 @@ public sealed partial class MainForm
     /// </summary>
     private string pendingSourceKind = ResultProvenance.AssettoCorsa;
 
-    private void SimulateResultNow(SimulationBias bias = SimulationBias.Natural)
+    /// <summary>
+    /// F5: risolve la sessione con una giornata buona, senza chiedere conferma.
+    ///
+    /// E' una scorciatoia da collaudo, e serve a una cosa sola: percorrere una
+    /// carriera intera in poco tempo per vedere cosa combina il programma,
+    /// senza chiudere una finestra di conferma a ogni domenica.
+    ///
+    /// Il risultato NON e' un numero scritto a mano. Passa dal simulatore vero,
+    /// con lo stato vero della carriera; l'unica forzatura e' un bonus di passo
+    /// (<c>RaceSimulator.BiasShift</c>, quattordici punti) che mette il pilota
+    /// davanti senza garantirgli la vittoria, perche' la dispersione degli
+    /// avversari resta quella di sempre. E resta archiviato come SIMULATO: lo
+    /// storico lo dichiara e il portale lo segnala.
+    ///
+    /// F6 fa l'opposto (giornata storta, con possibilita' di ritiro) e F7
+    /// lascia decidere allo stato reale della carriera.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        switch (keyData)
+        {
+            case Keys.F5: SimulateResultNow(SimulationBias.Positive, chiediConferma: false); return true;
+            case Keys.F6: SimulateResultNow(SimulationBias.Negative, chiediConferma: false); return true;
+            case Keys.F7: SimulateResultNow(SimulationBias.Natural, chiediConferma: false); return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    private void SimulateResultNow(SimulationBias bias = SimulationBias.Natural, bool chiediConferma = true)
     {
         if (!awaitingResult)
         {
@@ -34,11 +62,18 @@ public sealed partial class MainForm
         var plan = CurrentSessionPlan(isTest ? "test" : pendingMode);
         var track = career.Round < rounds.Count ? rounds[career.Round].Track : plan?.Track ?? "";
 
-        var conferma = CareerMessages.Ask(null, 
-            BuildConfirmationText(isTest, track, plan, bias),
-            "CorsaCareer — simula il risultato",
-            MessageBoxButtons.YesNo, DialogResult.Yes);
-        if (conferma != DialogResult.Yes) return;
+        // La conferma si mostra a chi ha premuto il pulsante. Con i tasti
+        // F5/F6/F7 la sessione si risolve subito: sono scorciatoie da
+        // collaudo, e una finestra da chiudere a ogni domenica renderebbe
+        // inutile percorrere in fretta una carriera intera.
+        if (chiediConferma)
+        {
+            var conferma = CareerMessages.Ask(null,
+                BuildConfirmationText(isTest, track, plan, bias),
+                "CorsaCareer — simula il risultato",
+                MessageBoxButtons.YesNo, DialogResult.Yes);
+            if (conferma != DialogResult.Yes) return;
+        }
 
         var imported = ExecuteSimulatedResult(bias, out var esito);
         if (imported == null) return;
