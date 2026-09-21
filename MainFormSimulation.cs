@@ -60,7 +60,7 @@ public sealed partial class MainForm
 
         var isTest = pendingMode.Equals("test", StringComparison.OrdinalIgnoreCase);
         var plan = CurrentSessionPlan(isTest ? "test" : pendingMode);
-        var track = career.Round < rounds.Count ? rounds[career.Round].Track : plan?.Track ?? "";
+        var track = plan?.Track ?? (career.Round < rounds.Count ? rounds[career.Round].Track : "");
 
         // La conferma si mostra a chi ha premuto il pulsante. Con i tasti
         // F5/F6/F7 la sessione si risolve subito: sono scorciatoie da
@@ -98,7 +98,10 @@ public sealed partial class MainForm
 
         var isTest = pendingMode.Equals("test", StringComparison.OrdinalIgnoreCase);
         var plan = CurrentSessionPlan(isTest ? "test" : pendingMode);
-        // Il weekend preparato batte lo stato della carriera.
+        // Il weekend preparato batte lo stato della carriera, anche per i
+        // round di campionato. Una firma durante la stagione può aggiornare
+        // career.Car, ma il preset già scritto rappresenta ancora il weekend
+        // precedente e deve essere simulato con la sua vettura e la sua pista.
         //
         // Prima la pista veniva dal calendario del campionato e la vettura da
         // career.Car anche per un invito: una gara su invito veniva risolta
@@ -107,13 +110,12 @@ public sealed partial class MainForm
         // stata risolta con la propria. Il piano archiviato all'avvio dice
         // esattamente cosa e' stato preparato: per tutto cio' che non e' un
         // round di campionato, e' lui la fonte.
-        var roundDiCampionato = pendingMode.Equals("race", StringComparison.OrdinalIgnoreCase);
-        var track = roundDiCampionato && career.Round < rounds.Count
-            ? rounds[career.Round].Track
-            : plan?.Track ?? (career.Round < rounds.Count ? rounds[career.Round].Track : "");
-        var car = !roundDiCampionato && !string.IsNullOrWhiteSpace(plan?.Car)
+        var track = !string.IsNullOrWhiteSpace(plan?.Track)
+            ? plan!.Track
+            : career.Round < rounds.Count ? rounds[career.Round].Track : "";
+        var car = !string.IsNullOrWhiteSpace(plan?.Car)
             ? plan!.Car
-            : string.IsNullOrWhiteSpace(career.Car) ? plan?.Car ?? "" : career.Car;
+            : career.Car;
         var imported = BuildSimulatedResult(isTest, track, car, plan, bias);
 
         pendingSourceKind = ResultProvenance.Simulated;
@@ -132,8 +134,8 @@ public sealed partial class MainForm
             }
             else if (pendingMode.Equals("invitation", StringComparison.OrdinalIgnoreCase))
             {
-                RecordInvitation(imported, "", "");
                 CompletePendingWeekend();
+                RecordInvitation(imported, "", "");
                 outcomeMessage = "";
             }
             else
@@ -219,7 +221,7 @@ public sealed partial class MainForm
             {
                 SimulationBias.Positive => "ESITO FORZATO: giornata buona. Serve a provare la catena delle conseguenze.",
                 SimulationBias.Negative => "ESITO FORZATO: giornata negativa, con possibilità di ritiro.",
-                _ => "Il risultato dipende dallo stato reale della carriera — fiducia dei team, prestigio, esperienza, competitività della vettura, stanchezza."
+                _ => "Il risultato dipende dallo stato reale della carriera — livello influencer, prestigio, esperienza e competitività della vettura."
             },
             "",
             "Verrà però archiviato come SIMULATO:",

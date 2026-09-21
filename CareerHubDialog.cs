@@ -89,7 +89,7 @@ public sealed class CareerHubDialog : CareerDialog
         var rival = cast.FirstOrDefault(x => x.Id == StoryCastService.Rival)?.Name ?? "Nico Valenti";
         teamBody.Controls.Add(Button("PADDOCK E RELAZIONI", openPaddock, DockStyle.Bottom));
         teamBody.Controls.Add(TextBlock(
-            $"Team: {career.Team}\nCompagno: {career.Teammate}\nLivello di fiducia dei followers: {career.TeamRelation}/100\n\nMentore: {mentor}\nRivale: {rival}\n\nCondizione: stanchezza {career.Fatigue}/100",
+            $"Team: {career.Team}\nCompagno: {career.Teammate}\nLivello influencer: {Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)}/100\n\nMentore: {mentor}\nRivale: {rival}",
             UiTheme.Small, UiTheme.TextPrimary, DockStyle.Fill, 0));
         body.Controls.Add(team, 0, 1);
 

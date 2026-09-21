@@ -609,13 +609,13 @@ public static class OpportunityGenerator
                    (covered > 0 ? $" Il team coprirà il {covered}% della spesa." : " Il costo resta interamente a carico del pilota.");
         }
         if (context.Reputation.TeamTrust >= 55)
-            return $"La fiducia dei team è salita a {context.Reputation.TeamTrust}/100: {team} apre le porte del proprio programma di test" +
+            return $"Il livello influencer è salito a {context.Reputation.PublicPopularity}/100: {team} apre le porte del proprio programma di test" +
                    (covered > 0 ? $" e copre il {covered}% del costo." : ", a spese del pilota.");
         // Questo ramo ignorava la copertura: un test coperto al 40% veniva
         // proposto con la motivazione "il costo è tutto suo", che contraddiceva
         // sia l'etichetta sia la cifra mostrata al giocatore.
         if (covered > 0)
-            return $"{team} apre una giornata di test a piloti esterni e, vista la fiducia a {context.Reputation.TeamTrust}/100, " +
+            return $"{team} apre una giornata di test a piloti esterni e, visto il livello influencer a {context.Reputation.PublicPopularity}/100, " +
                    $"copre il {covered}% della spesa: il resto è a carico del pilota.";
         return $"{team} affitta una giornata di test a piloti esterni. Nessuno sta investendo su {context.Driver}: il costo è tutto suo.";
     }
@@ -1350,7 +1350,7 @@ public static class OpportunityGenerator
                 Kind = OpportunityKind.PartiallyFundedSeat,
                 Title = $"Sedile {tier} con {team}, stagione parzialmente finanziata",
                 ProposedBy = team,
-                Justification = $"{team} è disposta a coprire il {covered}% della stagione: la fiducia dei team è a {trust}/100 e il prestigio sportivo a {prestige}/100.",
+                Justification = $"{team} è disposta a coprire il {covered}% della stagione: il livello influencer è a {context.Reputation.PublicPopularity}/100 e il prestigio sportivo a {prestige}/100.",
                 Tier = tier, Category = car.Category, CarId = car.Id,
                 Date = DataDiGara(context.Today, 28), Deadline = context.Today.AddDays(16),
                 Cost = seasonFee, CoveredPercent = covered, SeasonRounds = rounds,
@@ -1396,7 +1396,7 @@ public static class OpportunityGenerator
             Kind = OpportunityKind.SubstituteDrive,
             Title = $"Sostituzione in {tier} a {track.Name}",
             ProposedBy = team,
-            Justification = $"Un pilota di {team} è indisponibile e la squadra cerca un sostituto affidabile: la fiducia dei team verso {context.Driver} è a {context.Reputation.TeamTrust}/100. Nessun costo richiesto.",
+            Justification = $"Un pilota di {team} è indisponibile e la squadra cerca un sostituto affidabile: il livello influencer di {context.Driver} è a {context.Reputation.PublicPopularity}/100. Nessun costo richiesto.",
             Tier = tier,
             TrackId = track.Id,
             TrackName = track.Name,

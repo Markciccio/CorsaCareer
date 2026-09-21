@@ -192,7 +192,7 @@ public static class ConsequenceEngine
             career.TeamRelation = career.ReputationProfile.TeamTrust;
             career.Reputation = career.ReputationProfile.Overall;
             report.Reputation = shift;
-            report.Applied.Add(new Consequence("rifiuto", $"{opportunity.ProposedBy} registra il rifiuto: fiducia dei team {penalty:+#;-#;0}"));
+            report.Applied.Add(new Consequence("rifiuto", $"{opportunity.ProposedBy} registra il rifiuto: livello influencer {penalty:+#;-#;0}"));
         }
         else report.Applied.Add(new Consequence("rifiuto", $"Proposta «{opportunity.Title}» rifiutata: nessuna conseguenza sui rapporti"));
         return report;

@@ -98,8 +98,10 @@ public static class SelectionCatalog
     /// </summary>
     public static SelectionDefinition? ForRung(LadderRung rung) => rung.Id switch
     {
+        // La selezione monoposto arriva solo dopo il 125 con cambio e una
+        // piccola stagione kart completata. Il DAP è ancora gavetta: non deve
+        // aprire contemporaneamente un'offerta kart e un provino Formula.
         CareerLadder.Shifter => ById(FirstFormula),
-        CareerLadder.TwoStroke => ById(FirstFormula),
         "formula-4" => ById(NationalFormula),
         _ => null
     };

@@ -18,6 +18,8 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
     private Button? conferma;
     public string SelectedPath { get; private set; } = "";
     public bool ContentChanged { get; private set; }
+    public CareerContentReadiness ContentReadiness { get; }
+    public bool RequirementsSatisfied => ContentReadiness.Ready;
 
     /// <summary>
     /// Vero se da questa schermata e' stato chiesto di rileggere i contenuti.
@@ -54,6 +56,7 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         Font = new Font("Segoe UI", 10);
         Entrance = SceneEntrance.Curtain;
         SelectedPath = currentPath ?? "";
+        ContentReadiness = CareerContentRequirements.Evaluate(index);
 
         var cars = index.Cars.Where(ContentCategoryRules.IsRaceable).ToList();
         Controls.Add(new Label { Text = "LA TUA MAPPA DI CARRIERA", Left = 38, Top = 25, Width = 900, Height = 42, Font = new Font("Segoe UI", 24, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65) });
@@ -61,17 +64,23 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
 
         var start = suggestedStart == null ? "Nessuna auto utilizzabile: la carriera resta in attesa." : $"INIZIO CONSIGLIATO  ·  {suggestedStart.Name}  ·  {CareerLadder.ForCar(suggestedStart.Category, suggestedStart.PowerHp, suggestedStart.MassKg).Name}";
         Controls.Add(new Label { Text = start, Left = 40, Top = 113, Width = 1320, Height = 30, Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = suggestedStart == null ? Color.OrangeRed : Color.FromArgb(60, 215, 145) });
+        Controls.Add(new Label
+        {
+            Text = ContentReadiness.ShortMessage(), Left = 40, Top = 143, Width = 1320, Height = 22,
+            ForeColor = ContentReadiness.Ready ? Color.FromArgb(60, 215, 145) : Color.FromArgb(255, 150, 80),
+            Font = new Font("Segoe UI", 9.5f, FontStyle.Bold), AutoEllipsis = true
+        });
 
         Controls.Add(new Label
         {
             Text = soloLettura ? "LA CARRIERA POSSIBILE CON I CONTENUTI INSTALLATI" : "SCEGLI LA CARRIERA CHE PREFERISCI",
-            Left = 40, Top = 162, Width = 900, Height = 25,
+            Left = 40, Top = 169, Width = 900, Height = 25,
             Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65)
         });
         var formula = CareerPanel("KART → MONOPOSTO", "Kart a quattro tempi, due tempi, cambio: poi Formula 4, Formula 3 e il vertice. È una carriera distinta.", cars, true);
-        formula.Left = 38; formula.Top = 196; Controls.Add(formula);
+        formula.Left = 38; formula.Top = 203; Controls.Add(formula);
         var closed = CareerPanel("UTILITARIE → TURISMO · GT · ENDURANCE", "Track day, trofei e turismo prima di GT4, GT3, prototipi e mondiale endurance. È una carriera distinta.", cars, false);
-        closed.Left = 714; closed.Top = 196; Controls.Add(closed);
+        closed.Left = 714; closed.Top = 203; Controls.Add(closed);
 
         // Il bivio deve sembrare un bivio.
         //
@@ -114,6 +123,21 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         };
         Controls.Add(conferma);
 
+        // Installare una mod mentre la mappa è aperta è un caso normale. La
+        // scansione esplicita evita di dover riavviare il portale e rende chiaro
+        // quando il pacchetto minimo è finalmente completo.
+        if (!soloLettura)
+        {
+            var rescansione = new Button
+            {
+                Text = "↻  RISCANSIONA", Left = 1000, Top = 872, Width = 110, Height = 44,
+                BackColor = Color.FromArgb(40, 46, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold)
+            };
+            rescansione.Click += (_, _) => { RichiestoAggiornamento = true; DialogResult = DialogResult.Retry; Close(); };
+            Controls.Add(rescansione);
+        }
+
         if (soloLettura)
         {
             var chiudi = new Button
@@ -144,7 +168,11 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
             var exact = cars.Where(x => HasCarForBranchLevel(x, formula, level)).OrderBy(x => x.Name).ToList();
             var present = exact.Count > 0 ? exact : NearbyEquivalents(cars, formula, level);
             var isEquivalent = exact.Count == 0 && present.Count > 0;
-            var manual = present.Count == 0 ? new ManualAssignment(formula, level, name) : null;
+            // Anche quando c'è un equivalente vicino bisogna lasciare la
+            // scelta manuale: il pacchetto base distingue una GT4 da una GT3
+            // e una Formula d'ingresso da una F3, quindi il giocatore deve
+            // poter dichiarare quale auto vuole usare per quel gradino.
+            var manual = exact.Count == 0 ? new ManualAssignment(formula, level, name) : null;
             var note = present.Count == 0 ? MissingMessage(formula, level)
                 : isEquivalent ? "Nessuna auto perfettamente classificata: qui usiamo un equivalente installato dello stesso ramo." : "";
             rows.Controls.Add(LevelCard(name, note, present, 585, present.Count == 0 ? MissingOptions(formula, level) : [], manual));
@@ -298,9 +326,10 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         // dire che la scelta e' obbligatoria, e toglie il caso in cui la
         // carriera partiva con una direzione decisa da nessuno.
         var scelto = monoposto || turismo;
-        conferma.Enabled = scelto;
-        conferma.Text = scelto ? "CONFERMA E CONTINUA" : "SCEGLI UNA DELLE DUE";
-        conferma.BackColor = scelto ? Color.FromArgb(224, 24, 58) : Color.FromArgb(58, 62, 72);
+        var pronto = ContentReadiness.Ready;
+        conferma.Enabled = scelto && pronto;
+        conferma.Text = !pronto ? "INSTALLA IL PACCHETTO BASE" : scelto ? "CONFERMA E CONTINUA" : "SCEGLI UNA DELLE DUE";
+        conferma.BackColor = scelto && pronto ? Color.FromArgb(224, 24, 58) : Color.FromArgb(58, 62, 72);
     }
 
     private static void Vesti(Button? pulsante, bool attivo, string nome)

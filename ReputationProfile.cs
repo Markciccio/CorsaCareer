@@ -73,7 +73,7 @@ public sealed class ReputationProfile
 
     public static string Label(ReputationKind kind) => kind switch
     {
-        ReputationKind.TeamTrust => "livello di fiducia dei followers",
+        ReputationKind.TeamTrust => "livello influencer",
         ReputationKind.SponsorAppeal => "interesse degli sponsor",
         ReputationKind.PublicPopularity => "livello influencer",
         ReputationKind.PressStanding => "considerazione della stampa",
@@ -82,6 +82,7 @@ public sealed class ReputationProfile
     };
 
     public string Describe() => string.Join(" · ", Enum.GetValues<ReputationKind>()
+        .Where(kind => kind != ReputationKind.TeamTrust)
         .Select(kind => $"{Label(kind)} {Of(kind)}"));
 }
 

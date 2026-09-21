@@ -687,6 +687,19 @@ public sealed partial class MainForm
             Anomalia($"REPUTAZIONE FUORI SCALA: {career.Reputation}.");
         if (career.ContractActive && string.IsNullOrWhiteSpace(career.Car))
             Anomalia("CONTRATTO SENZA AUTO: risulta un sedile attivo ma nessuna vettura assegnata.");
+
+        // Il dato importato deve rispettare la disciplina dell'appuntamento:
+        // una Formula su un kartodromo (o un kart su un autodromo) è un errore
+        // di pianificazione, anche se il referto Assetto Corsa è formalmente
+        // valido. Questo controllo impedisce che una firma a metà stagione
+        // trasformi i round già pubblicati con la nuova vettura.
+        foreach (var gara in career.RaceHistory ?? [])
+        {
+            var auto = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(gara.Car, StringComparison.OrdinalIgnoreCase));
+            var pista = contentIndex.Tracks.FirstOrDefault(x => x.Id.Equals(gara.Track, StringComparison.OrdinalIgnoreCase));
+            if (auto != null && pista != null && !CareerScheduler.IsTrackCompatible(pista, auto.Category))
+                Anomalia($"CIRCUITO INCOMPATIBILE: {gara.Car} ({auto.Category}) a {gara.Track}.");
+        }
     }
 
     private void Anomalia(string testo)
@@ -736,7 +749,9 @@ public sealed partial class MainForm
         if (invernali > 0)
             problemi.Add($"{invernali} gare disputate fra dicembre e febbraio: la stagione non sta dentro l'anno sportivo.");
 
-        // 4. La gavetta: un gradino non si lascia dopo due gare.
+        // 4. La gavetta segue il percorso iniziale dichiarato: due uscite con
+        // il DAP, tre con il 125 e poi la selezione monoposto. Le categorie
+        // professionistiche restano invece più lunghe.
         foreach (var passo in storico
                      .Select(x => new
                      {
@@ -747,7 +762,16 @@ public sealed partial class MainForm
                      .GroupBy(x => x.Passo))
         {
             var gare = passo.Count();
-            if (gare < 8 && passo.Key < gradino.Step)
+            var minimo = passo.Key switch
+            {
+                // Il kart 4T è una prova di accesso, non un campionato: una
+                // sola uscita è il percorso previsto prima di passare al DAP.
+                1 => 1,
+                2 => 2, // DAP / kart due tempi
+                3 => 3, // kart 125 con cambio
+                _ => 8
+            };
+            if (gare < minimo && passo.Key < gradino.Step)
                 problemi.Add($"categoria {passo.Key}: attraversata in {gare} gare, senza gavetta.");
         }
 

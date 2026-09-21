@@ -32,7 +32,7 @@ public static class RaceReactions
         int Posizione, int Partenti, bool HaPartenti, bool Ritiro, bool Vittoria, bool Podio,
         int Griglia, bool HaGriglia, int PosizioniGuadagnate, int PuntiGara, double Penalita,
         bool HaClassifica, int PostoCampionato, int PuntiCampionato, int DistanzaDalPrimo, int DistanzaDalTerzo,
-        int GareRimaste, string Leader, string ProssimoCampionato, bool PuoSalire);
+        int GareRimaste, string Leader, string ProssimoCampionato, bool PuoSalire, bool Debutto);
 
     public static IReadOnlyList<AnimeDialogueLine> Build(CareerState career, RaceHistoryEntry gara,
         IReadOnlyList<ContentCarRecord> vetture, IReadOnlyList<ContentTrackRecord> circuiti,
@@ -40,31 +40,45 @@ public static class RaceReactions
     {
         var c = Leggi(career, gara, vetture, circuiti, agenda);
 
-        // Chi parla: al massimo tre, e sempre scelti da quello che è successo.
-        // La rotazione usa il numero di gara, così due domeniche di fila non
-        // hanno mai la stessa formazione anche a parità di risultato.
-        var voci = new List<AnimeDialogueLine>();
-        var rotazione = Math.Max(0, career.Races);
-
-        // 1. Chi apre. Il meccanico se la macchina ha ceduto, altrimenti Haru,
-        //    che è quello che la gara la vive insieme a te.
-        voci.Add(c.Ritiro && rotazione % 2 == 0
-            ? CastDirector.Battuta(CastDirector.Genji, Meccanico(c), "deluso")
-            : CastDirector.Battuta(CastDirector.Haru, Amico(c), Umore(c)));
-
-        // 2. Chi mette la gara nel campionato. È la parte che al giocatore
-        //    serve davvero: dove sono adesso e che cosa manca.
-        voci.Add(rotazione % 3 == 0 && !c.Ritiro
-            ? CastDirector.Battuta(CastDirector.Shigeo, Ingegnere(c), "neutro")
-            : CastDirector.Battuta(CastDirector.Rei, Direttrice(c), c.Podio ? "serena" : c.Ritiro ? "preoccupata" : "cauta"));
-
-        // 3. La terza voce c'è solo se ha qualcosa da dire: il rivale quando
-        //    c'è stato un confronto, la giornalista quando è successo qualcosa
-        //    che si racconta. Se non c'è motivo, la scena finisce a due.
-        var terza = Terza(c, rotazione);
-        if (terza != null) voci.Add(terza);
-
+        // La scena resta manga, ma segue una sola linea narrativa: cronaca del
+        // risultato, commento tecnico del box, chiusura dell'amico. Prima ogni
+        // personaggio ripeteva la stessa gara con parole diverse e il rientro
+        // sembrava una sequenza di comunicati scollegati.
+        var voci = new List<AnimeDialogueLine>
+        {
+            CastDirector.Battuta(CastDirector.Haru, Cronaca(c), c.Vittoria ? "felice" : c.Ritiro ? "preoccupato" : "sollevato"),
+            CastDirector.Battuta(CastDirector.Rei, LetturaTecnica(c), c.Vittoria || c.Podio ? "serena" : c.Ritiro ? "preoccupata" : "cauta"),
+            CastDirector.Battuta(CastDirector.Noa, CommentoFinale(c), c.Vittoria ? "entusiasta" : c.Ritiro ? "neutro" : "orgogliosa")
+        };
         return voci;
+    }
+
+    private static string Cronaca(Contesto c)
+    {
+        var pilota = c.Debutto ? $"Il debuttante {c.Pilota}" : c.Pilota;
+        if (c.Ritiro)
+            return $"«{pilota} non ha visto il traguardo a {c.Circuito}: il ritiro chiude una gara che ora dovremo ricostruire con i dati del box.»";
+        if (c.Vittoria)
+            return $"«{pilota} vince la gara di {c.Circuito}, davanti a {Math.Max(0, c.Partenti - 1)} avversari. È una vittoria costruita in pista, non un tempo preso da solo.»";
+        return $"«{pilota} chiude {Maiuscola(Ordinale(c.Posizione))} a {c.Circuito}"
+            + (c.HaPartenti ? $", su {c.Partenti} partenti" : "")
+            + ". Il risultato è questo: adesso lo leggiamo senza aggiungere altro.»";
+    }
+
+    private static string LetturaTecnica(Contesto c)
+    {
+        if (c.Ritiro)
+            return "«Prima di parlare di classifica controlliamo la vettura e capiamo perché si è fermata. La prossima decisione deve partire da una causa reale.»";
+        var piazzamento = c.Vittoria ? "La vittoria conferma che il passo c'era" : c.Podio ? "Il podio conferma che il passo c'era" : "Il piazzamento ci dà una base concreta";
+        var campionato = c.HaClassifica ? $" In campionato siamo {Ordinale(c.PostoCampionato)} con {c.PuntiCampionato} punti." : " La classifica di campionato verrà dopo.";
+        return $"«{piazzamento}.{campionato} Il lavoro da portare alla prossima gara è chiaro: trasformare questo dato in continuità.»";
+    }
+
+    private static string CommentoFinale(Contesto c)
+    {
+        if (c.Ritiro) return "«Non è il risultato che volevamo, ma una gara storta non decide da sola una stagione. Ci saremo alla prossima.»";
+        if (c.Vittoria) return $"«Ottima prova, {c.Pilota}. Il titolo del giornale è semplice: prima vittoria a {c.Circuito}. Ora tutti si aspettano che tu possa ripeterla.»";
+        return $"«Buona prova, {c.Pilota}: {Maiuscola(Ordinale(c.Posizione))} posto e un riferimento vero da cui ripartire. La prossima gara ci dirà se è crescita o soltanto una giornata giusta.»";
     }
 
     // ------------------------------------------------------------- le voci
@@ -257,7 +271,8 @@ public static class RaceReactions
                                            && x.Season == career.Season && x.IsPlanned),
             Leader: classifica.Count > 0 ? classifica[0].Driver : "",
             ProssimoCampionato: ChampionshipLadder.IsTop(livello) ? "" : ChampionshipLadder.Name(livello + 1),
-            PuoSalire: !ChampionshipLadder.IsTop(livello));
+            PuoSalire: !ChampionshipLadder.IsTop(livello),
+            Debutto: career.RaceHistory.Count <= 1);
     }
 
     private static string Umore(Contesto c) =>

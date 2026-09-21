@@ -39,16 +39,28 @@ public sealed partial class MainForm
     /// una giornata qualunque devono stare dove si legge la giornata.
     /// </summary>
     private FlowLayoutPanel situationLine = new();
+    private PictureBox? seasonalPostcardImage;
+    private Label seasonalPostcardCaption = new();
+    private string seasonalPostcardKey = "";
+    private Image? seasonalPostcardCurrent;
 
     /// <summary>La promessa di ogni attività, sul pulsante che la esegue.</summary>
     private readonly ToolTip oggiTip = new() { AutoPopDelay = 20000, InitialDelay = 320, ReshowDelay = 120 };
     private Label todayDateLine = new();
+    private Label todayHolidayLine = new();
+    private Button skipAppointment = new();
     private BudgetPanel budgetPanel = new();
+    private Label pilotSummaryName = new();
+    private Label pilotSummaryDetails = new();
+    private Label pilotSummarySchool = new();
+    private PictureBox? pilotSummaryPortrait;
 
     // Colonna azioni.
     private Button continueStory = new(), launch = new(), briefing = new(), nextSeason = new(), activities = new(), dailyAgenda = new(), opportunities = new(), simulate = new(), phaseAdvance = new();
     /// <summary>Il comando principale della card «ADESSO», distinto da quello del pannello sezioni.</summary>
     private Button homeContinue = new();
+    /// <summary>Spiega che il test immediato porta direttamente al prossimo appuntamento.</summary>
+    private Label directAdvanceHint = new();
     private Button simulateGood = new(), simulateBad = new();
     private Label pendingBanner = new();
     private Label decisionSummary = new();
@@ -80,6 +92,8 @@ public sealed partial class MainForm
     /// <summary>Il passo attuale, impaginato: titolo, racconto e dati distinti.</summary>
     private FlowLayoutPanel homeStep = new();
     private FlowLayoutPanel homeCalendarTimeline = new();
+    private Label homePathSummary = new();
+    private ThemedBackdropPanel? homeAppointmentCard;
     private PictureBox? homeArtwork;
     private readonly List<string> homeArtworkPaths = [];
     private System.Windows.Forms.Timer? homeArtworkTimer;
@@ -96,9 +110,10 @@ public sealed partial class MainForm
     private void BuildUi()
     {
         Controls.Add(BuildStatusBar());
-        Controls.Add(BuildSectionBar());
-        Controls.Add(BuildBody());
-        Controls.Add(BuildStatStrip());
+        // La Home è un solo cruscotto: non una pila di fasce scollegate. Le
+        // destinazioni restano nella testata; qui sotto c'è solo ciò che serve
+        // per decidere il prossimo passo della carriera.
+        Controls.Add(BuildReferenceDashboard());
         Controls.Add(BuildHeader());
         // L'avviso di un articolo nuovo non è più un nastro ancorato in cima
         // alla finestra: vive dentro la colonna «OGGI», inserito da
@@ -129,7 +144,13 @@ public sealed partial class MainForm
     /// </summary>
     private Control BuildSectionBar()
     {
-        var bar = new Panel { Dock = DockStyle.Top, Height = 46, BackColor = UiTheme.Surface, Padding = new Padding(24, 7, 24, 7) };
+        var bar = UiTheme.BackdropPanel(
+            "manga-manager-next-race-plan-wall-map.jpg",
+            Color.FromArgb(212, UiTheme.Surface),
+            imageAlpha: 36,
+            padding: new Padding(24, 7, 24, 7));
+        bar.Dock = DockStyle.Top;
+        bar.Height = 46;
         bar.Paint += (_, e) =>
         {
             using var line = new Pen(UiTheme.Border);
@@ -167,9 +188,16 @@ public sealed partial class MainForm
 
     private Control BuildHeader()
     {
-        // Due righe: marchio e comandi sopra, contesto del round sotto a tutta
-        // larghezza. Su una riga sola il titolo e il round si sovrapponevano.
-        var header = new Panel { Dock = DockStyle.Top, Height = 112, BackColor = UiTheme.HeaderBackground, Padding = new Padding(24, 6, 24, 8) };
+        // La testata segue la composizione della tavola di riferimento: un
+        // banner fotografico per il marchio, una barra di navigazione separata
+        // e sotto il contesto della stagione. I comandi restano gli stessi.
+        var header = UiTheme.BackdropPanel(
+            "ui-backgrounds/home-hero-circuit-dawn-v1.png",
+            Color.FromArgb(168, UiTheme.HeaderBackground),
+            imageAlpha: 112,
+            padding: new Padding(24, 6, 24, 8));
+        header.Dock = DockStyle.Top;
+        header.Height = 158;
         header.Paint += (_, e) =>
         {
             using var accent = new SolidBrush(UiTheme.Accent);
@@ -178,31 +206,56 @@ public sealed partial class MainForm
             e.Graphics.DrawLine(line, 0, header.Height - 1, header.Width, header.Height - 1);
         };
 
-        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, BackColor = Color.Transparent };
+        var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = Color.Transparent };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         header.Controls.Add(grid);
 
-        var brand = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, BackColor = Color.Transparent, Margin = new Padding(0) };
-        brand.Controls.Add(new Label { Text = "CORSA CAREER", AutoSize = true, Font = UiTheme.Display, ForeColor = UiTheme.TextPrimary, Margin = new Padding(0, 6, 14, 0) });
-        brand.Controls.Add(new Label { Text = "LA TUA CARRIERA · ASSETTO CORSA", AutoSize = true, Font = UiTheme.Small, ForeColor = UiTheme.TextMuted, Margin = new Padding(0, 18, 0, 0) });
-        grid.Controls.Add(brand, 0, 0);
+        var mast = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Color.Transparent, Margin = Padding.Empty };
+        mast.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 72));
+        mast.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 28));
+        var brandStack = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent, Margin = Padding.Empty };
+        brandStack.RowStyles.Add(new RowStyle(SizeType.Absolute, 37));
+        brandStack.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        var brand = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, BackColor = Color.Transparent, Margin = Padding.Empty };
+        brand.Controls.Add(new Label { Text = "CORSA ", AutoSize = true, Font = new Font(UiTheme.FamilySemibold, 29F, FontStyle.Bold | FontStyle.Italic), ForeColor = UiTheme.TextPrimary, Margin = new Padding(0, -2, 0, 0) });
+        brand.Controls.Add(new Label { Text = "CAREER", AutoSize = true, Font = new Font(UiTheme.FamilySemibold, 29F, FontStyle.Bold | FontStyle.Italic), ForeColor = UiTheme.Accent, Margin = new Padding(0, -2, 14, 0) });
+        brandStack.Controls.Add(brand, 0, 0);
+        brandStack.Controls.Add(new Label { Text = "LA TUA CARRIERA  ·  ASSETTO CORSA", Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextPrimary, Margin = new Padding(2, 0, 0, 0), TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false }, 0, 1);
+        mast.Controls.Add(brandStack, 0, 0);
 
-        var tools = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true, BackColor = Color.Transparent, Margin = new Padding(0, 8, 0, 0) };
-        narrationControl = UiTheme.GhostButton("▶  RUBRICA TV", 156);
+        var slogan = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = Color.Transparent, Margin = new Padding(0, 3, 0, 0) };
+        slogan.RowStyles.Add(new RowStyle(SizeType.Percent, 45));
+        slogan.RowStyles.Add(new RowStyle(SizeType.Percent, 28));
+        slogan.RowStyles.Add(new RowStyle(SizeType.Percent, 27));
+        slogan.Controls.Add(new Label { Text = "走り続けろ", Dock = DockStyle.Fill, Font = new Font("Yu Gothic UI", 14F, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.BottomRight, UseMnemonic = false }, 0, 0);
+        slogan.Controls.Add(new Label { Text = "KEEP DRIVING", Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySans, 7.5F, FontStyle.Bold), ForeColor = UiTheme.TextSecondary, TextAlign = ContentAlignment.MiddleRight, UseMnemonic = false }, 0, 1);
+        var sloganRule = new Panel { Dock = DockStyle.Fill, BackColor = Color.Transparent };
+        sloganRule.Paint += (_, e) => { using var pen = new Pen(UiTheme.Accent, 3); e.Graphics.DrawLine(pen, Math.Max(0, sloganRule.Width - 84), 7, sloganRule.Width - 4, 1); };
+        slogan.Controls.Add(sloganRule, 0, 2);
+        mast.Controls.Add(slogan, 1, 0);
+        grid.Controls.Add(mast, 0, 0);
+
+        var tools = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoScroll = false, BackColor = Color.FromArgb(115, 4, 14, 25), Padding = new Padding(4, 3, 4, 3), Margin = new Padding(0, 0, 0, 2) };
+        var homeButton = UiTheme.GhostButton("⌂  HOME", 108);
+        homeButton.ForeColor = UiTheme.Warning;
+        homeButton.FlatAppearance.BorderColor = UiTheme.Warning;
+        homeButton.Click += (_, _) => RefreshCareerHome();
+        tools.Controls.Add(homeButton);
+        narrationControl = UiTheme.GhostButton("▷  RUBRICA TV", 132);
         narrationControl.ForeColor = UiTheme.TextPrimary;
         narrationControl.Click += (_, _) => ToggleNarration();
-        var soundtrackButton = UiTheme.GhostButton("♫  SOUNDTRACK", 138);
+        var soundtrackButton = UiTheme.GhostButton("♫  SOUNDTRACK", 128);
         soundtrackButton.Click += (_, _) => OpenSoundtrack();
-        var settingsButton = UiTheme.GhostButton("⚙  IMPOSTAZIONI", 156);
+        var settingsButton = UiTheme.GhostButton("⚙  IMPOSTAZIONI", 140);
         settingsButton.Click += (_, _) => OpenSettings();
         // Una voce sola per la carriera. «Centro carriera» e «Carriere» erano
         // due pulsanti indistinguibili a leggerli, e costringevano a ricordare
         // quale dei due contenesse cosa: la gestione dei salvataggi adesso è
         // una scheda dentro il centro carriera.
-        var careerHub = UiTheme.GhostButton("◎  CENTRO CARRIERA", 176);
+        var careerHub = UiTheme.GhostButton("◎  CENTRO CARRIERA", 160);
         careerHub.Click += (_, _) => OpenCareerHub();
         tools.Controls.Add(narrationControl);
         tools.Controls.Add(soundtrackButton);
@@ -219,24 +272,23 @@ public sealed partial class MainForm
         // carriera con le auto che ho»: si guarda all'inizio, e si riguarda
         // ogni volta che si installa qualcosa di nuovo. Deve stare dove si
         // vede sempre, accanto ai contenuti che e' quello che la cambia.
-        var mapButton = UiTheme.GhostButton("◈  MAPPA CARRIERA", 178);
+        var mapButton = UiTheme.GhostButton("◈  MAPPA CARRIERA", 154);
         mapButton.Click += (_, _) => OpenCareerMap();
         tools.Controls.Add(mapButton);
-        var contentsButton = UiTheme.GhostButton("▣  CONTENUTI", 132);
+        var contentsButton = UiTheme.GhostButton("▣  CONTENUTI", 118);
         contentsButton.Click += (_, _) => RefreshContents();
         tools.Controls.Add(contentsButton);
         tools.Controls.Add(settingsButton);
-        grid.Controls.Add(tools, 1, 0);
+        grid.Controls.Add(tools, 0, 1);
 
         var context = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent, Margin = new Padding(0) };
-        context.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        context.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
         context.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        headerRound = new Label { Text = "", Dock = DockStyle.Fill, Font = UiTheme.Title, ForeColor = UiTheme.TextPrimary, AutoEllipsis = true, Margin = new Padding(0) };
-        headerChampionship = new Label { Text = "", Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary, AutoEllipsis = true, Margin = new Padding(0) };
+        headerRound = new Label { Text = "", Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySemibold, 10.5F, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, AutoEllipsis = true, Margin = new Padding(0) };
+        headerChampionship = new Label { Text = "", Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySans, 7.5F), ForeColor = UiTheme.TextSecondary, AutoEllipsis = true, Margin = new Padding(0) };
         context.Controls.Add(headerRound, 0, 0);
         context.Controls.Add(headerChampionship, 0, 1);
-        grid.Controls.Add(context, 0, 1);
-        grid.SetColumnSpan(context, 2);
+        grid.Controls.Add(context, 0, 2);
 
         return header;
     }
@@ -271,14 +323,21 @@ public sealed partial class MainForm
         // 330 e non 250: nella colonna di destra adesso ci sono i pulsanti
         // della giornata, e con 250 se ne vedevano tre file su sette — il
         // resto stava sotto una barra di scorrimento che nessuno cerca.
-        var wrapper = new TableLayoutPanel { Dock = DockStyle.Top, Height = 330, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 10), ColumnCount = 2, RowCount = 1 };
-        // Il conto e i due indicatori decisivi devono stare a sinistra, prima
-        // della frase narrativa: sono il cruscotto che guida ogni scelta.
-        // I riquadri di sinistra non hanno piu' i tre pulsanti che aprivano
-        // altre schermate: sono numeri, e occupano meno. Lo spazio che si
-        // libera va alla giornata, che adesso e' la parte con cui si gioca.
-        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 46));
+        var backdrop = UiTheme.BackdropPanel(
+            "manga-kart-scrapyard-four-stroke-generator-first-test.jpg",
+            Color.FromArgb(214, UiTheme.Background),
+            imageAlpha: 34,
+            padding: Padding.Empty);
+        backdrop.Dock = DockStyle.Top;
+        backdrop.Height = 330;
+        var wrapper = new TableLayoutPanel { Dock = DockStyle.Fill, BackColor = Color.Transparent, Padding = new Padding(24, 6, 24, 10), ColumnCount = 3, RowCount = 1 };
+        // La carta pilota e' una colonna vera, come nella tavola di riferimento:
+        // occupa tutta l'altezza della fascia e non viene confusa con un quinto
+        // indicatore. Budget e tre livelli restano raccolti nel cruscotto
+        // centrale, mentre la giornata vive nella colonna destra.
+        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
         wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 54));
+        wrapper.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 24));
         todayDateLine = new Label
         {
             Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySemibold, 12F, FontStyle.Bold),
@@ -288,17 +347,17 @@ public sealed partial class MainForm
         situationLine = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = true,
-            AutoScroll = true, BackColor = UiTheme.Background,
+            AutoScroll = false, BackColor = Color.Transparent,
             Padding = new Padding(0, 2, 12, 0), Margin = new Padding(0)
         };
         var narrative = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, BackColor = UiTheme.Background, ColumnCount = 1, RowCount = 3,
+            Dock = DockStyle.Fill, BackColor = Color.Transparent, ColumnCount = 1, RowCount = 3,
             Margin = new Padding(8, 0, 0, 0), Padding = new Padding(0)
         };
         narrative.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-        narrative.RowStyles.Add(new RowStyle(SizeType.Absolute, 26));
         narrative.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        narrative.RowStyles.Add(new RowStyle(SizeType.Absolute, 104));
         narrative.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
         // Scorrere il calendario a mano.
@@ -323,13 +382,18 @@ public sealed partial class MainForm
         comandiTempo.Controls.Add(domani);
         comandiTempo.Controls.Add(prossimo);
 
-        narrative.Controls.Add(todayDateLine, 0, 0);
-        narrative.Controls.Add(comandiTempo, 0, 1);
+        // La data compare una sola volta dentro la riga della giornata: il
+        // titolo "OGGI" separato qui sopra duplicava la stessa informazione.
+        narrative.Controls.Add(comandiTempo, 0, 0);
+        narrative.Controls.Add(BuildSeasonalPostcard(), 0, 1);
         narrative.Controls.Add(situationLine, 0, 2);
         // Il conto era una stringa di due righe nello stesso corpo minuscolo del
         // resto: il denaro decide ogni scelta della carriera e non si
         // distingueva da una nota a margine.
-        budgetPanel = new BudgetPanel { Dock = DockStyle.Fill, Margin = new Padding(8, 0, 0, 0) };
+        budgetPanel = new BudgetPanel(includePilot: false) { Dock = DockStyle.Fill, Margin = new Padding(8, 0, 8, 0) };
+        var pilotColumn = budgetPanel.CreatePilotCardForHome();
+        pilotColumn.Dock = DockStyle.Fill;
+        pilotColumn.Margin = new Padding(0, 0, 8, 0);
         // Ogni riquadro apre le proprie attività: dal social non si deve
         // finire a scegliere la palestra.
         // I tre riquadri non aprono piu' niente: i pulsanti che avevano dentro
@@ -338,8 +402,209 @@ public sealed partial class MainForm
         // e una di quelle stanze era la trattativa con gli sponsor, che per
         // qualche giorno e' stata irraggiungibile da tutto il programma.
         // Adesso la trattativa sta dove appartiene: nelle fasce di Haru.
-        wrapper.Controls.Add(budgetPanel, 0, 0); wrapper.Controls.Add(narrative, 1, 0);
-        return wrapper;
+        wrapper.Controls.Add(pilotColumn, 0, 0);
+        wrapper.Controls.Add(budgetPanel, 1, 0);
+        wrapper.Controls.Add(narrative, 2, 0);
+        backdrop.Controls.Add(wrapper);
+        return backdrop;
+    }
+
+    /// <summary>
+    /// Figurina del pilota: identità e scuola hanno un posto proprio, sotto
+    /// ai quattro indicatori, invece di finire in una riga anonima accanto a
+    /// una seconda data. È il riepilogo umano della carriera.
+    /// </summary>
+    private Control BuildPilotSummaryCard()
+    {
+        var card = new Panel
+        {
+            Dock = DockStyle.Fill, BackColor = UiTheme.SurfaceRaised,
+            Margin = new Padding(0, 6, 0, 0), Padding = new Padding(10, 7, 12, 7)
+        };
+        card.Paint += (_, e) =>
+        {
+            using var border = new Pen(UiTheme.Warning, 2);
+            using var accent = new SolidBrush(UiTheme.Warning);
+            e.Graphics.DrawRectangle(border, 0, 0, card.Width - 1, card.Height - 1);
+            e.Graphics.FillRectangle(accent, 0, 0, 5, card.Height);
+        };
+
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 108));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+
+        var portraitPath = AssetPaths.File("ui-icons", DriverFigurinaAsset(12));
+        if (File.Exists(portraitPath))
+        {
+            pilotSummaryPortrait = new PictureBox
+            {
+                Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 12, 0),
+                Image = LoadArtwork(portraitPath), AccessibleName = "Figurina manga del pilota", Tag = portraitPath
+            };
+            layout.Controls.Add(pilotSummaryPortrait, 0, 0);
+        }
+
+        var text = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3,
+            BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty
+        };
+        text.RowStyles.Add(new RowStyle(SizeType.Absolute, 30));
+        text.RowStyles.Add(new RowStyle(SizeType.Absolute, 25));
+        text.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        pilotSummaryName = new Label
+        {
+            Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySemibold, 16F, FontStyle.Bold),
+            ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.MiddleLeft,
+            AutoEllipsis = true, UseMnemonic = false, Margin = Padding.Empty
+        };
+        pilotSummaryDetails = new Label
+        {
+            Dock = DockStyle.Fill, Font = UiTheme.BodyStrong, ForeColor = UiTheme.TextSecondary,
+            TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true,
+            UseMnemonic = false, Margin = Padding.Empty
+        };
+        pilotSummarySchool = new Label
+        {
+            Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = UiTheme.Warning,
+            TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true,
+            UseMnemonic = false, Margin = Padding.Empty
+        };
+        text.Controls.Add(pilotSummaryName, 0, 0);
+        text.Controls.Add(pilotSummaryDetails, 0, 1);
+        text.Controls.Add(pilotSummarySchool, 0, 2);
+        layout.Controls.Add(text, 1, 0);
+        card.Controls.Add(layout);
+        return card;
+    }
+
+    private void UpdatePilotSummary()
+    {
+        var eta = EtaPilota();
+        var portraitPath = AssetPaths.File("ui-icons", DriverFigurinaAsset(eta));
+        if (pilotSummaryPortrait != null
+            && !string.Equals(pilotSummaryPortrait.Tag as string, portraitPath, StringComparison.OrdinalIgnoreCase)
+            && File.Exists(portraitPath))
+        {
+            var replacement = LoadArtwork(portraitPath);
+            var previous = pilotSummaryPortrait.Image;
+            pilotSummaryPortrait.Image = replacement;
+            pilotSummaryPortrait.Tag = portraitPath;
+            previous?.Dispose();
+        }
+        var classe = Scuola.Classe(career).ToUpperInvariant();
+        var livello = Scuola.Livello(career);
+        pilotSummaryName.Text = $"FIGURINA DEL PILOTA  ·  {career.Driver}";
+        pilotSummaryDetails.Text = $"{eta} ANNI  ·  {classe}";
+        pilotSummarySchool.Text = $"LIVELLO SCUOLA  {livello}/100  ·  {GiudizioScuola(livello)}";
+        pilotSummarySchool.ForeColor = livello < Scuola.SogliaDiDivieto
+            ? UiTheme.Accent
+            : livello < Scuola.SogliaDiPromozione ? UiTheme.Warning : UiTheme.Positive;
+    }
+
+    private static string DriverFigurinaAsset(int eta) => eta switch
+    {
+        <= 13 => "driver-figurina-12-manga-v1.png",
+        <= 16 => "driver-figurina-15-manga-v1.png",
+        _ => "driver-figurina-18-manga-v1.png"
+    };
+
+    private static string GiudizioScuola(int livello) => livello switch
+    {
+        >= 80 => "OTTIMO",
+        >= 60 => "BUONO",
+        >= 40 => "SUFFICIENTE",
+        _ => "DA RECUPERARE"
+    };
+
+    private Control BuildSeasonalPostcard()
+    {
+        var card = new Panel
+        {
+            Dock = DockStyle.Fill, BackColor = UiTheme.SurfaceRaised,
+            Margin = new Padding(0, 2, 12, 4), Padding = new Padding(6),
+            TabStop = false
+        };
+        card.Paint += (_, e) =>
+        {
+            using var pen = new Pen(UiTheme.Border);
+            e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+        };
+        var layout = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1,
+            BackColor = Color.Transparent, Margin = new Padding(0)
+        };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 142));
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        seasonalPostcardImage = new PictureBox
+        {
+            Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom,
+            BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 8, 0)
+        };
+        seasonalPostcardImage.Disposed += (_, _) => seasonalPostcardImageCurrentDispose();
+        seasonalPostcardCaption = new Label
+        {
+            Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary,
+            TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, UseMnemonic = false,
+            Padding = new Padding(2, 0, 3, 0)
+        };
+        layout.Controls.Add(seasonalPostcardImage, 0, 0);
+        layout.Controls.Add(seasonalPostcardCaption, 1, 0);
+        card.Controls.Add(layout);
+        AggiornaCartolinaStagionale();
+        return card;
+    }
+
+    private void seasonalPostcardImageCurrentDispose()
+    {
+        seasonalPostcardCurrent?.Dispose();
+        seasonalPostcardCurrent = null;
+    }
+
+    private void AggiornaCartolinaStagionale()
+    {
+        if (seasonalPostcardImage == null) return;
+        var scelta = CartolinaStagionale(career.StoryDate);
+        if (scelta.FileName == seasonalPostcardKey && seasonalPostcardImage.Image != null) return;
+        seasonalPostcardKey = scelta.FileName;
+        var path = AssetPaths.File("seasonal-postcards", scelta.FileName);
+        var replacement = LoadArtwork(path);
+        if (replacement == null)
+        {
+            var previousMissing = seasonalPostcardCurrent;
+            seasonalPostcardCurrent = null;
+            seasonalPostcardImage.Image = null;
+            previousMissing?.Dispose();
+            seasonalPostcardImage.Visible = false;
+            seasonalPostcardCaption.Text = "LA GIORNATA DI OGGI\n" + scelta.Caption;
+            return;
+        }
+        var previous = seasonalPostcardCurrent;
+        seasonalPostcardImage.Image = replacement;
+        seasonalPostcardImage.Visible = true;
+        seasonalPostcardCaption.Text = "CARTOLINA DEL GIORNO\n" + scelta.Caption;
+        seasonalPostcardCurrent = replacement;
+        previous?.Dispose();
+    }
+
+    private static (string FileName, string Caption) CartolinaStagionale(DateTime date)
+    {
+        var alternative = date.Month switch
+        {
+            12 => new[] { ("december-snow-paddock.jpg", "Dicembre · si libera la pista dalla neve"), ("january-school-dusk.jpg", "Inverno · scuola, strada e casco nello zaino") },
+            1 or 2 => new[] { ("january-school-dusk.jpg", "Inverno · scuola, strada e casco nello zaino"), ("december-snow-paddock.jpg", "Inverno · lavoro di squadra ai box") },
+            3 or 4 or 5 => new[] { ("spring-ramen-blossoms.jpg", "Primavera · ramen dopo l'allenamento"), ("kart-235-cherry-blossom.jpg", "Primavera · il circuito si risveglia") },
+            6 or 7 or 8 => new[] { ("august-coast-holiday.jpg", "Estate · una pausa sulla costa"), ("kart-231-summer-heat-race.jpg", "Estate · caldo, gomme e pista") },
+            9 or 10 => new[] { ("autumn-kart-tuning.jpg", "Autunno · si prepara il prossimo salto"), ("kart-233-autumn-leaves.jpg", "Autunno · foglie e traiettorie") },
+            _ => new[] { ("november-rain-walk.jpg", "Novembre · una passeggiata sotto la pioggia"), ("manga-team-ramen-rainout-paddock.jpg", "Novembre · aspettando che smetta di piovere") }
+        };
+        return alternative[(date.DayOfYear / 7) % alternative.Length];
     }
 
     /// <summary>
@@ -393,6 +658,19 @@ public sealed partial class MainForm
         return relativo.Length == 0 ? data : $"{relativo} · {data}";
     }
 
+    /// <summary>Data completa con il conto alla rovescia sempre visibile.</summary>
+    private static string DataConDistanza(DateTime giorno, DateTime oggi)
+    {
+        var giorni = (giorno.Date - oggi.Date).Days;
+        var relativo = giorni switch
+        {
+            <= 0 => "OGGI",
+            1 => "DOMANI",
+            _ => $"FRA {giorni} GIORNI"
+        };
+        return $"{NarrativeCalendar.Format(giorno).ToUpperInvariant()} ({relativo})";
+    }
+
     /// <summary>Che cosa si va a fare: la wild card ha un nome suo.</summary>
     private static string EtichettaAppuntamento(ScheduledEvent evento) =>
         evento.IsWildCard ? "Wild card" : CareerScheduler.KindLabel(evento);
@@ -419,38 +697,21 @@ public sealed partial class MainForm
 
         var giorno = DriverDay.EnsureToday(career);
         var eta = EtaPilota();
-        var larghezza = Math.Max(360, situationLine.ClientSize.Width - 24);
-        var mezza = (larghezza - 16) / 2;
-
-        // La scuola si mostra finche' e' un vincolo, e poi sparisce del tutto.
-        // Finita la scuola dell'obbligo non ha senso tenere a schermo un
-        // parametro che non impedisce e non concede piu' niente.
-        var etichettaScuola = Scuola.Etichetta(career);
-        var scuola = etichettaScuola.Length == 0
-            ? ""
-            : $"  ·  {Scuola.Classe(career).ToUpperInvariant()}  ·  {etichettaScuola.ToUpperInvariant()}";
-        // Se oggi e' una festa nazionale si dice qual e': spiega da sola
-        // perche' non c'e' scuola, e da' al calendario un sapore di posto vero.
-        var festa = CalendarioGiapponese.Festa(career.StoryDate);
-        var fermo = CalendarioGiapponese.PaeseFermo(career.StoryDate);
-        situationLine.Controls.Add(Etichetta(
-            $"{career.StoryDate:dddd d MMMM yyyy}".ToUpperInvariant()
-            + $"  ·  {eta} ANNI"
-            + (festa != null ? $"  ·  {festa.ToUpperInvariant()}" : "")
-            + (fermo ? "  ·  IL PAESE È FERMO: CIRCUITI E OFFICINE CHIUSI" : "")
-            + (career.RepeatingYear ? "  ·  RIPETENTE: RECUPERO FINO ALLE 18" : "") + scuola,
-            UiTheme.Kicker,
-            career.RepeatingYear || Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.TextMuted,
-            larghezza));
+        // La colonna destra è larga: non lasciamo che il TableLayoutPanel
+        // prenda la sola misura minima dei testi e lasci spazio vuoto a destra.
+        var larghezza = Math.Max(340, situationLine.ClientSize.Width - 8);
+        var mezza = larghezza - 8;
+        // La data e il contesto sono già nel titolo del programma: duplicarli
+        // qui rubava una riga utile alle fasce realmente selezionabili.
 
         var colonne = new TableLayoutPanel
         {
-            Width = larghezza, ColumnCount = 2, RowCount = 1, AutoSize = true,
+            Width = larghezza, ColumnCount = 1, RowCount = 2, AutoSize = true,
             AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent,
             Margin = new Padding(0), Padding = new Padding(0)
         };
-        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
-        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+        colonne.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        colonne.RowStyles.Add(new RowStyle(SizeType.AutoSize));
         colonne.Controls.Add(Colonna(
             $"IO · {career.Driver?.Split(' ').FirstOrDefault()?.ToUpperInvariant()}",
             DaySlots.Pilota(career.StoryDate, eta, career.RepeatingYear),
@@ -458,7 +719,7 @@ public sealed partial class MainForm
         colonne.Controls.Add(Colonna(
             "HARU SENDA",
             DaySlots.Haru(career.StoryDate),
-            giorno.FasceHaru, DayActor.Agent, giorno, mezza), 1, 0);
+            giorno.FasceHaru, DayActor.Agent, giorno, mezza), 0, 1);
         situationLine.Controls.Add(colonne);
         situationLine.ResumeLayout();
     }
@@ -509,9 +770,14 @@ public sealed partial class MainForm
 
         if (fascia.Fissa)
         {
-            var fisso = PulsanteDiOggi($"{fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.TextMuted, larghezza);
-            fisso.Enabled = false;
-            fisso.BackColor = UiTheme.Surface;
+            // La scuola è un vincolo, non una fascia già consumata: deve
+            // risaltare anche quando le altre attività sono in grigio. Non la
+            // disabilitiamo graficamente, perché WinForms sostituirebbe il
+            // colore arancione con il grigio di sistema.
+            var fisso = PulsanteDiOggi($"⚠  OBBLIGATORIA · {fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.Warning, larghezza);
+            fisso.Font = UiTheme.BodyStrong;
+            fisso.BackColor = Color.FromArgb(55, 40, 22);
+            fisso.Cursor = Cursors.Default;
             oggiTip.SetToolTip(fisso, "Obbligatoria: non si sceglie. È la ragione per cui il pomeriggio è corto.");
             return fisso;
         }
@@ -519,8 +785,11 @@ public sealed partial class MainForm
         if (gia.Length > 0)
         {
             var fatta = PulsanteDiOggi($"{fascia.Orario} · {gia.ToUpperInvariant()}", UiTheme.Positive, larghezza);
+            // L'attività resta nella fascia, ma diventa trasparente e non
+            // cliccabile: si vede che è stata svolta e non sembra una scelta
+            // ancora disponibile.
             fatta.Enabled = false;
-            fatta.BackColor = UiTheme.Surface;
+            fatta.BackColor = Color.FromArgb(22, UiTheme.SurfaceRaised);
             oggiTip.SetToolTip(fatta, "Già fatto. Questa fascia della giornata è passata.");
             return fatta;
         }
@@ -550,7 +819,8 @@ public sealed partial class MainForm
         if (scelta == null)
         {
             var vuota = PulsanteDiOggi($"{fascia.Orario} · niente da fare", UiTheme.TextMuted, larghezza);
-            vuota.Enabled = false;
+            // Stessa scelta grafica per le fasce vuote: visibili ma senza
+            // alcuna azione associata.
             return vuota;
         }
 
@@ -618,9 +888,48 @@ public sealed partial class MainForm
         }
         while (occupate.Count <= indice) occupate.Add("");
         occupate[indice] = attivita.Name;
+        if (attivita.Id.Equals("kart-training", StringComparison.OrdinalIgnoreCase))
+        {
+            PreparaTurniLiberiKart();
+            SaveCareer(createVersionedBackup: false);
+            ShowDayScene(report);
+            LaunchDailyTrackTraining();
+            return;
+        }
         SaveCareer(createVersionedBackup: false);
         ShowDayScene(report);
         RefreshUi();
+    }
+
+    private void PreparaTurniLiberiKart()
+    {
+        var car = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase))
+                  ?? contentIndex.Cars.FirstOrDefault(ContentCategoryRules.IsRaceable);
+        if (car == null) return;
+        var kartTracks = contentIndex.Tracks
+            .Where(x => (x.Id + " " + x.Name + " " + x.Category).Contains("kart", StringComparison.OrdinalIgnoreCase)
+                     || (x.Id + " " + x.Name + " " + x.Category).Contains("kartodromo", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        var track = kartTracks.Count == 0
+            ? CareerScheduler.PickTrack(contentIndex.Tracks, career.StoryDate.DayOfYear, car.Category)
+            : kartTracks[Math.Abs(career.StoryDate.DayOfYear) % kartTracks.Count];
+        if (track == null) return;
+
+        var commitment = LifeCalendar.Today(career, contentIndex).FirstOrDefault(x => x.Kind == "track-training");
+        if (commitment == null)
+        {
+            commitment = new DailyCommitment { Id = $"kart-open-day-{career.StoryDate:yyyyMMdd}", Date = career.StoryDate.Date };
+            career.DailyCommitments.Add(commitment);
+        }
+        commitment.Kind = "track-training";
+        commitment.Title = "Turni liberi in kart";
+        commitment.Detail = "Open day nel kartodromo di casa: pista, gomme e revisione minima già pagate. In pista girano anche altri concorrenti.";
+        commitment.StartTime = "16:00";
+        commitment.Hours = 2;
+        commitment.TrackId = track.Id;
+        commitment.TrackName = track.Name;
+        commitment.Required = false;
+        commitment.Status = "active";
     }
 
     /// <summary>L'ora d'inizio di un impegno, letta dall'etichetta «16:00».</summary>
@@ -628,22 +937,14 @@ public sealed partial class MainForm
         int.TryParse((orario ?? "").Split(':').FirstOrDefault(), out var ora) ? ora : -1;
 
     /// <summary>
-    /// Un impegno gia' in agenda dentro la sua fascia: si fa o si salta.
-    ///
-    /// Saltarlo e' una scelta con un prezzo dichiarato, non un'omissione: il
-    /// tasto c'e' perche' rinunciare deve costare qualcosa e deve vedersi.
+    /// Un impegno gia' in agenda dentro la sua fascia: si fa oppure si lascia
+    /// passare la giornata. Non c'e' una X separata: il salto avviene usando
+    /// «VAI A DOMANI», senza cancellare gli impegni di Haru.
     /// </summary>
     private Control Impegno(DailyCommitment impegno, FasciaDelGiorno fascia, int larghezza)
     {
-        var riga = new FlowLayoutPanel
-        {
-            FlowDirection = FlowDirection.LeftToRight, WrapContents = false, AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent,
-            Margin = new Padding(0, 0, 0, 5), Padding = new Padding(0)
-        };
         var fai = PulsanteDiOggi($"{fascia.Orario} · {impegno.Title.ToUpperInvariant()}",
-            impegno.Required ? UiTheme.Warning : UiTheme.TextPrimary, larghezza - 46);
-        fai.Margin = new Padding(0, 0, 4, 0);
+            impegno.Required ? UiTheme.Warning : UiTheme.TextPrimary, larghezza);
         oggiTip.SetToolTip(fai, impegno.Detail
             + (impegno.TrackName.Length > 0 ? "\nLuogo: " + impegno.TrackName : ""));
         fai.Click += (_, _) =>
@@ -664,19 +965,7 @@ public sealed partial class MainForm
             SaveCareer(createVersionedBackup: false);
             RefreshUi();
         };
-        riga.Controls.Add(fai);
-
-        var salta = PulsanteDiOggi("✕", UiTheme.TextMuted, 38);
-        salta.Margin = new Padding(0);
-        oggiTip.SetToolTip(salta, "Salta questo impegno. Quello che costa è scritto nella carriera, non qui.");
-        salta.Click += (_, _) =>
-        {
-            LifeCalendar.Skip(career, impegno);
-            SaveCareer(createVersionedBackup: false);
-            RefreshUi();
-        };
-        riga.Controls.Add(salta);
-        return riga;
+        return fai;
     }
 
     /// <summary>
@@ -704,13 +993,19 @@ public sealed partial class MainForm
 
     private static Button PulsanteDiOggi(string testo, Color colore, int larghezza)
     {
-        var b = UiTheme.SecondaryButton(testo);
-        b.Dock = DockStyle.None;
-        b.Width = larghezza; b.Height = 30;
-        b.Font = UiTheme.Small;
-        b.ForeColor = colore;
-        b.Margin = new Padding(0, 0, 0, 5);
-        b.Padding = new Padding(8, 0, 4, 0);
+        var parti = testo.Split(new[] { " · " }, 2, StringSplitOptions.None);
+        var b = new AgendaButton
+        {
+            TimeText = parti[0],
+            ActivityText = parti.Length > 1 ? parti[1] : "",
+            AccentColor = colore,
+            BackColor = Color.FromArgb(72, UiTheme.SurfaceRaised),
+            ForeColor = colore,
+            Width = larghezza,
+            Height = 42,
+            Margin = new Padding(0, 0, 0, 6),
+            AccessibleName = testo
+        };
         return b;
     }
 
@@ -738,6 +1033,125 @@ public sealed partial class MainForm
 
     // ------------------------------------------------------------------ corpo
 
+    /// <summary>
+    /// Tavola principale della Home. La geometria è intenzionalmente stabile:
+    /// figurina a tutta colonna, indicatori in alto, appuntamento al centro e
+    /// programma/calendario a destra. Così il giocatore non deve mai scorrere
+    /// per leggere o azionare l'essenziale.
+    /// </summary>
+    private Control BuildReferenceDashboard()
+    {
+        var page = UiTheme.BackdropPanel(
+            "ui-backgrounds/home-hero-circuit-dawn-v1.png",
+            Color.FromArgb(226, UiTheme.Background),
+            imageAlpha: 44,
+            padding: new Padding(24, 12, 24, 7));
+        page.Dock = DockStyle.Fill;
+
+        var footer = BuildDashboardFooter();
+        footer.Dock = DockStyle.Bottom;
+
+        var grid = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 1,
+            BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty
+        };
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 56));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
+
+        // Il BudgetPanel mantiene la logica dei quattro parametri; estraiamo
+        // soltanto la figurina per darle la colonna verticale della reference.
+        budgetPanel = new BudgetPanel(includePilot: false) { Dock = DockStyle.Fill, Margin = new Padding(0, 0, 10, 0) };
+        var pilot = budgetPanel.CreatePilotCardForHome();
+        pilot.Dock = DockStyle.Fill;
+        pilot.Margin = new Padding(0, 0, 10, 0);
+        grid.Controls.Add(pilot, 0, 0);
+
+        var center = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2,
+            BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty
+        };
+        center.RowStyles.Add(new RowStyle(SizeType.Absolute, 206));
+        center.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        budgetPanel.Margin = new Padding(0, 0, 0, 10);
+        center.Controls.Add(budgetPanel, 0, 0);
+
+        // Il pannello centrale è il manifesto della prossima uscita: la tavola
+        // deve restare visibile, non sepolta sotto un velo blu opaco.
+        var appointment = UiTheme.BackdropCard("", "manga-race-car-mountain-hill-circuit.jpg", out var appointmentInner, UiTheme.Warning, imageAlpha: 242, veilAlpha: 84);
+        homeAppointmentCard = appointment;
+        appointment.Dock = DockStyle.Fill;
+        appointment.Margin = new Padding(0);
+        var appointmentLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent, Margin = Padding.Empty };
+        appointmentLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        appointmentLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 56));
+        homeStep = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false,
+            AutoScroll = false, BackColor = Color.Transparent, Padding = new Padding(0), Margin = Padding.Empty,
+            HorizontalScroll = { Enabled = false, Visible = false }
+        };
+        homeContinue = UiTheme.PrimaryButton("AFFRONTA SUBITO IL TEST   ›");
+        homeContinue.Dock = DockStyle.Fill;
+        homeContinue.Margin = new Padding(16, 4, 16, 5);
+        homeContinue.Click += (_, _) => ContinueStory();
+        appointmentLayout.Controls.Add(homeStep, 0, 0);
+        appointmentLayout.Controls.Add(homeContinue, 0, 1);
+        appointmentInner.Controls.Add(appointmentLayout);
+        homeStep.ClientSizeChanged += (_, _) => FitStepLines();
+        center.Controls.Add(appointment, 0, 1);
+        grid.Controls.Add(center, 1, 0);
+
+        var program = UiTheme.BackdropCard("IL TUO PROGRAMMA", "manga-manager-next-race-plan-wall-map.jpg", out var programInner, UiTheme.Warning, imageAlpha: 132, veilAlpha: 112);
+        program.Dock = DockStyle.Fill; program.Margin = new Padding(10, 0, 0, 0);
+        var programLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.Transparent, Margin = Padding.Empty };
+        programLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
+        programLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        programLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        programLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 128));
+        todayDateLine = new Label { Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySemibold, 13F, FontStyle.Bold), ForeColor = UiTheme.Warning, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, Margin = Padding.Empty };
+        todayHolidayLine = new Label { Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary, TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = true, Margin = new Padding(0, 0, 0, 2), Visible = false };
+        situationLine = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = false, BackColor = Color.Transparent, Padding = new Padding(0, 3, 0, 0), Margin = Padding.Empty };
+        var dayActions = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 2, BackColor = Color.Transparent, Margin = new Padding(0, 8, 0, 0) };
+        dayActions.RowStyles.Add(new RowStyle(SizeType.Percent, 68));
+        dayActions.RowStyles.Add(new RowStyle(SizeType.Percent, 32));
+        dayActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 42)); dayActions.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 58));
+        var tomorrow = UiTheme.PrimaryButton("VAI A DOMANI"); tomorrow.Dock = DockStyle.Fill; tomorrow.Margin = new Padding(0, 0, 6, 0); tomorrow.Click += (_, _) => VaiADomaniConConferma();
+        var nextEvent = UiTheme.PrimaryButton("VAI DIRETTAMENTE AL PROSSIMO APPUNTAMENTO"); nextEvent.Dock = DockStyle.Fill; nextEvent.Margin = Padding.Empty; nextEvent.Click += (_, _) => AvanzaNelCalendario(0);
+        skipAppointment = UiTheme.SecondaryButton("SALTA TEST / GARA"); skipAppointment.Dock = DockStyle.Fill; skipAppointment.Margin = new Padding(0, 6, 0, 0);
+        skipAppointment.Click += (_, _) => SaltaAppuntamentoDaHome();
+        dayActions.Controls.Add(tomorrow, 0, 0); dayActions.Controls.Add(nextEvent, 1, 0);
+        dayActions.Controls.Add(skipAppointment, 0, 1); dayActions.SetColumnSpan(skipAppointment, 2);
+        programLayout.Controls.Add(todayDateLine, 0, 0); programLayout.Controls.Add(todayHolidayLine, 0, 1); programLayout.Controls.Add(situationLine, 0, 2); programLayout.Controls.Add(dayActions, 0, 3); programInner.Controls.Add(programLayout);
+        grid.Controls.Add(program, 2, 0);
+        page.Controls.Add(grid);
+        // Aggiunto dopo il Fill: Dock riserva davvero la fascia in basso e la
+        // tavola centrale non la copre quando la finestra è bassa.
+        page.Controls.Add(footer);
+        return page;
+    }
+
+    private Control BuildDashboardFooter()
+    {
+        var footer = UiTheme.BackdropPanel(
+            "manga-rookie-empty-circuit-blue-hour.jpg", Color.FromArgb(174, UiTheme.HeaderBackground),
+            imageAlpha: 54, padding: new Padding(28, 7, 28, 7));
+        footer.Height = 72;
+        footer.Paint += (_, e) =>
+        {
+            using var line = new Pen(UiTheme.Border, 1); e.Graphics.DrawLine(line, 0, 0, footer.Width, 0);
+            using var accent = new Pen(UiTheme.Accent, 3); e.Graphics.DrawLine(accent, 30, footer.Height - 12, 76, footer.Height - 17);
+        };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, BackColor = Color.Transparent };
+        layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78)); layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
+        layout.Controls.Add(new Label { Text = "夢は、走り続ける。\nLE GRANDI STORIE INIZIANO CON UN PICCOLO GIRO.", Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false }, 0, 0);
+        layout.Controls.Add(new Label { Text = "DRIVE\nLEARN\nGROW", Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySans, 9F, FontStyle.Italic | FontStyle.Bold), ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.MiddleRight, UseMnemonic = false }, 1, 0);
+        footer.Controls.Add(layout);
+        return footer;
+    }
+
     private Control BuildBody()
     {
         return BuildCareerHome();
@@ -745,7 +1159,13 @@ public sealed partial class MainForm
 
     private Control BuildCareerHome()
     {
-        var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = UiTheme.Background, Padding = new Padding(24, 6, 24, 12) };
+        var pageBackdrop = UiTheme.BackdropPanel(
+            "manga-race-car-mountain-hill-circuit.jpg",
+            Color.FromArgb(224, UiTheme.Background),
+            imageAlpha: 30,
+            padding: Padding.Empty);
+        pageBackdrop.Dock = DockStyle.Fill;
+        var body = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Color.Transparent, Padding = new Padding(24, 6, 24, 12) };
         // La tavola era piu larga di tutto il resto e la colonna di destra
         // doveva impilare ADESSO e calendario in poco spazio. Ora l'immagine
         // accompagna, e le due sezioni stanno affiancate.
@@ -769,14 +1189,14 @@ public sealed partial class MainForm
         // Il passo attuale è la ragione per cui si guarda questa colonna, e il
         // suo comando deve avere l'aria di un comando: prende quasi due terzi.
         command.RowStyles.Add(new RowStyle(SizeType.Percent, 62)); command.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
-        var mission = UiTheme.Card("ADESSO", out var missionInner, UiTheme.Accent); mission.Dock = DockStyle.Fill;
+        var mission = UiTheme.BackdropCard("ADESSO", "manga-rookie-circuit-map-veteran-coach.jpg", out var missionInner, UiTheme.Accent, imageAlpha: 54); mission.Dock = DockStyle.Fill;
         // Il passo attuale era una Label unica con un font solo: titolo, racconto
         // e dati tecnici avevano lo stesso peso, e il giocatore leggeva una
         // scheda invece di capire dove si trovava. Ora è un blocco impaginato.
         homeStep = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false,
-            AutoScroll = true, BackColor = Color.Transparent, Padding = new Padding(0, 2, 0, 6),
+            AutoScroll = false, BackColor = Color.Transparent, Padding = new Padding(0, 2, 0, 6),
             HorizontalScroll = { Enabled = false, Visible = false }
         };
         var missionActions = new Panel { Dock = DockStyle.Fill, Height = 88, BackColor = Color.Transparent };
@@ -820,7 +1240,34 @@ public sealed partial class MainForm
         var calendarCard = BuildHomeCalendar();
         command.Controls.Add(calendarCard, 1, 0);
         body.Controls.Add(command, 1, 0);
-        return body;
+        var footer = UiTheme.BackdropPanel(
+            "manga-rookie-empty-circuit-blue-hour.jpg",
+            Color.FromArgb(174, UiTheme.HeaderBackground),
+            imageAlpha: 54,
+            padding: new Padding(28, 7, 28, 7));
+        footer.Dock = DockStyle.Bottom;
+        footer.Height = 78;
+        footer.Paint += (_, e) =>
+        {
+            using var line = new Pen(UiTheme.Border, 1);
+            e.Graphics.DrawLine(line, 0, 0, footer.Width, 0);
+            using var accent = new Pen(UiTheme.Accent, 3);
+            e.Graphics.DrawLine(accent, 30, footer.Height - 12, 76, footer.Height - 17);
+        };
+        var footerGrid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, RowCount = 1, BackColor = Color.Transparent };
+        footerGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 78));
+        footerGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 22));
+        var footerCopy = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent };
+        footerCopy.RowStyles.Add(new RowStyle(SizeType.Percent, 62));
+        footerCopy.RowStyles.Add(new RowStyle(SizeType.Percent, 38));
+        footerCopy.Controls.Add(new Label { Text = "夢は、走り続ける。", Dock = DockStyle.Fill, Font = new Font("Yu Gothic UI", 14F, FontStyle.Bold), ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.BottomLeft, UseMnemonic = false }, 0, 0);
+        footerCopy.Controls.Add(new Label { Text = "LE GRANDI STORIE INIZIANO CON UN PICCOLO GIRO.", Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary, TextAlign = ContentAlignment.TopLeft, UseMnemonic = false }, 0, 1);
+        footerGrid.Controls.Add(footerCopy, 0, 0);
+        footerGrid.Controls.Add(new Label { Text = "DRIVE\nLEARN\nGROW", Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySans, 10F, FontStyle.Italic | FontStyle.Bold), ForeColor = UiTheme.TextPrimary, TextAlign = ContentAlignment.MiddleRight, UseMnemonic = false }, 1, 0);
+        footer.Controls.Add(footerGrid);
+        pageBackdrop.Controls.Add(body);
+        pageBackdrop.Controls.Add(footer);
+        return pageBackdrop;
     }
 
     private void StartHomeArtworkSequence()
@@ -1050,26 +1497,32 @@ public sealed partial class MainForm
 
     private Panel BuildHomeCalendar()
     {
-        var card = UiTheme.Card("CALENDARIO DELLA CARRIERA · ARCHIVIO VIVO", out var inner, UiTheme.Warning);
+        var card = UiTheme.BackdropCard(
+            "PERCORSO DEL PILOTA",
+            "manga-manager-next-race-plan-wall-map.jpg",
+            out var inner,
+            UiTheme.Warning,
+            imageAlpha: 112,
+            veilAlpha: 126);
         card.Dock = DockStyle.Fill;
-        // I comandi di avanzamento appartengono al calendario: qui sono sempre
-        // visibili, vicino agli eventi, invece di essere nascosti nella riga
-        // narrativa della testata. Ogni comando aggiorna subito giorno, ore,
-        // budget e prossimo appuntamento.
-        // I tre comandi di avanzamento del tempo sono stati tolti su richiesta:
-        // «VAI AL PROSSIMO APPUNTAMENTO» portava dove porta già il pulsante
-        // rosso principale, e «AVANTI 1 GIORNO»/«+7 GIORNI» chiedevano al
-        // giocatore di far scorrere il tempo a mano. Il calendario resta un
-        // archivio da leggere; ad avanzare ci pensa il percorso della storia.
-        var open = UiTheme.SecondaryButton("APRI ARCHIVIO COMPLETO");
-        open.Dock = DockStyle.Bottom; open.Height = 32; open.Click += (_, _) => OpenCalendar();
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = Color.Transparent, Margin = Padding.Empty };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 40));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
+        homePathSummary = new Label { Dock = DockStyle.Fill, Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary, TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false, AutoEllipsis = true };
         homeCalendarTimeline = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false,
-            AutoScroll = true, BackColor = Color.Transparent, Padding = new Padding(0, 0, 6, 0)
+            AutoScroll = false, BackColor = Color.Transparent, Padding = new Padding(0, 0, 6, 0)
         };
-        inner.Controls.Add(homeCalendarTimeline);
-        inner.Controls.Add(open);
+        var actions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight, WrapContents = false, BackColor = Color.Transparent, Margin = Padding.Empty };
+        var map = UiTheme.SecondaryButton("MAPPA"); map.Width = 88; map.Height = 28; map.Margin = new Padding(0, 0, 6, 0); map.Click += (_, _) => OpenCareerMap();
+        var open = UiTheme.SecondaryButton("ARCHIVIO"); open.Width = 100; open.Height = 28; open.Margin = Padding.Empty; open.Click += (_, _) => OpenCalendar();
+        actions.Controls.Add(map); actions.Controls.Add(open);
+        layout.Controls.Add(homePathSummary, 0, 0);
+        layout.Controls.Add(homeCalendarTimeline, 0, 1);
+        layout.Controls.Add(actions, 0, 2);
+        inner.Controls.Add(layout);
         return card;
     }
 
@@ -1127,16 +1580,16 @@ public sealed partial class MainForm
             var outcome = string.IsNullOrWhiteSpace(test.Outcome) ? "TEST ARCHIVIATO" : test.Outcome;
             var time = test.BestLapMilliseconds > 0 ? FormatLap(test.BestLapMilliseconds) : "nessun giro valido";
             var fitness = test.FitnessAfter > 0 ? test.FitnessAfter : career.Fitness;
-            var trust = test.TrustAfter > 0 ? test.TrustAfter : career.TeamRelation;
+            var trust = career.ReputationProfile?.PublicPopularity ?? career.Fanbase;
             entries.Add((test.StoryDate, outcome,
                 $"Prova con {NomeVettura(test.Car)} a {NomeCircuito(test.Track)}",
-                $"Miglior giro {time} · forma {fitness}/100 · fiducia followers {trust}/100 · budget € {test.CashDelta:+#,##0;-#,##0;0}",
+                $"Miglior giro {time} · forma {fitness}/100 · livello influencer {trust}/100 · budget € {test.CashDelta:+#,##0;-#,##0;0}",
                 outcome.StartsWith("SUPERATO", StringComparison.OrdinalIgnoreCase) ? UiTheme.Positive : UiTheme.Warning, false));
         }
         foreach (var race in career.RaceHistory)
         {
             var fitness = race.FitnessAfter > 0 ? race.FitnessAfter : career.Fitness;
-            var trust = race.TrustAfter > 0 ? race.TrustAfter : career.TeamRelation;
+            var trust = career.ReputationProfile?.PublicPopularity ?? career.Fanbase;
             var inGriglia = race.Classification?.Count ?? 0;
             var esito = race.Dnf
                 ? "RITIRATO"
@@ -1144,44 +1597,29 @@ public sealed partial class MainForm
                 : $"ARRIVATO {Ordinale(race.Position).ToUpperInvariant()}";
             entries.Add((race.StoryDate, esito,
                 $"Gara con {NomeVettura(race.Car)} a {NomeCircuito(race.Track)}",
-                $"{race.Points} punti · premio € {race.Prize:N0} · forma {fitness}/100 · fiducia followers {trust}/100 · budget € {race.CashDelta:+#,##0;-#,##0;0}",
+                $"{race.Points} punti · premio € {race.Prize:N0} · forma {fitness}/100 · livello influencer {trust}/100 · budget € {race.CashDelta:+#,##0;-#,##0;0}",
                 race.Dnf ? UiTheme.Accent : UiTheme.Info, false));
         }
-        var next = NextScheduled();
-        if (next != null)
-            entries.Add((next.Date, "PROSSIMO APPUNTAMENTO", CareerScheduler.Describe(next), next.Objective, UiTheme.Warning, true));
-
         var width = Math.Max(310, homeCalendarTimeline.ClientSize.Width - 24);
-        // Il prossimo appuntamento in cima, poi la storia dal piu recente al
-        // piu vecchio.
-        //
-        // Prima si vedevano solo gli ultimi tre eventi in ordine crescente, con
-        // il prossimo appuntamento in fondo: la storia della carriera veniva
-        // buttata via a ogni gara, e la cosa da fare adesso finiva dove si
-        // guarda per ultimo. Ora nulla viene cancellato — la lista scorre.
-        var selected = entries.Where(x => x.Next)
-            .Concat(entries.Where(x => !x.Next).OrderByDescending(x => x.Date))
-            .ToList();
+        // L'appuntamento futuro ha la carta grande al centro: qui entrano solo
+        // le tappe già compiute, altrimenti la Home ripeteva la stessa notizia.
+        var selected = entries.OrderByDescending(x => x.Date).Take(2).ToList();
         if (selected.Count == 0)
-            homeCalendarTimeline.Controls.Add(new Label { Text = "Nessun evento archiviato: il primo test entrerà qui con tempo, conseguenze e prospettive.", Width = width, Height = 40, Font = UiTheme.Small, ForeColor = UiTheme.TextMuted });
+            homeCalendarTimeline.Controls.Add(new Label { Text = "Le prove e i risultati entreranno qui, una tappa alla volta.", Width = width, Height = 34, Font = UiTheme.Small, ForeColor = UiTheme.TextMuted });
         foreach (var entry in selected)
         {
             var isToday = entry.Date.Date == career.StoryDate.Date;
-            var row = new Panel { Width = width, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = entry.Next ? Color.FromArgb(38, 48, 39) : UiTheme.SurfaceRaised, Margin = new Padding(0, 0, 0, 5), Padding = new Padding(10, 5, 8, 4) };
+            var row = new Panel { Width = width, Height = 54, BackColor = entry.Next ? Color.FromArgb(38, 48, 39) : UiTheme.SurfaceRaised, Margin = new Padding(0, 0, 0, 5), Padding = new Padding(10, 5, 8, 4) };
             row.Paint += (_, e) => { using var brush = new SolidBrush(entry.Accent); e.Graphics.FillRectangle(brush, 0, 0, 3, row.Height); };
-            var rowLayout = new TableLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent };
+            var rowLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2, BackColor = Color.Transparent };
             rowLayout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
-            // La data per esteso: «03 lug» costringeva a decifrare, e in una
-            // carriera lunga anni serve sapere anche di che anno si parla.
-            var quando = entry.Date.ToString("d MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
+            var quando = entry.Date.ToString("dd MMM yyyy", CultureInfo.GetCultureInfo("it-IT")).ToUpperInvariant();
             rowLayout.Controls.Add(StepLine(
-                $"{(isToday ? "OGGI · " : "")}{quando}  ·  {entry.Title}",
+                $"{(isToday ? "OGGI · " : "")}{quando}  ·  {SintesiDashboard(entry.Title, 42)}",
                 new Font(UiTheme.FamilySemibold, isToday || entry.Next ? 9F : 8F, FontStyle.Bold),
-                entry.Accent, Math.Max(220, width - 20), 0, 2), 0, 0);
-            rowLayout.RowCount = 3;
-            rowLayout.Controls.Add(StepLine(entry.Kicker, new Font(UiTheme.FamilySemibold, 8F, FontStyle.Bold),
-                entry.Accent, Math.Max(220, width - 20), 0, 1), 0, 1);
-            rowLayout.Controls.Add(StepLine(entry.Detail, UiTheme.Small, UiTheme.TextSecondary, Math.Max(220, width - 20), 0, 0), 0, 2);
+                entry.Accent, Math.Max(220, width - 20), 0, 1), 0, 0);
+            rowLayout.Controls.Add(StepLine(SintesiDashboard(entry.Kicker, 52), new Font(UiTheme.FamilySemibold, 8F, FontStyle.Bold),
+                UiTheme.TextSecondary, Math.Max(220, width - 20), 0, 0), 0, 1);
             row.Controls.Add(rowLayout);
             homeCalendarTimeline.Controls.Add(row);
         }
@@ -1212,6 +1650,13 @@ public sealed partial class MainForm
         continueStory = UiTheme.PrimaryButton("CONTINUA LA STORIA");
         continueStory.Height = 42;
         continueStory.Click += (_, _) => ContinueStory();
+        directAdvanceHint = new Label
+        {
+            Text = "AFFRONTA SUBITO IL TEST · qui puoi saltare i giorni liberi del calendario e arrivare direttamente all'appuntamento.",
+            Dock = DockStyle.Top, Height = 34, Font = UiTheme.Small, ForeColor = UiTheme.Warning,
+            TextAlign = ContentAlignment.MiddleLeft, AutoEllipsis = false, Visible = false,
+            Padding = new Padding(0, 3, 0, 3), UseMnemonic = false
+        };
         launch = UiTheme.SecondaryButton("APRI IN CONTENT MANAGER");
         launch.Click += (_, _) => LaunchWeekend();
         briefing = UiTheme.SecondaryButton("PREPARA IL TEST");
@@ -1260,6 +1705,7 @@ public sealed partial class MainForm
         weekend.Controls.Add(briefing);
         weekend.Controls.Add(launch);
         weekend.Controls.Add(pendingBanner);
+        weekend.Controls.Add(directAdvanceHint);
         weekend.Controls.Add(continueStory);
         weekend.Controls.Add(decisionSummary);
 
@@ -1542,7 +1988,7 @@ public sealed partial class MainForm
         else if (evaluation)
             headerRound.Text = scheduled == null
                 ? $"ROOKIE EVALUATION · in attesa del prossimo appuntamento"
-                : $"{(scheduled.Kind == ScheduledEventKind.ConfirmationTest ? "PROVA DI CONFERMA" : scheduled.Kind == ScheduledEventKind.Invitation ? "GARA SU INVITO" : "ROOKIE EVALUATION")} · tentativo {career.EvaluationAttempts + 1} · {(string.IsNullOrWhiteSpace(scheduled.TrackName) ? scheduled.TrackId : scheduled.TrackName)} · obiettivo {FormatLap(career.EvaluationTargetMilliseconds)}";
+                : $"{(scheduled.Kind == ScheduledEventKind.ConfirmationTest ? "PROVA DI CONFERMA" : scheduled.Kind == ScheduledEventKind.Invitation ? "GARA SU INVITO" : "ROOKIE EVALUATION")} · tentativo {career.EvaluationAttempts + 1} · {(string.IsNullOrWhiteSpace(scheduled.TrackName) ? scheduled.TrackId : scheduled.TrackName)} · {ScheduledObjective(scheduled)}";
         else if (rounds.Count == 0) headerRound.Text = $"STAGIONE {career.Season} · calendario non ancora pubblicato";
         else if (career.Round >= rounds.Count) headerRound.Text = $"STAGIONE {career.Season} CONCLUSA · in attesa del passaggio di campionato";
         else headerRound.Text = $"STAGIONE {career.Season} · ROUND {career.Round + 1}/{rounds.Count} · {rounds[career.Round].GrandPrix} · {rounds[career.Round].Date}";
@@ -1564,10 +2010,23 @@ public sealed partial class MainForm
         // devono restare visibili anche quando non c'e' una gara fissata.
         todayDateLine.Text = TestataDellaGiornata(career.StoryDate);
         todayDateLine.Visible = true;
+        var ricorrenza = CalendarioGiapponese.Ricorrenza(career.StoryDate);
+        todayHolidayLine.Text = ricorrenza ?? "";
+        todayHolidayLine.Visible = !string.IsNullOrWhiteSpace(ricorrenza);
+        var appuntamentoOggi = NextScheduled();
+        skipAppointment.Enabled = appuntamentoOggi != null && appuntamentoOggi.IsPlanned && appuntamentoOggi.Date.Date <= career.StoryDate.Date;
+        skipAppointment.Text = skipAppointment.Enabled ? "SALTA TEST / GARA" : "NESSUN TEST / GARA OGGI";
+        AggiornaCartolinaStagionale();
         AggiornaPannelloDiOggi();
         situationLine.Visible = true;
         budgetPanel.Update(career);
     }
+
+    private string ScheduledObjective(ScheduledEvent scheduled) => scheduled.IsTest
+        ? $"tempo obiettivo {FormatLap(career.EvaluationTargetMilliseconds)}"
+        : string.IsNullOrWhiteSpace(scheduled.Objective)
+            ? "obiettivo: posizione finale"
+            : $"obiettivo: {scheduled.Objective}";
 
     /// <summary>
     /// Fa scorrere il calendario senza saltare un appuntamento pianificato.
@@ -1578,6 +2037,58 @@ public sealed partial class MainForm
     /// Fa scorrere il calendario e si ferma quando c'è qualcosa da decidere.
     /// </summary>
     /// <param name="giorni">Quanti giorni; zero significa «fino al prossimo impegno».</param>
+    private void VaiADomaniConConferma()
+    {
+        var appuntamento = NextScheduled();
+        if (appuntamento != null && appuntamento.IsPlanned && appuntamento.Date.Date <= career.StoryDate.Date)
+        {
+            var dove = string.IsNullOrWhiteSpace(appuntamento.TrackName) ? appuntamento.TrackId : appuntamento.TrackName;
+            var risposta = CareerMessages.Ask(this,
+                $"Oggi c'è l'appuntamento a {dove}.\n\nVuoi davvero saltare test/gara e andare a domani?\n\n"
+                + "La quota non viene pagata, ma il paddock registra l'assenza.",
+                "CorsaCareer — conferma salto", MessageBoxButtons.YesNo, DialogResult.No);
+            if (risposta != DialogResult.Yes) return;
+            RegistraSaltoAppuntamento(appuntamento);
+            AdvanceCalendar(1, false);
+            SaveCareer(createVersionedBackup: false);
+            RefreshUi();
+            return;
+        }
+        AvanzaNelCalendario(1);
+    }
+
+    private void SaltaAppuntamentoDaHome()
+    {
+        var appuntamento = NextScheduled();
+        if (appuntamento == null || !appuntamento.IsPlanned || appuntamento.Date.Date > career.StoryDate.Date)
+        {
+            CareerMessages.Show(this, "Oggi non c'è un test o una gara da saltare.", "CorsaCareer — calendario", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+        var dove = string.IsNullOrWhiteSpace(appuntamento.TrackName) ? appuntamento.TrackId : appuntamento.TrackName;
+        var risposta = CareerMessages.Ask(this,
+            $"Salti l'appuntamento a {dove}?\n\nLa gara/test sarà segnato come saltato e perderai reputazione, senza cancellare gli impegni di Haru.",
+            "CorsaCareer — salta appuntamento", MessageBoxButtons.YesNo, DialogResult.No);
+        if (risposta != DialogResult.Yes) return;
+        RegistraSaltoAppuntamento(appuntamento);
+        SaveCareer(createVersionedBackup: false);
+        RefreshUi();
+    }
+
+    private void RegistraSaltoAppuntamento(ScheduledEvent impegno)
+    {
+        var dove = string.IsNullOrWhiteSpace(impegno.TrackName) ? impegno.TrackId : impegno.TrackName;
+        RaceChoice.ApplySkip(career, impegno);
+        var titolo = $"{career.Driver} salta l'appuntamento a {dove}.";
+        career.News.Add(titolo);
+        career.Events.Add(new CareerEventRecord
+        {
+            DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "EVENT_SKIPPED",
+            Headline = titolo, Track = dove, Importance = 55
+        });
+        CareerLog.Info("agenda", $"impegno saltato per scelta: {impegno.Id} · {dove}");
+    }
+
     private void AvanzaNelCalendario(int giorni)
     {
         if (BlockIfPending("Far passare il tempo")) return;
@@ -1655,7 +2166,7 @@ public sealed partial class MainForm
         var conseguenze = new List<string>();
         if (prezzo.Popularity != 0) conseguenze.Add($"seguito {prezzo.Popularity:+#;-#;0}");
         if (prezzo.SportingReputation != 0) conseguenze.Add($"prestigio sportivo {prezzo.SportingReputation:+#;-#;0}");
-        if (prezzo.TeamTrust != 0) conseguenze.Add($"fiducia followers {prezzo.TeamTrust:+#;-#;0}");
+        if (prezzo.TeamTrust != 0) conseguenze.Add($"livello influencer {prezzo.TeamTrust:+#;-#;0}");
         var costoSalto = conseguenze.Count > 0 ? $" ({string.Join(" · ", conseguenze)})" : "";
 
         var risposta = CareerMessages.Ask(this,
@@ -1671,17 +2182,9 @@ public sealed partial class MainForm
         if (risposta == DialogResult.Yes) { ContinueStory(); return; }
         if (risposta != DialogResult.No) return;
 
-        // Saltato per scelta: lo si registra come tale, con il suo prezzo.
-        RaceChoice.ApplySkip(career, impegno);
-        var titolo = $"{career.Driver} salta {cosa} a {dove}.";
-        career.News.Add(titolo);
-        career.Events.Add(new CareerEventRecord
-        {
-            DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "EVENT_SKIPPED",
-            Headline = titolo + (costoSalto.Length > 0 ? $" Costo:{costoSalto}" : ""),
-            Track = dove, Importance = 55
-        });
-        CareerLog.Info("agenda", $"impegno saltato per scelta: {impegno.Id} · {dove}");
+        // Saltato per scelta: lo si registra come tale, senza mai cancellare
+        // le fasce di Haru presenti nella giornata.
+        RegistraSaltoAppuntamento(impegno);
         SaveCareer();
         RefreshUi();
     }
@@ -1766,6 +2269,8 @@ public sealed partial class MainForm
         }
         var next = NextScheduled();
         RenderStepBriefing(next);
+        var rungHome = CareerLadder.Current(career, contentIndex.Cars);
+        homePathSummary.Text = $"{rungHome.Name} · categoria {rungHome.Step}/{CareerLadder.Steps}\n{CareerPhases.Current(career).Title}";
         // Le tavole seguono il passo: quando questo cambia va rifatta la
         // sequenza, altrimenti la Home resta illustrata come il momento
         // precedente. Il confronto sulla firma evita di riavviare la dissolvenza
@@ -1777,7 +2282,7 @@ public sealed partial class MainForm
             RestartHomeArtworkSequence();
         }
         var eta = EtaPilota();
-        homeTeam.Text = $"{career.Team}\nPilota: {eta} anni · {DriverAge.Fase(eta)}\nCompagno: {career.Teammate}\nFiducia: {career.TeamRelation}/100";
+        homeTeam.Text = $"{career.Team}\nPilota: {eta} anni · {DriverAge.Fase(eta)}\nCompagno: {career.Teammate}";
         // La cifra in cassa è già nella riga dati del passo attuale: qui conta
         // come sta il bilancio, non ripetere lo stesso numero una terza volta.
         homeMoney.Text = $"CASSA PERSONALE\n€ {career.Cash:N0} · {CareerFinances.Status(career.Cash)}\nSPONSOR\n{career.Sponsor} · budget € {career.SponsorBudget:N0}\nTEAM SUPPORT\n{career.TeamSupportPercent}% dei costi coperti\nRapporto sponsor: {career.SponsorRelation}/100";
@@ -1859,6 +2364,12 @@ public sealed partial class MainForm
         var briefing = StepBriefingBuilder.Build(career, next, OpenSelection, awaitingResult, car, track,
             FormatLap(career.EvaluationTargetMilliseconds));
 
+        // L'illustrazione non è un ornamento generico: racconta il mezzo che
+        // il giocatore sta per guidare. Un kart non può mai condividere la
+        // tavola con una stradale o una monoposto.
+        if (homeAppointmentCard != null)
+            homeAppointmentCard.SetBackdrop(AssetPaths.File(AppointmentArtwork(next)), Color.FromArgb(84, UiTheme.Surface));
+
         homeStep.SuspendLayout();
         foreach (Control existing in homeStep.Controls) existing.Dispose();
         homeStep.Controls.Clear();
@@ -1903,6 +2414,37 @@ public sealed partial class MainForm
         FitStepLines();
     }
 
+    private string AppointmentArtwork(ScheduledEvent? next)
+    {
+        var car = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase));
+        var rung = car == null ? CareerLadder.Current(career, contentIndex.Cars)
+            : CareerLadder.ForCar(car.Category, car.PowerHp, car.MassKg);
+        var isTest = next?.IsTest == true;
+        // Biblioteca per gradino: i nomi sono deliberatamente espliciti per
+        // rendere l'audit immediato. Le varianti "test" e "gara" evitano di
+        // raccontare una partenza da campionato durante una familiarizzazione.
+        return rung.Id.ToLowerInvariant() switch
+        {
+            "kart-4t" or "four-stroke" => "ui-backgrounds/hero-kart-fuji-sunset-v1.jpg",
+            "kart-2t" or "two-stroke" => isTest ? "kart-001-test-alba.jpg" : "anime-kart-duello-rivale-curva.jpg",
+            "kart-kz" or "shifter" => isTest ? "kart-072-kz125-shifter.jpg" : "manga-kart-rookie-overtake-autumn-circuit.jpg",
+            "formula-4" => isTest ? "anime-formula4-rookie-test-suzuka.jpg" : "anime-formula4-gara-partenza-giappone.jpg",
+            "formula-3" => isTest ? "anime-formula3-telemetria-pit-garage.jpg" : "anime-formula3-primo-podio-professionale.jpg",
+            "formula-2" => isTest ? "manga-formula2-ultimo-gradino.jpg" : "anime-formula2-debutto-griglia.jpg",
+            "formula-1" => isTest ? "manga-rookie-formula-tunnel-dawn-test.jpg" : "manga-formula1-debutto-griglia.jpg",
+            "gt4" => isTest ? "manga-gt3-first-test-japan-paddock.jpg" : "manga-rookie-gt-high-speed-corner-sunset.jpg",
+            "gt3" => isTest ? "manga-gt3-first-test-japan-paddock.jpg" : "manga-gt3-endurance-victory-dawn-team.jpg",
+            "prototipi" or "prototype" => isTest ? "manga-team-prototype-headlights-night-test.jpg" : "manga-prototype-sweeping-corner-dawn-mist.jpg",
+            "hypercar" => isTest ? "manga-team-prototype-headlights-night-test.jpg" : "manga-prototype-pass-under-bridge-dawn.jpg",
+            "cup" => isTest ? "anime-touring-car-pit-stop.jpg" : "manga-touring-first-race-grid-rookie.jpg",
+            "tcr" => isTest ? "manga-touring-tire-pressure-engineer-pit-lane.jpg" : "manga-touring-car-sunset-corner-rival.jpg",
+            "road-rookie" => isTest ? "anime-touring-car-pit-stop.jpg" : "anime-touring-car-fuji-gara.jpg",
+            "club-cup" => isTest ? "manga-rookie-qualifying-preparation-pit-exit.jpg" : "manga-touring-cars-wet-hairpin-duel.jpg",
+            "regional-touring" => isTest ? "manga-touring-telemetry-teammate-wet-race-fuji.jpg" : "manga-rookie-defends-position-touring-straight.jpg",
+            _ => rung.Path == LadderPath.Karting ? "ui-backgrounds/hero-kart-fuji-sunset-v1.jpg" : "anime-touring-car-fuji-gara.jpg"
+        };
+    }
+
     /// <summary>Larghezza della colonna dell'icona nell'area Oggi.</summary>
     private const int TodayIconColumnWidth = 78;
 
@@ -1918,23 +2460,22 @@ public sealed partial class MainForm
     /// </summary>
     private Control BuildTodayCard(StepBriefing briefing, ScheduledEvent? next, int width)
     {
+        // Il bordo e l'immagine sono sulla carta genitore: annidare un secondo
+        // sfondo qui rendeva opaco il manifesto e lasciava un rettangolo vuoto.
         var card = new Panel
         {
-            Width = width,
-            AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink,
-            BackColor = UiTheme.SurfaceRaised,
-            Margin = new Padding(0, 0, 0, 9),
-            Padding = new Padding(16, 12, 16, 14)
+            BackColor = Color.Transparent,
+            Padding = new Padding(16, 12, 16, 14),
+            Tag = "today-card"
         };
-        card.Paint += (_, e) =>
-        {
-            using var border = new Pen(UiTheme.Warning, 2);
-            using var accent = new SolidBrush(UiTheme.Warning);
-            e.Graphics.DrawRectangle(border, 0, 0, card.Width - 1, card.Height - 1);
-            e.Graphics.FillRectangle(accent, 0, 0, 5, card.Height);
-        };
-
+        card.Width = width;
+        // La Home non deve trasformarsi in una pagina da scorrere: questa è
+        // una scheda di guida, non il dossier completo dell'evento. Altezza
+        // fissa e quattro righe operative tengono sempre visibile anche il
+        // pulsante rosso sottostante.
+        card.Height = Math.Max(292, homeStep.ClientSize.Height - 4);
+        card.AutoSize = false;
+        card.Margin = new Padding(0, 0, 0, 9);
         var inner = Math.Max(240, width - card.Padding.Horizontal);
         var stack = new FlowLayoutPanel
         {
@@ -1952,32 +2493,9 @@ public sealed partial class MainForm
         // --- che giorno è e che cosa c'è ---------------------------------
         stack.Controls.Add(BuildTodayHeader(next, inner));
 
-        // --- i dati della giornata ---------------------------------------
-        stack.Controls.Add(CardRule(inner, 11, 10));
+        // --- dati essenziali: circuito, vettura, obiettivo, costo/rischio --
+        stack.Controls.Add(CardRule(inner, 8, 7));
         stack.Controls.Add(BuildTodayFacts(TodayFactRows(briefing, next), inner));
-
-        // --- la classifica del campionato -----------------------------------
-        //
-        // Al posto del racconto. Prima qui c'era un paragrafo narrativo — «Questa
-        // volta si corre per punti» — che non aggiungeva niente a chi doveva
-        // decidere: la scheda del prossimo impegno deve dire a che punto sei del
-        // campionato e che cosa ti serve, non ricordarti che le gare assegnano
-        // punti. La storia ha già le sue scene.
-        var classifica = RigheClassifica();
-        if (classifica.Count > 0)
-        {
-            stack.Controls.Add(CardRule(inner, 12, 8));
-            stack.Controls.Add(StepLine("CLASSIFICA DEL CAMPIONATO", UiTheme.Kicker, UiTheme.Info, inner, 0, 5));
-            foreach (var (riga, evidenzia) in classifica)
-                stack.Controls.Add(StepLine(riga, evidenzia ? UiTheme.BodyStrong : UiTheme.Small,
-                    evidenzia ? UiTheme.Warning : UiTheme.TextSecondary, inner, 0, 2));
-        }
-
-        // --- che cosa serve ottenere ----------------------------------------
-        stack.Controls.Add(CardRule(inner, 12, 8));
-        stack.Controls.Add(StepLine("OBIETTIVI", UiTheme.Kicker, UiTheme.Positive, inner, 0, 5));
-        foreach (var obiettivo in RigheObiettivi())
-            stack.Controls.Add(StepLine(obiettivo, UiTheme.Body, UiTheme.TextPrimary, inner, 0, 6));
 
         card.Controls.Add(stack);
         // La larghezza definitiva arriva dopo, quando il pannello della Home
@@ -2120,42 +2638,35 @@ public sealed partial class MainForm
     private List<(string Label, string Value, bool Highlight)> TodayFactRows(StepBriefing briefing, ScheduledEvent? next)
     {
         var righe = new List<(string, string, bool)>();
-        var today = career.StoryDate.Date;
-
+        // Queste quattro righe sono il cruscotto dell'appuntamento: il resto
+        // (classifica completa, dossier e cronologia) è disponibile dai
+        // rispettivi pulsanti, non deve imporre una scrollbar alla Home.
         if (next != null)
         {
-            var giorni = (next.Date.Date - today).Days;
-            if (giorni > 0)
-                righe.Add(("QUANDO", $"{next.Date:dddd d MMMM} · {(giorni == 1 ? "domani" : $"fra {giorni} giorni")}", false));
             var dove = CareerScheduler.TrackLabel(next);
-            if (!string.IsNullOrWhiteSpace(dove)) righe.Add(("DOVE", dove, false));
+            if (!string.IsNullOrWhiteSpace(dove)) righe.Add(("DOVE", SintesiDashboard(dove, 62), false));
         }
-        else if (!string.IsNullOrWhiteSpace(briefing.When))
-        {
-            // Nessun appuntamento in agenda ma un passo che ha comunque un
-            // quando — una giornata di selezione, per esempio.
-            righe.Add(("QUANDO", briefing.When.TrimEnd('.'), false));
-        }
-
-        // I dati tecnici del passo, saltando quelli che l'obiettivo o il
-        // rischio dicono già a parole: lo stesso tempo e la stessa cifra
-        // scritti due volte erano la ripetizione più fastidiosa della scheda.
-        foreach (var (label, value) in briefing.Facts)
-        {
-            if (RipeteGia(value, briefing.Demand) || RipeteGia(value, briefing.Stake)) continue;
-            righe.Add((label.ToUpperInvariant(), value, false));
-        }
+        if (!string.IsNullOrWhiteSpace(career.Car))
+            righe.Add(("AUTO", SintesiDashboard(NomeVettura(career.Car), 62), false));
 
         if (!string.IsNullOrWhiteSpace(briefing.Demand))
-            righe.Add(("OBIETTIVO", briefing.Demand.TrimEnd('.'), true));
+            righe.Add(("OBIETTIVO", SintesiDashboard(briefing.Demand, 72), true));
         if (!string.IsNullOrWhiteSpace(briefing.Stake))
-            righe.Add(("IN GIOCO", briefing.Stake, false));
+            righe.Add(("IN GIOCO", SintesiDashboard(briefing.Stake, 72), false));
 
         // «Ore di oggi» stava qui e non c'entrava: le ore libere sono la
         // giornata del pilota, e hanno già il loro riquadro in alto a sinistra
         // con i pulsanti per usarle. Ripeterle nella scheda del prossimo
         // impegno confondeva le due cose.
-        return righe;
+        return righe.Take(4).ToList();
+    }
+
+    private static string SintesiDashboard(string value, int max)
+    {
+        var testo = (value ?? "").Trim();
+        var fineFrase = testo.IndexOf(". ", StringComparison.Ordinal);
+        if (fineFrase > 0) testo = testo[..fineFrase].TrimEnd('.');
+        return testo.Length <= max ? testo : testo[..Math.Max(1, max - 1)].TrimEnd() + "…";
     }
 
     /// <summary>Vero se il dato è già scritto, parola per parola, nella frase.</summary>
@@ -2201,8 +2712,8 @@ public sealed partial class MainForm
             // riga del valore, che ha un carattere più grande.
             table.Controls.Add(StepLine(label, labelFont, UiTheme.TextMuted, labelWidth - 10, 3, 6), 0, i);
             table.Controls.Add(highlight
-                ? StepLine(value, UiTheme.HeadlineSmall, UiTheme.Warning, valueWidth, 0, 6)
-                : StepLine(value, UiTheme.BodyStrong, UiTheme.TextPrimary, valueWidth, 0, 6), 1, i);
+                ? StepLine(value, UiTheme.BodyStrong, UiTheme.Warning, valueWidth, 0, 4)
+                : StepLine(value, UiTheme.BodyStrong, UiTheme.TextPrimary, valueWidth, 0, 4), 1, i);
         }
         return table;
     }
@@ -2286,7 +2797,7 @@ public sealed partial class MainForm
             ? "Nessuna gara né prova in agenda"
             : current
                 ? $"{EtichettaAppuntamento(next)} · {NomeVettura(career.Car)}"
-                : $"{QuandoSuccede(next.Date, today)} · {EtichettaAppuntamento(next)} · {CareerScheduler.TrackLabel(next)}";
+                : $"{DataConDistanza(next.Date, today)} · {EtichettaAppuntamento(next)} · {CareerScheduler.TrackLabel(next)}";
 
         var layout = new TableLayoutPanel
         {
@@ -2401,6 +2912,8 @@ public sealed partial class MainForm
         {
             control.MaximumSize = new Size(width, int.MaxValue);
             control.Width = width;
+            if (control is Panel panel && Equals(panel.Tag, "today-card"))
+                panel.Height = Math.Max(292, homeStep.ClientSize.Height - 4);
             if (control is not Label label) continue;
             var measured = TextRenderer.MeasureText(string.IsNullOrEmpty(label.Text) ? "Ag" : label.Text, label.Font,
                 new Size(width, int.MaxValue), TextFormatFlags.WordBreak | TextFormatFlags.TextBoxControl);
@@ -2541,7 +3054,7 @@ public sealed partial class MainForm
                     : evaluation && scheduled?.Kind == ScheduledEventKind.Invitation
                         ? "CONTINUA · VALUTA L'INVITO"
                         : evaluation && scheduled != null
-                            ? "CONTINUA · AFFRONTA IL TEST"
+                            ? "AFFRONTA SUBITO IL TEST"
                             : evaluation && hasOffers
                                 ? "CONTINUA · SCEGLI IL PRIMO TEAM"
                                 : evaluation
@@ -2561,6 +3074,11 @@ public sealed partial class MainForm
         // qui, dopo che l'etichetta è stata decisa.
         homeContinue.Text = continueStory.Text;
         homeContinue.Enabled = continueStory.Enabled;
+        directAdvanceHint.Visible = string.IsNullOrWhiteSpace(missingContent)
+            && !awaitingResult
+            && OpenSelection == null
+            && evaluation
+            && scheduled?.IsTest == true;
 
         if (!string.IsNullOrWhiteSpace(missingContent))
         {
@@ -3005,7 +3523,7 @@ public sealed partial class MainForm
             "",
             "RELAZIONI",
             topRival == null ? "Nessuna rivalità registrata." : $"Rivale principale: {topRival.Rival} · intensità {topRival.Level}/100",
-            $"Rapporto col team: {OffTrackActivities.RelationLabel(career.TeamRelation)} ({career.TeamRelation}/100)",
+            $"Livello influencer: {Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)}/100",
             $"Confronto col compagno in stagione: {career.TeammateRacesWon}-{career.TeammateRacesLost}",
             $"Roster persistente: {aiDrivers} piloti AI",
             "",
@@ -3029,8 +3547,8 @@ public sealed partial class MainForm
             $"Premi € {career.PrizeMoney:N0} · sponsor € {career.SponsorMoney:N0} · stipendio € {career.SalaryPaid:N0}",
             $"Riparazioni € -{career.RepairCosts:N0} · trasferte € -{career.LogisticsCosts:N0}",
             "",
-            "CONDIZIONE",
-            $"{OffTrackActivities.FatigueLabel(career.Fatigue)} ({career.Fatigue}/100) · seguito {career.Fanbase} · {Math.Max(0, career.DaysUntilNextRound)} giorni liberi prima del prossimo round",
+            "VITA DEL PILOTA",
+            $"Scuola {Scuola.Livello(career)}/100 · seguito {career.Fanbase} · {Math.Max(0, career.DaysUntilNextRound)} giorni liberi prima del prossimo round",
             "",
             "SESSIONI NON CONCLUSE",
             // Il conto resta pubblico: l'app non può distinguere un problema

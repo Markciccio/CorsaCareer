@@ -60,7 +60,7 @@ public static class WithdrawalRules
         outcome.Reputation = -2;
         outcome.TeamRelation = -3;
         outcome.Reasons.Add($"tentativo {attempt} consumato senza tempo utilizzabile");
-        outcome.Reasons.Add("reputazione -2, rapporto col team -3");
+        outcome.Reasons.Add("reputazione -2, livello influencer -3");
         outcome.Headline = kind == WithdrawalKind.NoTimedLap
             ? $"Prova {attempt} chiusa senza alcun giro cronometrato: il tentativo resta a referto."
             : $"Prova {attempt} abbandonata dal pilota: il tentativo viene comunque conteggiato.";
@@ -89,7 +89,7 @@ public static class WithdrawalRules
         outcome.LogisticsCost = LogisticsForTier(tier);
         outcome.Reasons.Add($"round {round} consumato senza referto");
         outcome.Reasons.Add("nessun punto e nessun premio gara");
-        outcome.Reasons.Add($"reputazione -6, team -8, sponsor -6, trasferta € -{outcome.LogisticsCost:N0}");
+        outcome.Reasons.Add($"reputazione -6, livello influencer -8, sponsor -6, trasferta € -{outcome.LogisticsCost:N0}");
         outcome.Headline = kind == WithdrawalKind.NoTimedLap
             ? $"{grandPrix}: sessione chiusa senza referto utilizzabile, il round va a referto come ritiro."
             : $"{grandPrix}: ritiro dal weekend. Nessun punto, e il round resta disputato.";

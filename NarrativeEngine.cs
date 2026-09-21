@@ -176,7 +176,7 @@ public static class NarrativeEngine
         if (f.TeammatePosition > 0 && !f.Dnf && Math.Abs(f.Position - f.TeammatePosition) <= 1) impact += 8;
         // Contesto extra-pista.
         if (f.MilestoneRaces > 0) impact += 20;
-        if (f.SponsorRelation <= 20 || f.TeamRelation <= 20) impact += 8;
+        if (f.SponsorRelation <= 20 || f.Fanbase <= 20) impact += 8;
         if (f.Damage > 0.3) impact += 6;
         return Math.Clamp(impact, 0, 100);
     }
@@ -344,8 +344,8 @@ public static class NarrativeEngine
             $"{f.SponsorName} mette il contratto in revisione: {name} avvisato",
             $"Tensione commerciale: {f.SponsorName} chiede garanzie a {name}"),
         "TEAM_WARNING" => bank.Pick("title-teamwarn",
-            $"Rapporto in crisi fra {name} e {f.TeamName}",
-            $"{f.TeamName} perde fiducia: la posizione di {name} si complica"),
+            $"Il livello influencer di {name} è in calo",
+            $"Il pubblico perde fiducia: la posizione di {name} si complica"),
         "ACTIVITY_SETBACK" => bank.Pick("title-activitybad",
             $"{name} fuori dalla pista: {f.LastActivity} non è andata come previsto",
             $"Passo falso lontano dal circuito per {name}"),

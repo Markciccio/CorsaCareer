@@ -185,8 +185,8 @@ public sealed class DriverDayDialog : CareerDialog
         driverHours.Text = $"◉  PILOTA   {day.DriverHoursLeft} / {day.DriverHoursTotal} ORE LIBERE";
 
         var profile = career.ReputationProfile ?? new ReputationProfile();
-        indices.Text = $"FORMA  {career.Fitness}/100     FIDUCIA FOLLOWERS  {career.TeamRelation}/100     APPEAL SPONSOR  {career.SponsorRelation}/100";
-        stats.Text = $"Budget disponibile € {career.Cash:N0}   ·   stanchezza {career.Fatigue}/100 ({DriverDay.ConditionLabel(career.Fitness, career.Fatigue)})   ·   "
+        indices.Text = $"FORMA  {career.Fitness}/100     LIVELLO INFLUENCER  {Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)}/100     APPEAL SPONSOR  {career.SponsorRelation}/100";
+        stats.Text = $"Budget disponibile € {career.Cash:N0}   ·   livello scuola {Scuola.Livello(career)}/100   ·   "
                      + $"livello influencer {profile.PublicPopularity}/100   ·   reputazione sportiva {profile.SportingPrestige}/100";
 
         Fill(driverColumn, DayActor.Driver);
@@ -406,7 +406,7 @@ internal sealed class DriverActivityResultDialog : CareerDialog
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 64));
 
-        var artwork = SceneArtwork.ForActivity(report.Activity.Id);
+        var artwork = SceneArtwork.ForActivity(report.Activity.Id, StableHash.Of(report.Activity.Id, career.StoryDate.ToString("yyyyMMdd"), "result"));
         var image = new PictureBox { Dock = DockStyle.Fill, BackColor = Color.Black, SizeMode = PictureBoxSizeMode.Zoom, Margin = new Padding(0, 0, 22, 0) };
         if (SceneArtwork.Exists(artwork))
         {

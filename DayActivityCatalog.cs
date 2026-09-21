@@ -22,8 +22,10 @@ public static class DayActivityCatalog
     /// attivita' scolastiche per prefisso faceva scattare la scena di Sae e
     /// Tooru dopo un pomeriggio passato al circuito.
     /// </summary>
-    public static readonly IReadOnlyList<string> Scolastiche =
-        ["scuola", "scuola-sae", "scuola-tooru", "scuola-volantini"];
+    // La scuola è ora un impegno obbligatorio del calendario, non una voce
+    // selezionabile fra le attività: l'elenco resta vuoto per non trattarla
+    // erroneamente come un'azione facoltativa.
+    public static readonly IReadOnlyList<string> Scolastiche = [];
 
     /// <summary>Vero se questa attivita' si svolge a scuola.</summary>
     public static bool AScuola(string id) =>
@@ -53,6 +55,20 @@ public static class DayActivityCatalog
                 {
                     Line = "Ultima serie, e le braccia non rispondono piu'. E' esattamente il punto in cui serve farne un'altra.",
                     Effects = [new(DayEffectKind.Fitness, 6), new(DayEffectKind.Fatigue, 12)]
+                }
+            ]
+        },
+        new()
+        {
+            Id = "kart-training", Name = "Turni liberi in kart", Actor = DayActor.Driver, Focus = DayFocus.Fisico,
+            Hours = 2, Cost = 180,
+            Promise = "Open day nel kartodromo di casa: pista € 90, gomme e revisione minima € 90. Giri con altri concorrenti, senza risultato di gara.",
+            Outcomes =
+            [
+                new()
+                {
+                    Line = "Due turni puliti nel kartodromo di casa. Gli altri girano per conto loro e tu impari a stare nel traffico senza una classifica.",
+                    Effects = []
                 }
             ]
         },

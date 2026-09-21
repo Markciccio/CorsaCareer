@@ -164,8 +164,8 @@ public sealed class ActivitiesDialog : CareerDialog
 
     private void RefreshHeader() => header.Text =
         $"Stagione {career.Season} · verso il round {Math.Min(career.Round + 1, 99)} · {career.DaysUntilNextRound} giorni liberi\n" +
-        $"Budget € {career.Cash:N0} · reputazione {career.Reputation}/100 · seguito {career.Fanbase} · condizione: {OffTrackActivities.FatigueLabel(career.Fatigue)} ({career.Fatigue}/100) · " +
-        $"team {OffTrackActivities.RelationLabel(career.TeamRelation)} ({career.TeamRelation}) · sponsor {OffTrackActivities.RelationLabel(career.SponsorRelation)} ({career.SponsorRelation})";
+        $"Budget € {career.Cash:N0} · reputazione {career.Reputation}/100 · seguito {career.Fanbase} · " +
+        $"livello influencer {Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)}/100 · sponsor {OffTrackActivities.RelationLabel(career.SponsorRelation)} ({career.SponsorRelation})";
 
     private void RefreshJournal()
     {
@@ -174,7 +174,7 @@ public sealed class ActivitiesDialog : CareerDialog
             ? "DIARIO DELLE ATTIVITÀ\r\nNessuna attività svolta: l'agenda fra i weekend è ancora vuota."
             : "DIARIO DELLE ATTIVITÀ\r\n" + string.Join("\r\n", recent.Select(x =>
                 $"S{x.Season:00} R{x.Round:00} · {x.Name} · {(x.Success ? "riuscita" : "non riuscita")} · {x.Story} " +
-                $"[rep {x.Reputation:+#;-#;0} · seguito {x.Fanbase:+#;-#;0} · team {x.TeamRelation:+#;-#;0} · sponsor {x.SponsorRelation:+#;-#;0} · condizione {x.Fatigue:+#;-#;0} · € {x.Money:N0}]"));
+                $"[rep {x.Reputation:+#;-#;0} · seguito {x.Fanbase:+#;-#;0} · influencer {x.TeamRelation:+#;-#;0} · sponsor {x.SponsorRelation:+#;-#;0} · € {x.Money:N0}]"));
     }
 
     /// <summary>Riapre il servizio della riga del diario su cui si fa doppio clic.</summary>
@@ -258,9 +258,8 @@ public sealed class ActivitiesDialog : CareerDialog
         var parts = new List<string>();
         if (effect.Reputation != 0) parts.Add($"reputazione {effect.Reputation:+#;-#;0}");
         if (effect.Fanbase != 0) parts.Add($"seguito {effect.Fanbase:+#;-#;0}");
-        if (effect.TeamRelation != 0) parts.Add($"rapporto col team {effect.TeamRelation:+#;-#;0}");
+        if (effect.TeamRelation != 0) parts.Add($"livello influencer {effect.TeamRelation:+#;-#;0}");
         if (effect.SponsorRelation != 0) parts.Add($"rapporto sponsor {effect.SponsorRelation:+#;-#;0}");
-        if (effect.Fatigue != 0) parts.Add($"stanchezza {effect.Fatigue:+#;-#;0}");
         if (effect.Money != 0) parts.Add($"compenso € {effect.Money:N0}");
         return parts.Count == 0 ? "nessun effetto" : string.Join(" · ", parts);
     }

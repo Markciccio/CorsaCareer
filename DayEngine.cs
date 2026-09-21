@@ -68,10 +68,8 @@ public static class DayEngine
                     break;
 
                 case DayEffectKind.Fatigue:
-                    var fatigueBefore = career.Fatigue;
-                    career.Fatigue = Math.Clamp(career.Fatigue + effect.Amount, 0, DriverDay.MaxFatigue);
-                    if (career.Fatigue != fatigueBefore)
-                        applied.Add($"stanchezza {Signed(career.Fatigue - fatigueBefore)} (ora {career.Fatigue})");
+                    // Il parametro è stato rimosso dal gameplay; il ramo resta
+                    // per leggere senza errori le attività dei vecchi salvataggi.
                     break;
 
                 case DayEffectKind.Popularity:
@@ -129,7 +127,7 @@ public static class DayEngine
             Fanbase = effects.Where(x => x.Kind == DayEffectKind.Popularity).Sum(x => x.Amount),
             TeamRelation = 0,
             SponsorRelation = 0,
-            Fatigue = effects.Where(x => x.Kind == DayEffectKind.Fatigue).Sum(x => x.Amount),
+            Fatigue = 0,
             Money = effects.Where(x => x.Kind == DayEffectKind.Money).Sum(x => x.Amount) - Math.Max(0, activity.Cost)
         });
         career.News.Add($"{activity.Name}: {outcome.Line}");
@@ -158,7 +156,7 @@ public static class DayEngine
     /// </summary>
     public static DayPlan Advance(CareerState career, DayPlan today)
     {
-        career.Fatigue = Math.Clamp(career.Fatigue - NightRecovery, 0, DriverDay.MaxFatigue);
+        career.Fatigue = 0;
         career.StoryDate = today.Date.AddDays(1);
         if (career.DaysUntilNextRound > 0) career.DaysUntilNextRound--;
 

@@ -192,7 +192,7 @@ public sealed class SeasonStatistics
         righe.Add(("BILANCIO", "Saldo della stagione", $"€ {SaldoStagione:N0}"));
 
         righe.Add(("IL PILOTA", "Forma fisica", $"{FormaInizio} → {FormaFine}  ({Segno(FormaFine - FormaInizio)})"));
-        righe.Add(("IL PILOTA", "Fiducia della squadra", $"{FiduciaInizio} → {FiduciaFine}  ({Segno(FiduciaFine - FiduciaInizio)})"));
+        righe.Add(("IL PILOTA", "Livello influencer", $"{FiduciaInizio} → {FiduciaFine}  ({Segno(FiduciaFine - FiduciaInizio)})"));
 
         return righe;
     }

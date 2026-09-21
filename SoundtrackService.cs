@@ -174,6 +174,8 @@ public static class SoundtrackService
     private static bool paused;
     private static int currentVolume = BackgroundVolume;
     private static readonly Dictionary<string, int> moodCursor = new(StringComparer.OrdinalIgnoreCase);
+    private static int soundtrackCursor;
+    private static readonly Queue<string> recentTracks = new();
     private static string? lastMood;
     public static string LastBackend { get; private set; } = "nessuno";
 
@@ -509,9 +511,28 @@ public static class SoundtrackService
             .ToArray();
         if (candidates.Length == 0) candidates = Tracks().ToArray();
         if (candidates.Length == 0) return;
-        var index = moodCursor.TryGetValue(normalized, out var stored) ? stored % candidates.Length : 0;
-        moodCursor[normalized] = (index + 1) % candidates.Length;
-        Play(candidates[index], volume);
+        // La selezione precedente ripartiva dall'indice del singolo mood:
+        // cambiando spesso atmosfera si tornava sempre ai primi due o tre
+        // brani. La coda globale mantiene invece una rotazione ampia, senza
+        // perdere la preferenza tematica del mood corrente.
+        var pool = candidates
+            .Concat(Tracks().Where(x => !candidates.Contains(x, StringComparer.OrdinalIgnoreCase)))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var disponibili = pool.Where(x => !recentTracks.Contains(x, StringComparer.OrdinalIgnoreCase)).ToArray();
+        if (disponibili.Length == 0)
+        {
+            recentTracks.Clear();
+            disponibili = pool;
+        }
+        var index = soundtrackCursor % disponibili.Length;
+        soundtrackCursor = (soundtrackCursor + 1) % Math.Max(1, disponibili.Length);
+        var selected = disponibili[index];
+        recentTracks.Enqueue(selected);
+        var keep = Math.Min(4, Math.Max(1, pool.Length - 1));
+        while (recentTracks.Count > keep) recentTracks.Dequeue();
+        moodCursor[normalized] = index;
+        Play(selected, volume);
         // L'atmosfera si considera raggiunta solo se un canale è partito
         // davvero: su un PC senza backend audio la guardia avrebbe altrimenti
         // impedito ogni tentativo successivo.

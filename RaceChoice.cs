@@ -123,10 +123,6 @@ public static class RaceChoice
         if (upcoming.Count == 0)
             notes.Add("Non ci sono altri impegni già fissati con una quota da pagare.");
 
-        // La condizione fisica: correre stanchi rende meno.
-        if (career.Fatigue >= DriverDay.TiredThreshold)
-            notes.Add($"Sei {DriverDay.ConditionLabel(career.Fitness, career.Fatigue)}: il ritmo calerebbe nella seconda metà.");
-
         return notes;
     }
 }

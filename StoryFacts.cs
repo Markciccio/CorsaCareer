@@ -197,8 +197,11 @@ public sealed class StoryFacts
             Podiums = career.Podiums,
             SponsorStatus = career.SponsorObjectiveStatus,
             SponsorRelation = career.SponsorRelation,
-            TeamRelation = career.TeamRelation,
-            Fanbase = career.Fanbase,
+            // Il vecchio rapporto con il team non è più una metrica narrativa:
+            // per articoli e scene questa posizione rappresenta il livello
+            // influencer mostrato nella Home.
+            TeamRelation = Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100),
+            Fanbase = Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100),
             Fatigue = career.Fatigue,
             ContractObjective = career.ContractObjective,
             ContractObjectiveStatus = career.ContractObjectiveStatus,

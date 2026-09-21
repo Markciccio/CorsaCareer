@@ -250,9 +250,9 @@ public static class RaceSimulator
         skill += (input.Talent.RawPace - 50) * 0.12;                 // ±5,4
         if (input.Wet) skill += (input.Talent.WetSkill - 50) * 0.10; // ±4,5 solo con pioggia
         skill += (input.CarCompetitiveness - 50) * 0.06;   // vettura, +/-3
-        // Forma e stanchezza insieme, con la stessa formula usata dalla
-        // giornata del pilota: allenarsi serve, e arrivare consumati costa.
-        skill += DriverDay.PaceShift(input.Fitness, input.Fatigue);
+        // La forma fisica è il solo parametro di condizione usato dal passo;
+        // la vecchia stanchezza resta nell'input per compatibilità dei replay.
+        skill += DriverDay.PaceShift(input.Fitness, 0);
         skill -= (60 - Math.Min(60, input.Professionalism)) * 0.05;
 
         // Il vincolo si applica sul passo, non sulla posizione: lo scarto e
@@ -428,7 +428,6 @@ public static class RaceSimulator
         // distintivo di una carriera intera.
         var fragilita = (50 - input.Talent.Reliability) * 0.0016;
         var risk = BaseRetirementRisk
-                   + input.Fatigue * 0.0011
                    + Math.Max(0, 60 - input.Professionalism) * 0.0009
                    + Math.Max(-0.03, fragilita);
         // Una giornata forzatamente negativa puo finire con un ritiro; una

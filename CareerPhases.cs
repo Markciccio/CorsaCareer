@@ -258,7 +258,7 @@ public static class CareerPhases
                     "adesso guidare è il tuo lavoro, e chi ti paga si aspetta un rendimento. La libertà di sbagliare che " +
                     "avevi nelle categorie minori non esiste più.",
 
-                    $"La fiducia dei team è a {profile.TeamTrust}/100 e questo apre porte che prima non si vedevano: " +
+                    $"Il livello influencer è a {profile.PublicPopularity}/100 e questo apre porte che prima non si vedevano: " +
                     "sostituzioni all'ultimo momento in categorie superiori, test su vetture che non avresti potuto " +
                     "affittare, contratti con clausole al posto di quote d'iscrizione.",
 

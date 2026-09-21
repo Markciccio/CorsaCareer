@@ -383,6 +383,10 @@ public sealed partial class MainForm : Form
     private ContentIndexRecord contentIndex = new();
     private CareerState career = new();
     private bool awaitingResult;
+    // L'importazione apre finestre modali e aggiorna la Home. Durante quelle
+    // operazioni Activated/Timer possono rientrare qui: lo stesso race_out.json
+    // deve poter consumare un solo weekend.
+    private bool importInProgress;
     /// <summary>Il dossier del pilota è appena stato aperto nel browser in
     /// questa stessa sessione: al primo Shown va ripreso il fuoco, altrimenti
     /// il portale — attivandosi per la prima volta — glielo ruba subito dopo.</summary>
@@ -541,7 +545,17 @@ public sealed partial class MainForm : Form
             // Anche una carriera già creata con una versione precedente deve
             // vedere una volta la fotografia dell'installazione reale, prima
             // di qualunque prologo o tutorial.
-            if (career.InstalledContentAnalysisVersion < 11) ShowInstalledCareerAnalysis();
+            if (career.InstalledContentAnalysisVersion < 12 && !ShowInstalledCareerAnalysis())
+            {
+                // Una carriera salvata senza il pacchetto minimo non deve
+                // entrare in calendario con categorie inventate. Il giocatore
+                // può installare i contenuti e riaprire il portale.
+                CareerMessages.Show(this,
+                    "Il pacchetto base della carriera non è completo. Installa le voci indicate nella mappa e riapri il programma.",
+                    "CorsaCareer — contenuti necessari");
+                BeginInvoke(new Action(Close));
+                return;
+            }
             // Il tema d'avvio lo decide chi apre la scena: se c'è una fase da
             // presentare è il prologo a scegliere musica o voce e a restituire
             // il tema della Home alla chiusura. Suonare qui l'intro significava
@@ -619,7 +633,7 @@ public sealed partial class MainForm : Form
         var normalizedFitness = Math.Clamp(career.Fitness, 0, 100);
         var normalizedTrust = Math.Clamp(career.TeamRelation, 0, 100);
         var normalizedSponsor = Math.Clamp(career.SponsorRelation, 0, 100);
-        var normalizedFatigue = Math.Clamp(career.Fatigue, 0, 100);
+        const int normalizedFatigue = 0;
         migrated |= normalizedCash != career.Cash
                     || normalizedFitness != career.Fitness
                     || normalizedTrust != career.TeamRelation
@@ -788,7 +802,7 @@ public sealed partial class MainForm : Form
             migrated = true;
         }
         if (career.DaysUntilNextRound < 0) { career.DaysUntilNextRound = OffTrackActivities.DaysBetweenRounds(); migrated = true; }
-        career.Fatigue = Math.Clamp(career.Fatigue, 0, OffTrackActivities.MaxFatigue);
+        career.Fatigue = 0;
         career.TeamRelation = Math.Clamp(career.TeamRelation, 0, 100);
         career.SponsorRelation = Math.Clamp(career.SponsorRelation, 0, 100);
         career.Fanbase = Math.Max(0, career.Fanbase);
@@ -1142,7 +1156,8 @@ public sealed partial class MainForm : Form
     }
     private void TryImportRaceResult()
     {
-        if (!awaitingResult) return;
+        if (!awaitingResult || importInProgress) return;
+        importInProgress = true;
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var probe = $"{pendingMode}|{launchTimeUtc:O}|{resultFile}|{(File.Exists(resultFile) ? File.GetLastWriteTimeUtc(resultFile).ToString("O") : "missing")}";
         if (!probe.Equals(lastImportProbe, StringComparison.Ordinal))
@@ -1150,7 +1165,16 @@ public sealed partial class MainForm : Form
             lastImportProbe = probe;
             CareerLog.Info("import", $"controllo referto: modalità={pendingMode}, avvio={launchTimeUtc:O}, file={resultFile}, aggiornato={(File.Exists(resultFile) ? File.GetLastWriteTimeUtc(resultFile).ToString("O") : "assente")}");
         }
-        if (!File.Exists(resultFile) || File.GetLastWriteTimeUtc(resultFile) <= launchTimeUtc) return;
+        // Non lasciare il flag attivo quando il file non esiste ancora o il
+        // referto disponibile è quello precedente all'avvio. Questo metodo è
+        // richiamato dal timer ogni due secondi: un return diretto qui lasciava
+        // `importInProgress` a true dopo il primo controllo e impediva di
+        // leggere il referto nuovo scritto da Assetto Corsa.
+        if (!File.Exists(resultFile) || File.GetLastWriteTimeUtc(resultFile) <= launchTimeUtc)
+        {
+            importInProgress = false;
+            return;
+        }
         try
         {
             var json = File.ReadAllText(resultFile);
@@ -1298,8 +1322,11 @@ public sealed partial class MainForm : Form
             }
             else if (pendingMode.Equals("invitation", StringComparison.OrdinalIgnoreCase))
             {
-                RecordInvitation(imported, photo, archivedResultFile);
+                // Chiudi prima l'associazione: RecordInvitation aggiorna la
+                // Home e apre la scena anime, quindi un Activated durante la
+                // finestra non deve vedere ancora il weekend pendente.
                 CompletePendingWeekend();
+                RecordInvitation(imported, photo, archivedResultFile);
                 CareerMessages.Show(null, $"Gara su invito importata: P{imported.Position} su {imported.Classification.Count} partecipanti.\n\nIl risultato entra nella storia del pilota, ma non assegna punti di campionato.", "CorsaCareer — gara su invito", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 // La reazione del box e l'articolo li apre già RecordInvitation:
                 // qui aprirli di nuovo mostrava lo stesso articolo due volte.
@@ -1319,6 +1346,7 @@ public sealed partial class MainForm : Form
             }
         }
         catch (Exception error) { CareerLog.Error("import", "importazione del referto interrotta", error); acLog(error.Message); }
+        finally { importInProgress = false; }
     }
     private void CheckResultNow()
     {
@@ -1380,9 +1408,8 @@ public sealed partial class MainForm : Form
         var profile = career.ReputationProfile ??= new ReputationProfile();
         profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 3, 0, 100);
         profile.SportingPrestige = Math.Clamp(profile.SportingPrestige - 4, 0, 100);
-        profile.TeamTrust = Math.Clamp(profile.TeamTrust - 5, 0, 100);
         profile.SyncLegacyFields(career);
-        career.Fatigue = Math.Clamp(career.Fatigue + 4, 0, 100);
+        career.Fatigue = 0;
         // L'abbandono applica già qui un costo esplicito: non sommare anche la
         // penalità di una gara saltata, altrimenti la stessa scelta colpisce due volte.
         career.Results.Add($"Sessione abbandonata: {track}");
@@ -1399,7 +1426,7 @@ public sealed partial class MainForm : Form
         RefreshUi();
         CareerMessages.Show(this,
             $"La sessione a {track} è stata abbandonata.\n\n"
-            + "Penalità applicate: -3 livello influencer, -4 prestigio sportivo, -5 fiducia followers e +4 fatica.\n"
+            + "Penalità applicate: -3 livello influencer, -4 prestigio sportivo e +4 fatica.\n"
             + "La quota eventualmente già pagata non viene restituita.",
             "CorsaCareer — sessione abbandonata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
     }
@@ -1848,6 +1875,12 @@ public sealed partial class MainForm : Form
 
         var currentStep = CareerLadder.Current(career, contentIndex.Cars).Step;
         var generated = CareerScheduler.BuildSeason(contentIndex.Tracks, career.Tier, career.Season, career.SeasonStartDate, career.Championship, CategoryForCareer(career), currentStep);
+        // Un calendario è una fotografia sportiva: anche se il pilota firma
+        // altrove prima dell'ultimo round, questi weekend restano legati alla
+        // vettura con cui sono stati programmati. Senza questo vincolo una
+        // Formula appena firmata finiva a correre il vecchio calendario kart.
+        foreach (var item in generated)
+            item.CarId = career.Car;
         var added = generated.Count(x => CareerScheduler.Append(career.Schedule, x));
         if (added == 0)
         {
@@ -1921,10 +1954,7 @@ public sealed partial class MainForm : Form
         // quasi il doppio del tempo che serviva a venti. È il modo in cui l'età
         // si sente prima ancora che nel cronometro.
         var recupero = (int)Math.Round(Math.Min(notti, 21) * DayEngine.NightRecovery * DriverAge.FattoreRecupero(EtaPilota()));
-        var prima = career.Fatigue;
-        career.Fatigue = Math.Clamp(career.Fatigue - recupero, 0, OffTrackActivities.MaxFatigue);
-        if (career.Fatigue != prima)
-            CareerLog.Info("pilota", $"{notti} giorni di pausa: stanchezza da {prima} a {career.Fatigue}");
+        career.Fatigue = 0;
     }
 
     private DateTime SeasonAnchor() => career.SeasonStartDate != default
@@ -2036,6 +2066,20 @@ public sealed partial class MainForm : Form
         // «cup» viene prima di «formula 4». Firmava, e la carriera cambiava
         // disciplina senza che nessuno l'avesse deciso.
         offerPool = CareerLadder.OnPath(offerPool, career.ChosenPath);
+        // Dal kart 125 alla monoposto non si salta con una normale offerta di
+        // mercato: prima si deve aprire e superare la selezione in quattro
+        // giornate. Così la Home non presenta insieme il sedile kart e il
+        // provino Formula come se fossero due passaggi equivalenti.
+        var currentRung = CareerLadder.Current(career, contentIndex.Cars);
+        var formulaSelectionPassed = career.Selections.Any(x =>
+            x.TargetRungId.Equals(CareerLadder.ById(SelectionCatalog.FirstFormula).Id,
+                StringComparison.OrdinalIgnoreCase)
+            && x.Outcome.Equals(nameof(SelectionOutcome.Promoted), StringComparison.OrdinalIgnoreCase));
+        if (currentRung.Id == CareerLadder.Shifter && !formulaSelectionPassed)
+        {
+            offerPool = offerPool.Where(x =>
+                CareerLadder.ForCar(x.Category, x.PowerHp, x.MassKg).Path != LadderPath.SingleSeater).ToList();
+        }
         if (offerPool.Count == 0) return new List<TeamOffer>();
         var entryCategory = offerPool.OrderBy(x => CategoryRank(x.Category)).ThenBy(x => x.Name).Select(x => x.Category).FirstOrDefault() ?? "special";
         var entryCars = offerPool.Where(x => x.Category.Equals(entryCategory, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -2169,7 +2213,14 @@ public sealed partial class MainForm : Form
         career = new CareerState(); ApplyProfile(dialog.Profile);
         // La scelta viene prima della rookie evaluation: kart e utilitarie non
         // sono un tratto comune, ma due ingressi diversi nella carriera.
-        ShowInstalledCareerAnalysis();
+        if (!ShowInstalledCareerAnalysis())
+        {
+            // Il profilo non viene salvato: al prossimo avvio la procedura
+            // riparte dalla verifica dei contenuti, senza lasciare una
+            // carriera mezza inizializzata.
+            career = new CareerState();
+            return;
+        }
         StartEvaluation(); EnsureSponsorProspects(); EnsurePaddockRoster(); SaveCareer();
         AnnounceDebutPhase();
         NarrationService.OpenCareerLaunchStories(career); career.LaunchStoriesOpened = true; SaveCareer();
@@ -2423,12 +2474,36 @@ public sealed partial class MainForm : Form
         var current = CurrentCareerCar();
         if (current == null) return false;
         var gradinoOra = CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Step;
-        if (RacesOnCurrentStep() < OpportunityGenerator.RacesBeforeStepUp(gradinoOra)) return false;
         var rung = CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Id;
+
+        // Il percorso kart ha una cadenza più credibile di quella generica
+        // usata per le categorie professionistiche: due uscite con il DAP,
+        // poi tre con il 125. Il passaggio alla Formula non è però automatico:
+        // richiede almeno cinque gare kart complessive e un piazzamento da top
+        // three nel campionato ricostruito dalle classifiche reali.
+        var requiredOnRung = rung switch
+        {
+            CareerLadder.TwoStroke => 2,
+            CareerLadder.Shifter => 3,
+            _ => 1
+        };
+        if (RacesOnCurrentStep() < requiredOnRung) return false;
+
+        if (rung == CareerLadder.Shifter)
+        {
+            if (!KartChampionshipReady()) return false;
+            var selection = OfferSelectionIfDue();
+            if (selection == null) return false;
+            career.RookieEvaluationStatus = "Campionato kart chiuso nei primi tre — selezione monoposto aperta";
+            career.Headline = $"{career.Driver} chiude la gavetta kart e riceve la convocazione alla selezione monoposto.";
+            career.News.Add(career.Headline);
+            CareerLog.Info("gavetta", "selezione monoposto aperta dopo almeno cinque gare kart e top three");
+            return true;
+        }
+
         ContentCarRecord? nextCar = rung switch
         {
             CareerLadder.TwoStroke => CarForRung(CareerLadder.Shifter),
-            CareerLadder.Shifter => FirstFormulaCar(),
             _ => null
         };
         if (nextCar == null) return false;
@@ -2446,6 +2521,7 @@ public sealed partial class MainForm : Form
             TrackName = track?.Name ?? "",
             Country = track?.Country ?? "",
             Season = career.Season,
+            CarId = nextCar.Id,
             EntryFee = formula ? 0 : CareerScheduler.FirstRaceFee,
             ProposedBy = formula ? "Minato Formula Academy" : "Hoshi Kart Works",
             GeneratedBy = formula
@@ -2466,6 +2542,50 @@ public sealed partial class MainForm : Form
     }
 
     /// <summary>
+    /// Classifica provvisoria del piccolo campionato kart iniziale. Le gare su
+    /// invito non assegnano punti ufficiali, ma la loro classifica reale è
+    /// sufficiente per capire se il pilota è da primi tre e merita il provino.
+    /// </summary>
+    private bool KartChampionshipReady()
+    {
+        var kartRaces = (career.RaceHistory ?? [])
+            .Where(x => x.Season == career.Season
+                && x.SessionName != GaraDaOspite
+                && contentIndex.Cars.FirstOrDefault(c => c.Id.Equals(x.Car, StringComparison.OrdinalIgnoreCase)) is { } car
+                && CareerLadder.ForCar(car.Category, car.PowerHp, car.MassKg).Path == LadderPath.Karting)
+            .ToList();
+        if (kartRaces.Count < 5) return false;
+
+        var table = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        foreach (var race in kartRaces)
+        {
+            foreach (var participant in race.Classification)
+            {
+                if (participant.Position <= 0) continue;
+                var points = participant.Position switch
+                {
+                    1 => 25,
+                    2 => 18,
+                    3 => 15,
+                    4 => 12,
+                    5 => 10,
+                    6 => 8,
+                    7 => 6,
+                    8 => 4,
+                    9 => 2,
+                    10 => 1,
+                    _ => 0
+                };
+                table[participant.Name] = table.GetValueOrDefault(participant.Name) + points;
+            }
+        }
+        if (!table.TryGetValue(career.Driver, out var myPoints))
+            return kartRaces.Count(x => !x.Dnf && x.Position <= 3) >= 2;
+        var rank = 1 + table.Values.Count(x => x > myPoints);
+        return rank <= 3;
+    }
+
+    /// <summary>
     /// Il test d'ingresso superato sul quattro tempi.
     ///
     /// Spostava subito il pilota sul due tempi: il primo gradino della scala
@@ -2482,7 +2602,16 @@ public sealed partial class MainForm : Form
         var current = CurrentCareerCar();
         if (current == null || CareerLadder.ForCar(current.Category, current.PowerHp, current.MassKg).Id != CareerLadder.FourStroke) return;
         var dap = CarForRung(CareerLadder.TwoStroke);
-        career.RookieEvaluationStatus = "Test superato — si comincia a correre sul quattro tempi";
+        if (dap != null)
+        {
+            // Il test resta un test 4T, ma il primo appuntamento successivo è
+            // già il kart DAP/2T: non chiediamo al giocatore di ripetere la
+            // stessa prova né lasciamo sul mercato un sedile 4T concorrente.
+            SetCareerCar(dap);
+        }
+        career.RookieEvaluationStatus = dap == null
+            ? "Test superato — si comincia a correre sul quattro tempi"
+            : "Test 4T superato — debutto in gara con il DAP/2T";
         var quante = OpportunityGenerator.RacesBeforeStepUp(1);
         career.News.Add(dap == null
             ? $"Test superato: {career.Driver} puo' cominciare a correre."
@@ -2492,28 +2621,40 @@ public sealed partial class MainForm : Form
     // Prima di chiedere un giro, la carriera dichiara onestamente il mondo che
     // può costruire con questa installazione. Non propone kart, F1 o endurance
     // per convenzione: ogni ramo mostrato deriva dalle auto e dalle piste lette.
-    private void ShowInstalledCareerAnalysis()
+    private bool ShowInstalledCareerAnalysis()
     {
-        if (Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1") return;
+        if (Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1") return true;
         var previousPath = career.ChosenPath;
+        CareerContentReadiness? finalReadiness = null;
         while (true)
         {
             using var analysis = new InstalledCareerAnalysisDialog(contentIndex, EntryLevelCar(), career.ChosenPath);
             analysis.ShowDialog(this);
+            if (analysis.RichiestoAggiornamento)
+            {
+                BuildRounds();
+                continue;
+            }
             if (!string.IsNullOrWhiteSpace(analysis.SelectedPath)) career.ChosenPath = analysis.SelectedPath;
-            if (!analysis.ContentChanged) break;
+            if (!analysis.ContentChanged)
+            {
+                finalReadiness = analysis.ContentReadiness;
+                break;
+            }
             // L'equivalente manuale è già una vettura della cartella reale:
             // salviamo solo l'associazione e riapriamo la mappa aggiornata.
             SaveContentIndex();
         }
+        if (finalReadiness == null || !finalReadiness.Ready) return false;
         // Se la carriera è ancora alla prima valutazione, una scelta fatta
         // riaprendo la mappa cambia subito auto di partenza e test; nessun
         // risultato già ottenuto viene invece toccato.
         if (!career.ChosenPath.Equals(previousPath, StringComparison.OrdinalIgnoreCase)
             && career.Races == 0 && career.Round == 0 && !string.IsNullOrWhiteSpace(career.Car)) StartEvaluation();
         career.InstalledContentAnalysisSeen = true;
-        career.InstalledContentAnalysisVersion = 11;
+        career.InstalledContentAnalysisVersion = 12;
         SaveCareer(createVersionedBackup: false);
+        return true;
     }
 
     private static string CareerPathForCar(ContentCarRecord? car)
@@ -2872,6 +3013,24 @@ public sealed partial class MainForm : Form
         var track = contentIndex.Tracks.Any(x => x.Id.Equals(round.Track, StringComparison.OrdinalIgnoreCase)) ? round.Track : contentIndex.Tracks.FirstOrDefault()?.Id ?? "";
         if (track.Length == 0) { CareerMessages.Show(null, "Nessun circuito installato per il test.", "CorsaCareer — test", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         var testCar = raceableCars.Any(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase)) ? career.Car : raceableCars[0].Id;
+        var testCarRecord = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(testCar, StringComparison.OrdinalIgnoreCase));
+        var requestedTrack = contentIndex.Tracks.FirstOrDefault(x => x.Id.Equals(track, StringComparison.OrdinalIgnoreCase));
+        if (testCarRecord != null && requestedTrack != null && !CareerScheduler.IsTrackCompatible(requestedTrack, testCarRecord.Category))
+        {
+            var replacement = CareerScheduler.PickTrack(contentIndex.Tracks, career.Races + career.EvaluationAttempts, testCarRecord.Category);
+            if (replacement != null)
+            {
+                track = replacement.Id;
+                var scheduledTest = NextScheduled();
+                if (scheduledTest?.IsTest == true)
+                {
+                    scheduledTest.TrackId = replacement.Id;
+                    scheduledTest.TrackName = replacement.Name;
+                    scheduledTest.Country = replacement.Country;
+                }
+                CareerLog.Warn("agenda", $"test riallineato: {testCar} spostata da {requestedTrack.Id} a {replacement.Id}.");
+            }
+        }
         // Il test usa lo stesso pianificatore della gara: cambia solo il formato
         // (prove libere, nessuna qualifica, nessun avversario obbligatorio).
         var plan = BuildSessionPlan(track, testCar, mixedGrid: false, testSession: true);
@@ -2965,6 +3124,7 @@ public sealed partial class MainForm : Form
         var previousTeam = career.Team;
         var offerCategory = string.IsNullOrWhiteSpace(offer.Category) ? installed.Category : offer.Category;
         offer.Category = offerCategory;
+        FreezePlannedRaceCars();
         career.Team = offer.Team; career.Car = offer.Car; career.Livery = offer.Livery ?? ""; career.Tier = TierForCategory(offerCategory); career.Championship = ChampionshipLadder.Name(career.ChampionshipLevel); career.Teammate = offer.Teammate; career.SeatPrestige = offer.Prestige;
         // Il carattere della squadra segue il sedile: da qui in poi decide
         // quanto vale una vittoria in visibilita' e quanto rendono i premi.
@@ -3981,7 +4141,7 @@ public sealed partial class MainForm : Form
     }
     private void OpenPaddock()
     {
-        NarrateCardEssentials("paddock|" + career.StoryDate.ToString("O"), $"Paddock e persone. Team attuale: {career.Team}. Compagno: {career.Teammate}. La fiducia della squadra è {career.TeamRelation} su 100. Qui puoi leggere relazioni, rivali e stato del garage.");
+        NarrateCardEssentials("paddock|" + career.StoryDate.ToString("O"), $"Paddock e persone. Team attuale: {career.Team}. Compagno: {career.Teammate}. Il livello influencer è {Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)} su 100. Qui puoi leggere relazioni, rivali e stato del garage.");
         using var dialog = new PaddockDialog(career); dialog.ShowDialog(this);
     }
     private void OpenCalendar()
@@ -4242,6 +4402,22 @@ public sealed partial class MainForm : Form
         career.ContractObjectiveStatus = "In corso";
     }
 
+    /// <summary>
+    /// Blocca la vettura dei weekend già annunciati. Un'offerta può arrivare
+    /// mentre un calendario kart è ancora aperto: il nuovo sedile aggiorna il
+    /// profilo del pilota, ma non può trasformare retroattivamente quei round
+    /// in gare di Formula sul kartodromo.
+    /// </summary>
+    private void FreezePlannedRaceCars()
+    {
+        if (string.IsNullOrWhiteSpace(career.Car)) return;
+        foreach (var item in career.Schedule ?? [])
+        {
+            if (!item.IsPlanned || item.IsTest || !string.IsNullOrWhiteSpace(item.CarId)) continue;
+            item.CarId = career.Car;
+        }
+    }
+
     private void AdvanceSeason()
     {
         // Chi si e' ritirato non corre piu': niente calendari, niente offerte,
@@ -4399,7 +4575,7 @@ public sealed partial class MainForm : Form
         career.TeammateRacesWon = 0; career.TeammateRacesLost = 0;
         career.DaysUntilNextRound = OffTrackActivities.DaysBetweenRounds();
         // La pausa fra due stagioni permette un recupero reale della condizione.
-        career.Fatigue = Math.Max(0, career.Fatigue - 40);
+        career.Fatigue = 0;
         AggiornaObiettivoDiContratto();
         AccumulaTotaliDiCarriera();
         career.Round = 0; career.Points = 0; career.Standings.Clear(); career.SalaryPaid = 0; career.PrizeMoney = 0; career.SponsorMoney = 0; career.RepairCosts = 0; career.LogisticsCosts = 0; career.SponsorQualifyingResults = 0; career.SponsorObjectiveStatus = "In corso";
@@ -4529,7 +4705,9 @@ public sealed partial class MainForm : Form
             career.EvaluationAttempts++;
             career.AbandonedSessions++;
             career.Reputation = Math.Clamp(career.Reputation + outcome.Reputation, 0, 100);
-            career.TeamRelation = Math.Clamp(career.TeamRelation + outcome.TeamRelation, 0, 100);
+            var profile = career.ReputationProfile ??= new ReputationProfile();
+            profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.TeamRelation, 0, 100);
+            profile.SyncLegacyFields(career);
             if (career.CareerPhase.Equals("Evaluation", StringComparison.OrdinalIgnoreCase))
                 career.RookieEvaluationStatus = "In corso — prova non completata";
         }
@@ -4579,7 +4757,9 @@ public sealed partial class MainForm : Form
 
         career.AbandonedSessions++;
         career.Reputation = Math.Clamp(career.Reputation + outcome.Reputation, 0, 100);
-        career.TeamRelation = Math.Clamp(career.TeamRelation + outcome.TeamRelation, 0, 100);
+        var profile = career.ReputationProfile ??= new ReputationProfile();
+        profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.TeamRelation, 0, 100);
+        profile.SyncLegacyFields(career);
         career.SponsorRelation = Math.Clamp(career.SponsorRelation + outcome.SponsorRelation, 0, 100);
         // Anche una spesa subita non puo portare la cassa sotto zero: si paga
         // quello che c'e, il resto resta un costo che non si e potuto sostenere.
@@ -4766,7 +4946,7 @@ public sealed partial class MainForm : Form
             // andare forte bloccava la carriera, andare piano no.
             var strongTarget = career.EvaluationTargetMilliseconds <= 0 ? RookieTargetEngine.FallbackTargetMilliseconds : career.EvaluationTargetMilliseconds;
             if (!kartPromotion)
-                AdvanceScheduleAfterEvaluation(RookieTargetEngine.Evaluate(imported.BestLapMilliseconds, strongTarget), imported.Track);
+                AdvanceScheduleAfterEvaluation(PositionVerdict(position, fieldSize), imported.Track, positionBased: true);
         }
         else if (!imported.Dnf && position <= Math.Ceiling(fieldSize * 0.7))
         {
@@ -4777,17 +4957,15 @@ public sealed partial class MainForm : Form
             career.RookieEvaluationStatus = "Prima gara chiusa — il paddock aspetta la conferma";
             career.Headline = $"Gara su invito a {invitation.TrackName}: {career.Driver} chiude P{position} su {fieldSize} al debutto. Nessun clamore, ma la gara è finita e qualcuno è rimasto dietro.";
             career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "INVITATION_DEBUT", Headline = career.Headline, Track = imported.Track, Importance = 70, PhotoPath = photoPath, PhotoView = string.IsNullOrWhiteSpace(photoPath) ? "" : PhotoSource.View(photoPath) });
-            var debutTarget = career.EvaluationTargetMilliseconds <= 0 ? RookieTargetEngine.FallbackTargetMilliseconds : career.EvaluationTargetMilliseconds;
             if (!kartPromotion)
-                AdvanceScheduleAfterEvaluation(RookieTargetEngine.Evaluate(imported.BestLapMilliseconds, debutTarget), imported.Track);
+                AdvanceScheduleAfterEvaluation(PositionVerdict(position, fieldSize), imported.Track, positionBased: true);
         }
         else
         {
             career.RookieEvaluationStatus = "Invito non sfruttato — serve un test di recupero";
             career.Headline = $"Gara su invito a {invitation.TrackName}: risultato insufficiente, il paddock rimanda {career.Driver} al lavoro di sviluppo.";
             career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "INVITATION_SETBACK", Headline = career.Headline, Track = imported.Track, Importance = 64, PhotoPath = photoPath, PhotoView = string.IsNullOrWhiteSpace(photoPath) ? "" : PhotoSource.View(photoPath) });
-            var target = career.EvaluationTargetMilliseconds <= 0 ? RookieTargetEngine.FallbackTargetMilliseconds : career.EvaluationTargetMilliseconds;
-            AdvanceScheduleAfterEvaluation(RookieTargetEngine.Evaluate(imported.BestLapMilliseconds, target), imported.Track);
+            AdvanceScheduleAfterEvaluation(PositionVerdict(position, fieldSize), imported.Track, positionBased: true);
         }
         career.News.Add(career.Headline);
         SaveCareer(); RefreshUi();
@@ -4974,7 +5152,22 @@ public sealed partial class MainForm : Form
     /// calendario deciso in anticipo, esiste la conseguenza di quello che è
     /// accaduto in pista.
     /// </summary>
-    private void AdvanceScheduleAfterEvaluation(RookieVerdict verdict, string track)
+    private static RookieVerdict PositionVerdict(int position, int fieldSize)
+    {
+        if (position <= 0 || position == 99)
+            return new RookieVerdict(0, false, false, "Ritiro: nessuna posizione utile.");
+        var field = Math.Max(1, fieldSize);
+        var passed = position <= Math.Max(3, (int)Math.Ceiling(field / 3.0));
+        var close = !passed && position <= Math.Ceiling(field * 0.7);
+        var score = (int)Math.Clamp(Math.Round(100 - (position - 1) * 100.0 / Math.Max(1, field - 1)), 10, 100);
+        return new RookieVerdict(score, passed, close, passed
+            ? $"Posizione centrata: P{position} su {field}."
+            : close
+                ? $"Risultato solido: P{position} su {field}, dentro la metà utile del gruppo."
+                : $"Risultato da migliorare: P{position} su {field}.");
+    }
+
+    private void AdvanceScheduleAfterEvaluation(RookieVerdict verdict, string track, bool positionBased = false)
     {
         career.Schedule ??= new List<ScheduledEvent>();
         // La valutazione serve a guadagnarsi un sedile: con un sedile in mano
@@ -4998,7 +5191,7 @@ public sealed partial class MainForm : Form
         if (haUnSedile) return;
         // Il 4T è solo la porta d'ingresso. Superata la prova, la prima gara
         // deve essere sul DAP/2T e non una seconda uscita col rental.
-        PromoteFromFourStrokeAfterPassedTest(verdict);
+        if (!positionBased) PromoteFromFourStrokeAfterPassedTest(verdict);
         var current = CareerScheduler.NextPlanned(career.Schedule);
         if (current != null) CareerScheduler.Close(career.Schedule, current.Id);
         var lastDate = current?.Date ?? career.StoryDate;
@@ -5014,6 +5207,8 @@ public sealed partial class MainForm : Form
         var currentCar = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase));
         var next = CareerScheduler.AfterEvaluation(verdict, career.EvaluationAttempts, contentIndex.Tracks, lastDate, career.Season, career.Cash, career.Races, currentCar?.Category ?? "");
         if (next == null) return;
+        if (next.Kind == ScheduledEventKind.Invitation)
+            next.CarId = career.Car;
         if (!CareerScheduler.Append(career.Schedule, next))
         {
             // Un appuntamento rifiutato lasciava l'agenda vuota senza che
@@ -5342,7 +5537,7 @@ public sealed partial class MainForm : Form
         // Nuova finestra fra i weekend: l'agenda del pilota si ricarica.
         career.DaysUntilNextRound = OffTrackActivities.DaysBetweenRounds();
         // La stanchezza del weekend non si azzera da sola: va gestita con l'agenda.
-        career.Fatigue = Math.Clamp(career.Fatigue + (sessionPlanForRound?.Endurance == true ? 14 : 8), 0, OffTrackActivities.MaxFatigue);
+        career.Fatigue = 0;
         if (previousRaceDate != default && (previousRaceDate.Year != raceDate.Year || previousRaceDate.Month != raceDate.Month))
         {
             var monthName = raceDate.ToString("MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
@@ -5629,10 +5824,17 @@ public sealed partial class MainForm : Form
             return;
         }
         var r = rounds[career.Round]; Directory.CreateDirectory(saveDir);
+        var scheduledRound = NextScheduled();
+        if (scheduledRound?.Kind != ScheduledEventKind.ChampionshipRound)
+            scheduledRound = CareerScheduler.ChampionshipRounds(career.Schedule ?? [], career.Season)
+                .FirstOrDefault(x => x.Round == career.Round + 1);
         // Quick Drive preset: il formato viene scritto direttamente nella cartella letta da CM.
         // Il contenuto storico viene usato solo se realmente installato; altrimenti si usa un fallback verificato.
         var installedCars = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).Select(x => x.Id).ToArray();
-        var car = installedCars.Contains(career.Car, StringComparer.OrdinalIgnoreCase) ? career.Car : installedCars.FirstOrDefault(x => x == "ks_ferrari_f2004") ?? installedCars.FirstOrDefault() ?? "";
+        var scheduledCar = scheduledRound?.CarId ?? "";
+        var car = installedCars.Contains(scheduledCar, StringComparer.OrdinalIgnoreCase)
+            ? scheduledCar
+            : installedCars.Contains(career.Car, StringComparer.OrdinalIgnoreCase) ? career.Car : installedCars.FirstOrDefault(x => x == "ks_ferrari_f2004") ?? installedCars.FirstOrDefault() ?? "";
         var selectedCar = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(car, StringComparison.OrdinalIgnoreCase));
         var grid = RaceGridSelector.Select(car, selectedCar?.Category ?? "", contentIndex.Cars);
         var candidates = grid.Candidates;
@@ -5647,6 +5849,25 @@ public sealed partial class MainForm : Form
         var installedTracks = contentIndex.Tracks.Select(x => x.Id).ToArray();
         var requestedTrackFound = installedTracks.Contains(r.Track, StringComparer.OrdinalIgnoreCase);
         var track = requestedTrackFound ? r.Track : (installedTracks.Contains("monza", StringComparer.OrdinalIgnoreCase) ? "monza" : installedTracks.FirstOrDefault() ?? "");
+        var trackRecord = contentIndex.Tracks.FirstOrDefault(x => x.Id.Equals(track, StringComparison.OrdinalIgnoreCase));
+        // Recupero per calendari creati dalle versioni precedenti, che non
+        // salvavano la vettura nell'evento: un round rimasto su kartodromo non
+        // può partire con una Formula solo perché il contratto è cambiato.
+        if (trackRecord != null && selectedCar != null && !CareerScheduler.IsTrackCompatible(trackRecord, selectedCar.Category))
+        {
+            var historicalCar = career.RaceHistory.AsEnumerable().Reverse()
+                .Select(x => contentIndex.Cars.FirstOrDefault(c => c.Id.Equals(x.Car, StringComparison.OrdinalIgnoreCase)))
+                .FirstOrDefault(c => c != null && CareerScheduler.IsTrackCompatible(trackRecord, c.Category));
+            var compatibleCar = historicalCar ?? contentIndex.Cars.FirstOrDefault(c =>
+                ContentCategoryRules.IsRaceable(c) && CareerScheduler.IsTrackCompatible(trackRecord, c.Category));
+            if (compatibleCar != null)
+            {
+                car = compatibleCar.Id;
+                selectedCar = compatibleCar;
+                if (scheduledRound != null) scheduledRound.CarId = car;
+                CareerLog.Warn("agenda", $"weekend riallineato: {track} usa {car}, coerente con il circuito già pubblicato.");
+            }
+        }
         if (installedCars.Length == 0 || candidates.Length == 0 || track.Length == 0)
         {
             CareerMessages.Show(null, $"Non ci sono contenuti sufficienti per avviare il weekend {r.GrandPrix}.\n\nAuto trovate: {installedCars.Length}\nCircuiti trovati: {installedTracks.Length}\n\nInstalla almeno un'auto e un circuito compatibili, poi riprova.", "CorsaCareer - contenuti mancanti", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -5796,6 +6017,21 @@ public sealed partial class MainForm : Form
         }
         var track = contentIndex.Tracks.Any(x => x.Id.Equals(invitation.TrackId, StringComparison.OrdinalIgnoreCase)) ? invitation.TrackId : contentIndex.Tracks.FirstOrDefault()?.Id ?? "";
         if (string.IsNullOrWhiteSpace(track)) { CareerMessages.Show(null, "Nessun circuito installato per la gara su invito.", "CorsaCareer — contenuti mancanti", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        var trackRecord = contentIndex.Tracks.FirstOrDefault(x => x.Id.Equals(track, StringComparison.OrdinalIgnoreCase));
+        if (trackRecord != null && selectedCar != null && !CareerScheduler.IsTrackCompatible(trackRecord, selectedCar.Category))
+        {
+            var replacement = CareerScheduler.PickTrack(contentIndex.Tracks, career.Races + career.EvaluationAttempts, selectedCar.Category);
+            if (replacement == null)
+            {
+                CareerMessages.Show(null, $"Non esiste un circuito compatibile con {UiText.Car(car)} per questa gara su invito.", "CorsaCareer — circuito incompatibile", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            track = replacement.Id;
+            invitation.TrackId = replacement.Id;
+            invitation.TrackName = replacement.Name;
+            invitation.Country = replacement.Country;
+            CareerLog.Warn("agenda", $"invito riallineato: {car} spostata da {trackRecord.Id} a {replacement.Id}.");
+        }
         var plan = BuildSessionPlan(track, car, mixedGrid: grid.UsedMixedFallback, testSession: false);
         var presetJson = ContentManagerPresetBuilder.Build(car, track, plan, grid.Candidates, grid.OpponentCount);
         var presetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AcTools Content Manager", "Presets", "Quick Drive");
@@ -5974,7 +6210,7 @@ public sealed partial class MainForm : Form
                 reply.Accepted
                     ? $"«Sono € {reply.Amount:N0}. Non cambiano la stagione, ma cambiano la prossima iscrizione.»"
                     : "«Niente. Ci riprovo, magari quando avremo qualcosa di più da mostrare.»",
-                "character-haru-senda.png",
+                SceneArtwork.PortraitFor("Haru Senda"),
                 reply.Accepted ? "soddisfatto" : "paziente")
         };
         using var scene = new AnimeDialogueDialog($"CorsaCareer — {visit.Target}", lines);
@@ -6007,10 +6243,10 @@ public sealed partial class MainForm : Form
         // La tavola dell'attività, se esiste: una palestra e una trattativa non
         // sono la stessa scena. Finché il file non c'è si ripiega sul ritratto
         // di chi parla, e la scena funziona lo stesso.
-        var artwork = SceneArtwork.ForActivity(report.Activity.Id);
+        var artwork = SceneArtwork.ForActivity(report.Activity.Id, StableHash.Of(report.Activity.Id, career.StoryDate.ToString("yyyyMMdd")));
         if (!SceneArtwork.Exists(artwork))
             artwork = report.Activity.Actor == DayActor.Agent
-                ? "character-haru-senda.png"
+                ? SceneArtwork.PortraitFor("Haru Senda")
                 : RitrattoDelPilota();
 
         var lines = new List<AnimeDialogueLine>
@@ -6096,7 +6332,10 @@ public sealed partial class MainForm : Form
     {
         if (!PuoScendereInPista()) return;
         if (awaitingResult) return;
-        var commitment = LifeCalendar.Today(career, contentIndex).FirstOrDefault(x => x.Kind == "track-training" && x.Status == "active");
+        var commitment = LifeCalendar.Today(career, contentIndex)
+            .Where(x => x.Kind == "track-training" && x.Status == "active")
+            .OrderByDescending(x => x.Title.StartsWith("Turni liberi", StringComparison.OrdinalIgnoreCase))
+            .FirstOrDefault();
         if (commitment == null) return;
         var car = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase))
                   ?? contentIndex.Cars.FirstOrDefault(ContentCategoryRules.IsRaceable);
@@ -6104,8 +6343,11 @@ public sealed partial class MainForm : Form
         {
             LifeCalendar.Skip(career, commitment); SaveCareer(); RefreshUi(); return;
         }
-        var plan = BuildSessionPlan(commitment.TrackId, car.Id, mixedGrid: false, testSession: true);
-        var presetJson = ContentManagerPresetBuilder.BuildTest(car.Id, commitment.TrackId, plan);
+        var openDay = commitment.Title.StartsWith("Turni liberi", StringComparison.OrdinalIgnoreCase);
+        var plan = BuildSessionPlan(commitment.TrackId, car.Id, mixedGrid: openDay, testSession: true);
+        var presetJson = openDay
+            ? ContentManagerPresetBuilder.BuildOpenDay(car.Id, commitment.TrackId, plan, contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).Select(x => x.Id).ToList(), 8)
+            : ContentManagerPresetBuilder.BuildTest(car.Id, commitment.TrackId, plan);
         var presetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AcTools Content Manager", "Presets", "Quick Drive");
         Directory.CreateDirectory(presetDir);
         var presetPath = Path.Combine(presetDir, $"CorsaCareer - Allenamento {career.StoryDate:yyyyMMdd} {commitment.TrackId}.cmpreset");
@@ -6137,9 +6379,9 @@ public sealed partial class MainForm : Form
     private void OpenActivityAnimeScene(ActivityRecord record)
     {
         var isHaru = record.ActivityId.StartsWith("haru-", StringComparison.OrdinalIgnoreCase);
-        var artwork = SceneArtwork.ForActivity(record.ActivityId);
+        var artwork = SceneArtwork.ForActivity(record.ActivityId, StableHash.Of(record.ActivityId, record.StoryDate.ToString("yyyyMMdd")));
         if (!SceneArtwork.Exists(artwork))
-            artwork = isHaru ? "character-haru-senda.png" : "character-genji-arakawa.png";
+            artwork = isHaru ? SceneArtwork.PortraitFor("Haru Senda") : RitrattoDelPilota();
 
         var speaker = isHaru ? "Haru Senda" : string.IsNullOrWhiteSpace(career.Driver) ? "Il pilota" : career.Driver;
         var portrait = isHaru ? SceneArtwork.PortraitFor("Haru Senda") : SceneArtwork.PortraitFor(career.Driver);
@@ -6149,9 +6391,8 @@ public sealed partial class MainForm : Form
         var effects = new List<string>();
         if (record.Reputation != 0) effects.Add($"reputazione {record.Reputation:+#;-#;0}");
         if (record.Fanbase != 0) effects.Add($"seguito {record.Fanbase:+#;-#;0}");
-        if (record.TeamRelation != 0) effects.Add($"fiducia team {record.TeamRelation:+#;-#;0}");
+        if (record.TeamRelation != 0) effects.Add($"livello influencer {record.TeamRelation:+#;-#;0}");
         if (record.SponsorRelation != 0) effects.Add($"appeal sponsor {record.SponsorRelation:+#;-#;0}");
-        if (record.Fatigue != 0) effects.Add($"stanchezza {record.Fatigue:+#;-#;0}");
         if (record.Money != 0) effects.Add($"budget {record.Money:+€ #,##0;-€ #,##0;€ 0}");
         var summary = effects.Count == 0 ? "Nessuna variazione numerica." : "Conseguenze: " + string.Join(" · ", effects) + ".";
         if (!string.IsNullOrWhiteSpace(record.ChoiceLabel))
@@ -6190,7 +6431,7 @@ public sealed partial class MainForm : Form
         var context = new ActivityContext
         {
             Tier = career.Tier, Season = career.Season, Round = career.Round,
-            Fatigue = career.Fatigue, Reputation = career.Reputation, Cash = career.Cash,
+            Fatigue = 0, Reputation = career.Reputation, Cash = career.Cash,
             DaysAvailable = career.DaysUntilNextRound,
             TimesDoneThisSeason = career.ActivityHistory.Count(x => x.Season == career.Season && x.ActivityId == definition.Id)
         };
@@ -6200,9 +6441,8 @@ public sealed partial class MainForm : Form
         career.DaysUntilNextRound = Math.Max(0, career.DaysUntilNextRound - definition.DurationDays);
         career.Reputation = Math.Clamp(career.Reputation + outcome.Effect.Reputation, 0, 100);
         career.Fanbase = Math.Max(0, career.Fanbase + outcome.Effect.Fanbase);
-        career.TeamRelation = Math.Clamp(career.TeamRelation + outcome.Effect.TeamRelation, 0, 100);
         career.SponsorRelation = Math.Clamp(career.SponsorRelation + outcome.Effect.SponsorRelation, 0, 100);
-        career.Fatigue = Math.Clamp(career.Fatigue + outcome.Effect.Fatigue, 0, OffTrackActivities.MaxFatigue);
+        career.Fatigue = 0;
         // Un'attività può avere una penalità economica (esito negativo), ma il
         // budget è un vincolo duro: anche in questo caso non può mai scendere
         // sotto zero. Le spese dichiarate sono già incluse nell'effetto
@@ -6215,7 +6455,7 @@ public sealed partial class MainForm : Form
         var profile = career.ReputationProfile ??= new ReputationProfile();
         profile.SportingPrestige = Math.Clamp(profile.SportingPrestige + outcome.Effect.Reputation, 0, 100);
         profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.Effect.Fanbase, 0, 100);
-        profile.TeamTrust = Math.Clamp(profile.TeamTrust + outcome.Effect.TeamRelation, 0, 100);
+        profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.Effect.TeamRelation, 0, 100);
         profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal + outcome.Effect.SponsorRelation, 0, 100);
         profile.SyncLegacyFields(career);
         // I giorni passano UNO ALLA VOLTA, non tutti insieme.
@@ -6250,7 +6490,7 @@ public sealed partial class MainForm : Form
             EffectiveRisk = outcome.EffectiveRisk,
             Days = definition.DurationDays, Reputation = outcome.Effect.Reputation, Fanbase = outcome.Effect.Fanbase,
             TeamRelation = outcome.Effect.TeamRelation, SponsorRelation = outcome.Effect.SponsorRelation,
-            Fatigue = outcome.Effect.Fatigue, Money = outcome.Effect.Money
+            Fatigue = 0, Money = outcome.Effect.Money
         });
         var headline = choice == null
             ? $"{definition.Name}: {outcome.Story}"
@@ -6269,9 +6509,9 @@ public sealed partial class MainForm : Form
             career.News.Add(warning);
             career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SPONSOR_WARNING", Headline = warning, Track = "Sponsor", Importance = 72 });
         }
-        if (career.TeamRelation <= 15)
+        if ((career.ReputationProfile?.PublicPopularity ?? career.Fanbase) <= 15)
         {
-            var warning = $"Il rapporto con {career.Team} è critico ({career.TeamRelation}/100): il rinnovo è a rischio.";
+            var warning = $"Il livello influencer è critico ({Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100)}/100): il mercato si sta raffreddando.";
             career.News.Add(warning);
             career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "TEAM_WARNING", Headline = warning, Track = "Paddock", Importance = 72 });
         }
@@ -6440,9 +6680,30 @@ public sealed partial class MainForm : Form
         career.Opportunities ??= new List<Opportunity>();
         if (contentIndex.Tracks.Count == 0) return;
         var generated = OpportunityGenerator.Generate(BuildOpportunityContext());
+        var currentRung = CareerLadder.Current(career, contentIndex.Cars);
+        var formulaSelectionPassed = career.Selections.Any(x =>
+            x.TargetRungId.Equals(CareerLadder.ById(SelectionCatalog.FirstFormula).Id,
+                StringComparison.OrdinalIgnoreCase)
+            && x.Outcome.Equals(nameof(SelectionOutcome.Promoted), StringComparison.OrdinalIgnoreCase));
         var added = 0;
         foreach (var opportunity in generated)
         {
+            // Il mercato non può bypassare la selezione monoposto: quando il
+            // pilota è ancora nel DAP o nel 125, qualsiasi sedile Formula
+            // viene tenuto fuori dalla lista finché il provino in quattro
+            // giornate non è stato superato.
+            var opportunityCar = contentIndex.Cars.FirstOrDefault(x =>
+                x.Id.Equals(opportunity.CarId, StringComparison.OrdinalIgnoreCase));
+            var opportunityIsFormula = opportunityCar != null
+                && CareerLadder.ForCar(opportunityCar.Category, opportunityCar.PowerHp, opportunityCar.MassKg).Path == LadderPath.SingleSeater;
+            var opportunityLeavesKart = (opportunity.IsSeat
+                    && !string.Equals(opportunity.Tier, "Rookie", StringComparison.OrdinalIgnoreCase))
+                || opportunity.Kind == OpportunityKind.SubstituteDrive
+                || (!string.Equals(opportunity.Tier, "Rookie", StringComparison.OrdinalIgnoreCase)
+                    && opportunity.Kind is OpportunityKind.ChampionshipStepUp or OpportunityKind.DisciplineSwitch);
+            if (currentRung.Path == LadderPath.Karting && !formulaSelectionPassed
+                && (opportunityIsFormula || opportunityLeavesKart))
+                continue;
             // Solo fra le occasioni ancora aperte: una proposta scaduta ha
             // esaurito il suo compito, e continuare a confrontarsi con essa
             // impediva che ne nascesse un'altra dello stesso tipo. Un pilota
@@ -6585,13 +6846,10 @@ public sealed partial class MainForm : Form
                 EntryFee = opportunity.NetCost,
                 EntryFeePaid = true,
                 ProposedBy = opportunity.ProposedBy,
-                // La vettura viaggia con l'appuntamento.
-                //
-                // Finora l'agenda non portava con se' nessuna macchina e la
-                // gara usava sempre quella del sedile: una wild card a Le Mans
-                // si sarebbe corsa con la monoposto di Formula 1. Resta vuota
-                // per tutto il resto, dove si corre con la propria.
-                CarId = opportunity.IsWildCard ? opportunity.CarId : "",
+                // La vettura viaggia con l'appuntamento, anche quando non è
+                // una wild card: se il pilota cambia categoria prima della
+                // domenica, un invito kart resta una gara kart e viceversa.
+                CarId = !string.IsNullOrWhiteSpace(opportunity.CarId) ? opportunity.CarId : career.Car,
                 IsWildCard = opportunity.IsWildCard
             });
             rounds = ChampionshipRoundsView();
@@ -6600,6 +6858,7 @@ public sealed partial class MainForm : Form
         {
             // Un sedile accettato diventa un contratto e fa nascere il calendario.
             var previousTeam = career.Team;
+            FreezePlannedRaceCars();
             career.Team = opportunity.ProposedBy;
             career.Tier = opportunity.Tier;
             // Un salto di campionato porta con sé il proprio livello: è il

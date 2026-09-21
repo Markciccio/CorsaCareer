@@ -191,7 +191,7 @@ public sealed class OpportunityDialog : CareerDialog
         var confirm = MessageBox.Show(
             $"Rifiutare «{opportunity.Title}»?\n\n" +
             (penalty
-                ? $"{opportunity.ProposedBy} registrerà il rifiuto e la fiducia dei team calerà: una proposta finanziata non si rifiuta senza conseguenze."
+                ? $"{opportunity.ProposedBy} registrerà il rifiuto e il livello influencer calerà: una proposta finanziata non si rifiuta senza conseguenze."
                 : "Nessuna conseguenza sui rapporti: è una proposta a pagamento senza impegni."),
             "Rifiuta la proposta", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
         if (confirm != DialogResult.Yes) return;

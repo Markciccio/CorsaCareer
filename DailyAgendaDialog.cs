@@ -62,9 +62,12 @@ public sealed class DailyAgendaDialog : CareerDialog
         var giorno = DriverDay.EnsureToday(career);
         var data = career.StoryDate.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
         var festa = CalendarioGiapponese.Festa(career.StoryDate);
+        var ricorrenza = CalendarioGiapponese.Ricorrenza(career.StoryDate);
 
         flow.Controls.Add(Riga(data.ToUpperInvariant() + (festa != null ? "  ·  " + festa.ToUpperInvariant() : ""),
             UiTheme.Kicker, UiTheme.Warning, 8));
+        if (!string.IsNullOrWhiteSpace(ricorrenza))
+            flow.Controls.Add(Riga(ricorrenza, UiTheme.Prose, UiTheme.Info, 8));
 
         if (CalendarioGiapponese.PaeseFermo(career.StoryDate))
             flow.Controls.Add(Riga(

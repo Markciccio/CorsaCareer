@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Json;
 
 namespace CorsaCareer;
 
@@ -33,6 +34,7 @@ internal static class ContenutiCheck
         problemi.AddRange(ControllaCitta(log));
         problemi.AddRange(ControllaTrattative(log));
         problemi.AddRange(ControllaAttivita(log));
+        problemi.AddRange(ControllaPacchettoBase(log));
         ControllaTavole(log);
         ControllaRisposteSponsor(log);
 
@@ -45,6 +47,48 @@ internal static class ContenutiCheck
         log.WriteLine($"PROBLEMI ({problemi.Count})");
         foreach (var p in problemi) log.WriteLine($"  · {p}");
         return 1;
+    }
+
+    private static List<string> ControllaPacchettoBase(TextWriter log)
+    {
+        var problemi = new List<string>();
+        var index = new ContentIndexRecord
+        {
+            Cars = CareerContentRequirements.BasePack
+                .Where(x => x.MinimumCars > 0)
+                .SelectMany(x => x.RungIds.Take(1).SelectMany(rung => Enumerable.Repeat(rung, Math.Max(1, x.MinimumCars))))
+                .Select((rung, i) => new ContentCarRecord { Id = $"base-car-{i}", Category = $"manual:{rung}", PowerHp = 300, MassKg = 600 })
+                .ToList(),
+            Tracks = Enumerable.Range(0, 3).Select(i => new ContentTrackRecord { Id = $"kart-{i}", Category = "kartodromo", LengthMeters = 900 }).Concat(
+                Enumerable.Range(0, 5).Select(i => new ContentTrackRecord { Id = $"permanent-{i}", Category = "permanent", LengthMeters = 3200 })).ToList()
+        };
+        var ready = CareerContentRequirements.Evaluate(index);
+        if (!ready.Ready) problemi.Add("il pacchetto base sintetico non viene riconosciuto come completo.");
+        if (CareerContentRequirements.Evaluate(new ContentIndexRecord()).Ready)
+            problemi.Add("un indice vuoto viene riconosciuto per errore come pacchetto base.");
+        var kartGrid = RaceGridSelector.Select("base-car-0", "kart", new[]
+        {
+            new ContentCarRecord { Id = "base-car-0", Category = "manual:kart-4t", PowerHp = 9, MassKg = 80 },
+            new ContentCarRecord { Id = "base-car-1", Category = "manual:kart-4t", PowerHp = 10, MassKg = 86 },
+            new ContentCarRecord { Id = "base-shifter", Category = "manual:kart-125", PowerHp = 42, MassKg = 74 }
+        });
+        if (kartGrid.Candidates.Distinct(StringComparer.OrdinalIgnoreCase).Count() < 2 || kartGrid.OpponentCount < 1)
+            problemi.Add("la griglia kart sintetica non contiene un avversario distinto.");
+        var monomarca = ContentManagerPresetBuilder.BuildGrid(
+            "base-car-0",
+            Enumerable.Repeat("base-car-0", 12).ToArray(),
+            opponents: 7,
+            new SessionPlan());
+        using (var monomarcaDoc = JsonDocument.Parse(monomarca))
+        {
+            var root = monomarcaDoc.RootElement;
+            var mode = root.GetProperty("ModeId").GetString();
+            var opponents = root.GetProperty("OpponentsNumber").GetInt32();
+            if (!string.Equals(mode, "same_car", StringComparison.OrdinalIgnoreCase) || opponents < 1)
+                problemi.Add("il preset monomarca non forza almeno un avversario reale.");
+        }
+        log.WriteLine($"  base  · {ready.Requirements.Count(x => x.Satisfied)}/{ready.Requirements.Count} requisiti sintetici soddisfatti");
+        return problemi;
     }
 
     // ------------------------------------------------------------- le scene

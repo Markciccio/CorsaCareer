@@ -21,6 +21,14 @@ public sealed class BudgetPanel : Panel
     private readonly Label movements = new();
     private readonly Label fitnessValue = new();
     private readonly Label trustValue = new();
+    private readonly Label schoolValue = new();
+    private readonly Panel fitnessProgress = ProgressTrack();
+    private readonly Panel influencerProgress = ProgressTrack();
+    private readonly Panel schoolProgress = ProgressTrack();
+    private readonly Label pilotName = new();
+    private readonly Label pilotDetails = new();
+    private readonly Label pilotSchool = new();
+    private ThemedBackdropPanel? pilotCard;
     private readonly Button fitnessAction = new();
     private readonly Button sponsorAction = new();
     private readonly Button communityAction = new();
@@ -46,7 +54,7 @@ public sealed class BudgetPanel : Panel
     /// <summary>Durata del lampeggio: abbastanza per accorgersene, non da distrarre.</summary>
     public const int PulseFrames = 34;
 
-    public BudgetPanel()
+    public BudgetPanel(bool includePilot = true)
     {
         BackColor = UiTheme.SurfaceRaised;
         Padding = new Padding(16, 8, 16, 8);
@@ -54,13 +62,18 @@ public sealed class BudgetPanel : Panel
 
         var grid = new TableLayoutPanel
         {
-            Dock = DockStyle.Fill, ColumnCount = 3, RowCount = 2, BackColor = Color.Transparent,
+            Dock = DockStyle.Fill, ColumnCount = includePilot ? 5 : 4, RowCount = 2, BackColor = Color.Transparent,
             MinimumSize = new Size(0, 176)
         };
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.333f));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.333f));
-        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 33.334f));
-        // Una riga unica per le tre tessere evita che il TableLayoutPanel
+        // I quattro indicatori hanno lo stesso peso visivo: il livello scuola
+        // non e' un dettaglio dell'influencer, ma un parametro autonomo che il
+        // pilota deve tenere d'occhio ogni giorno.
+        if (includePilot) grid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 210));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 25));
+        // Una riga unica per le quattro tessere evita che il TableLayoutPanel
         // distribuisca lo spazio su una riga fantasma e tagli i pulsanti.
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         // 40 e non 24: la riga dei movimenti va a capo — e' una frase, non
@@ -92,17 +105,31 @@ public sealed class BudgetPanel : Panel
         breakdown.Dock = DockStyle.Fill;
         breakdown.TextAlign = ContentAlignment.TopLeft;
         breakdown.UseMnemonic = false;
-        var account = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Padding = new Padding(12, 6, 12, 4), Margin = new Padding(6, 0, 6, 0) };
-        account.Paint += (_, e) => { using var pen = new Pen(UiTheme.Warning, 2); e.Graphics.DrawRectangle(pen, 0, 0, account.Width - 1, account.Height - 1); using var brush = new SolidBrush(UiTheme.Warning); e.Graphics.FillRectangle(brush, 0, 0, 3, account.Height); };
+        var account = UiTheme.BackdropPanel(
+            "ui-backgrounds/metric-budget-garage-v1.png",
+            Color.FromArgb(104, UiTheme.Surface),
+            imageAlpha: 176,
+            padding: new Padding(12, 6, 12, 4));
+        account.Dock = DockStyle.Fill;
+        account.Margin = new Padding(6, 0, 6, 0);
+        account.Paint += (_, e) =>
+        {
+            using var pen = new Pen(UiTheme.Warning, 2);
+            UiTheme.DrawRoundedBorder(e.Graphics, new Rectangle(0, 0, account.Width - 1, account.Height - 1), UiTheme.Warning, 2, 12);
+            using var brush = new SolidBrush(UiTheme.Warning);
+            e.Graphics.FillRectangle(brush, 0, 0, 3, account.Height);
+            using var rule = new Pen(Color.FromArgb(110, UiTheme.Warning), 1);
+            e.Graphics.DrawLine(rule, 14, 60, account.Width - 14, 60);
+        };
         var accountLayout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.Transparent };
-        accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 20));
+        accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
         // 54 e non 46: la cifra e' scritta a 25 punti in grassetto e con
         // l'interlinea ne occupa quasi cinquanta. In 46 pixel la parte bassa
         // del numero finiva sotto il pulsante degli sponsor.
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
         accountLayout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
-        accountLayout.Controls.Add(new Label { Text = "BUDGET DISPONIBILE", Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = UiTheme.Warning, UseMnemonic = false }, 0, 0);
+        accountLayout.Controls.Add(CreateMetricHeader("BUDGET DISPONIBILE", UiTheme.Warning, "", null), 0, 0);
         accountLayout.Controls.Add(amount, 0, 1);
         // I tre riquadri non aprono piu' niente.
         //
@@ -114,17 +141,23 @@ public sealed class BudgetPanel : Panel
         // e questi riquadri fanno quello che il loro titolo promette: mostrano
         // un numero.
         sponsorAction.Visible = false;
+        accountLayout.Controls.Add(status, 0, 2);
         accountLayout.Controls.Add(breakdown, 0, 3);
         account.Controls.Add(accountLayout);
-        grid.Controls.Add(account, 0, 0);
+        var firstMetricColumn = includePilot ? 1 : 0;
+        if (includePilot) grid.Controls.Add(BuildPilotCard(), 0, 0);
+        grid.Controls.Add(account, firstMetricColumn, 0);
         metricGrid = grid;
         tutorialTargets = [account];
 
         grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "", UiTheme.Positive,
-            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false), 1, 0);
-        grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "",
-            UiTheme.Info, () => CommunityRequested?.Invoke(this, EventArgs.Empty), communityAction, showAction: false), 2, 0);
-        tutorialTargets = [account, grid.GetControlFromPosition(1, 0)!, grid.GetControlFromPosition(2, 0)!];
+            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false,
+            iconAsset: "metric-fitness-manga-v1.png", progressBar: fitnessProgress), firstMetricColumn + 1, 0);
+        grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "", UiTheme.Info,
+            () => { }, new Button(), showAction: false, iconAsset: "metric-influencer-manga-v1.png", progressBar: influencerProgress), firstMetricColumn + 2, 0);
+        grid.Controls.Add(CreateMetricCard("LIVELLO SCUOLA", schoolValue, "", UiTheme.Warning,
+            () => { }, new Button(), showAction: false, iconAsset: "metric-school-manga-v1.png", progressBar: schoolProgress), firstMetricColumn + 3, 0);
+        tutorialTargets = [account, grid.GetControlFromPosition(firstMetricColumn + 1, 0)!, grid.GetControlFromPosition(firstMetricColumn + 2, 0)!, grid.GetControlFromPosition(firstMetricColumn + 3, 0)!];
 
         movements.Font = UiTheme.Small;
         movements.ForeColor = UiTheme.TextMuted;
@@ -135,7 +168,7 @@ public sealed class BudgetPanel : Panel
         movements.AutoEllipsis = false;
         movements.UseMnemonic = false;
         grid.Controls.Add(movements, 0, 1);
-        grid.SetColumnSpan(movements, 3);
+        grid.SetColumnSpan(movements, includePilot ? 5 : 4);
 
         Controls.Add(grid);
 
@@ -173,32 +206,214 @@ public sealed class BudgetPanel : Panel
     /// serve disegnata per questa misura. Finche' non c'e', il titolo da solo
     /// e' meglio di un titolo mangiato.
     /// </summary>
-    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true)
+    private static Control CreateMetricCard(string title, Label value, string actionText, Color accent, Action onAction, Button action, bool showAction = true, string? iconText = null, string? iconAsset = null, Panel? progressBar = null)
     {
-        var card = new Panel { Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Padding = new Padding(12, 6, 12, 4), Margin = new Padding(6, 0, 6, 0) };
+        var card = UiTheme.BackdropPanel(
+            MetricBackdrop(title),
+            Color.FromArgb(104, UiTheme.Surface),
+            imageAlpha: 176,
+            padding: new Padding(12, 6, 12, 4));
+        card.Dock = DockStyle.Fill;
+        card.Margin = new Padding(6, 0, 6, 0);
         card.Paint += (_, e) =>
         {
             using var pen = new Pen(accent, 2);
-            e.Graphics.DrawRectangle(pen, 0, 0, card.Width - 1, card.Height - 1);
+            UiTheme.DrawRoundedBorder(e.Graphics, new Rectangle(0, 0, card.Width - 1, card.Height - 1), accent, 2, 12);
             using var brush = new SolidBrush(accent);
             e.Graphics.FillRectangle(brush, 0, 0, 3, card.Height);
+            using var rule = new Pen(Color.FromArgb(112, accent), 1);
+            e.Graphics.DrawLine(rule, 14, 60, card.Width - 14, 60);
         };
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = showAction ? 3 : 2, BackColor = Color.Transparent };
-        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 22));
-        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 50));
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.Transparent };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 48));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 24));
+        if (progressBar != null && !showAction) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 10));
         if (showAction) layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
-        var caption = new Label { Text = title, Dock = DockStyle.Fill, Font = UiTheme.Kicker, ForeColor = accent, AutoEllipsis = true, UseMnemonic = false };
+        // I quattro box usano ora illustrazioni di fondo dedicate: l'icona
+        // piccola sopra il titolo diventava rumore e copriva le prime lettere.
+        var caption = CreateMetricHeader(title, accent, "", null);
         value.Font = new Font(UiTheme.FamilySemibold, 22F, FontStyle.Bold);
         value.ForeColor = UiTheme.TextPrimary;
         value.Dock = DockStyle.Fill;
         value.TextAlign = ContentAlignment.MiddleLeft;
         value.UseMnemonic = false;
+        var descriptor = new Label
+        {
+            Text = MetricDescriptor(title), Dock = DockStyle.Fill, AutoEllipsis = true,
+            Font = UiTheme.Small, ForeColor = UiTheme.TextSecondary,
+            TextAlign = ContentAlignment.MiddleLeft, UseMnemonic = false,
+            Padding = new Padding(0, 0, 2, 0)
+        };
         if (showAction) ConfigureActionButton(action, actionText, accent, onAction);
         layout.Controls.Add(caption, 0, 0);
         layout.Controls.Add(value, 0, 1);
-        if (showAction) layout.Controls.Add(action, 0, 2);
+        layout.Controls.Add(descriptor, 0, 2);
+        if (progressBar != null && !showAction) layout.Controls.Add(progressBar, 0, 3);
+        if (showAction) layout.Controls.Add(action, 0, 3);
         card.Controls.Add(layout);
         return card;
+    }
+
+    /// <summary>Restituisce la carta verticale del pilota per la colonna Home.</summary>
+    public Control CreatePilotCardForHome() => BuildPilotCard();
+
+    private static string MetricDescriptor(string title) => title switch
+    {
+        var value when value.StartsWith("FORMA", StringComparison.OrdinalIgnoreCase)
+            => "Energia, resistenza e recupero in pista.",
+        var value when value.StartsWith("LIVELLO INFLUENCER", StringComparison.OrdinalIgnoreCase)
+            => "Presenza, pubblico e attenzione dei media.",
+        var value when value.StartsWith("LIVELLO SCUOLA", StringComparison.OrdinalIgnoreCase)
+            => "Rendimento scolastico: la carriera parte da qui.",
+        _ => "Risorse disponibili per il prossimo passo."
+    };
+
+    private static Panel ProgressTrack()
+    {
+        var panel = new Panel { Dock = DockStyle.Fill, BackColor = Color.FromArgb(41, 49, 61), Margin = new Padding(0, 1, 0, 2), Tag = 0 };
+        panel.Paint += PaintProgressTrack;
+        return panel;
+    }
+
+    private static string MetricBackdrop(string title) => title switch
+    {
+        var value when value.StartsWith("FORMA", StringComparison.OrdinalIgnoreCase)
+            => "ui-backgrounds/metric-fitness-paddock-v1.png",
+        var value when value.StartsWith("LIVELLO INFLUENCER", StringComparison.OrdinalIgnoreCase)
+            => "ui-backgrounds/metric-influencer-media-v1.png",
+        var value when value.StartsWith("LIVELLO SCUOLA", StringComparison.OrdinalIgnoreCase)
+            => "ui-backgrounds/metric-school-study-v1.png",
+        _ => "ui-backgrounds/metric-budget-garage-v1.png"
+    };
+
+    private static void SetProgress(Panel panel, int value, Color accent)
+    {
+        panel.Tag = Math.Clamp(value, 0, 100);
+        panel.BackColor = Color.FromArgb(41, 49, 61);
+        panel.ForeColor = accent;
+        panel.AccessibleName = $"{value}/100";
+        panel.Invalidate();
+    }
+
+    private static void PaintProgressTrack(object? sender, PaintEventArgs e)
+    {
+        if (sender is not Panel panel) return;
+        var value = panel.Tag is int number ? number : 0;
+        var width = Math.Max(0, (int)Math.Round((panel.Width - 2) * (value / 100d)));
+        using var brush = new SolidBrush(panel.ForeColor == Color.Empty ? UiTheme.Positive : panel.ForeColor);
+        e.Graphics.FillRectangle(brush, 1, 1, width, Math.Max(1, panel.Height - 2));
+    }
+
+    /// <summary>
+    /// Intestazione riconoscibile a colpo d'occhio: il simbolo resta separato
+    /// dal testo, così anche con lo scaling di Windows non mangia le prime
+    /// lettere del titolo.
+    /// </summary>
+    private static Control CreateMetricHeader(string title, Color accent, string iconText, string? iconAsset = null)
+    {
+        var header = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false, BackColor = Color.Transparent, Margin = new Padding(0),
+            Padding = new Padding(0), AutoSize = false
+        };
+        var imagePath = string.IsNullOrWhiteSpace(iconAsset) ? "" : AssetPaths.File("ui-icons", iconAsset);
+        var image = LoadMetricIcon(imagePath);
+        if (image != null)
+        {
+            header.Controls.Add(new PictureBox
+            {
+                Image = image, Width = 60, Height = 58, SizeMode = PictureBoxSizeMode.Zoom,
+                BackColor = Color.Transparent, Margin = new Padding(0, 0, 4, 0), TabStop = false,
+                AccessibleName = title
+            });
+        }
+        else
+        {
+            header.Controls.Add(new Label
+            {
+                Text = iconText, Width = 42, Height = 58, AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI Symbol", 17F, FontStyle.Bold),
+                ForeColor = accent, UseMnemonic = false, Margin = new Padding(0, -1, 4, 0)
+            });
+        }
+        header.Controls.Add(new Label
+        {
+            Text = title, AutoSize = false, Width = 110, Height = 58,
+            Font = UiTheme.Kicker, ForeColor = accent,
+            AutoEllipsis = true, UseMnemonic = false, Margin = new Padding(0, 1, 0, 0),
+            TextAlign = ContentAlignment.MiddleLeft
+        });
+        return header;
+    }
+
+    private Control BuildPilotCard()
+    {
+        var card = UiTheme.BackdropPanel(
+            "ui-backgrounds/pilot-card-12-manga-v1.png",
+            Color.FromArgb(92, UiTheme.Background),
+            imageAlpha: 232,
+            padding: new Padding(12, 8, 12, 8));
+        pilotCard = card;
+        card.Tag = AssetPaths.File(DriverFigurinaAsset(12));
+        card.Dock = DockStyle.Fill;
+        card.Margin = new Padding(6, 0, 6, 0);
+        card.Paint += (_, e) =>
+        {
+            using var pen = new Pen(UiTheme.Warning, 2);
+            using var brush = new SolidBrush(UiTheme.Warning);
+            UiTheme.DrawRoundedBorder(e.Graphics, new Rectangle(0, 0, card.Width - 1, card.Height - 1), UiTheme.Warning, 2, 12);
+            e.Graphics.FillRectangle(brush, 0, 0, 3, card.Height);
+        };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.Transparent };
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
+        pilotName.Dock = DockStyle.Fill; pilotName.Font = new Font(UiTheme.FamilySemibold, 16F, FontStyle.Bold);
+        pilotName.ForeColor = UiTheme.TextPrimary; pilotName.AutoEllipsis = true; pilotName.UseMnemonic = false;
+        pilotName.TextAlign = ContentAlignment.MiddleLeft;
+        pilotDetails.Dock = DockStyle.Fill; pilotDetails.Font = new Font(UiTheme.FamilySans, 9F, FontStyle.Regular); pilotDetails.ForeColor = UiTheme.TextPrimary;
+        pilotDetails.AutoEllipsis = true; pilotDetails.UseMnemonic = false; pilotDetails.TextAlign = ContentAlignment.MiddleLeft;
+        pilotSchool.Dock = DockStyle.Fill; pilotSchool.Font = new Font(UiTheme.FamilySemibold, 9F, FontStyle.Bold); pilotSchool.ForeColor = UiTheme.Positive;
+        pilotSchool.AutoEllipsis = true; pilotSchool.UseMnemonic = false; pilotSchool.TextAlign = ContentAlignment.MiddleLeft;
+        var quote = new Label
+        {
+            Text = "« PICCOLI PASSI\n   GRANDI TRAGUARDI »", Dock = DockStyle.Fill,
+            Font = new Font(UiTheme.FamilySerif, 9F, FontStyle.Italic | FontStyle.Bold),
+            ForeColor = Color.FromArgb(238, 241, 246), UseMnemonic = false,
+            TextAlign = ContentAlignment.BottomLeft, Padding = new Padding(0, 0, 0, 2)
+        };
+        layout.Controls.Add(pilotName, 0, 0);
+        layout.Controls.Add(pilotDetails, 0, 1);
+        layout.Controls.Add(pilotSchool, 0, 2);
+        layout.Controls.Add(quote, 0, 3);
+        card.Controls.Add(layout);
+        return card;
+    }
+
+    private static string DriverFigurinaAsset(int eta) => eta switch
+    {
+        <= 13 => "ui-backgrounds/pilot-card-12-manga-v1.png",
+        <= 16 => "ui-backgrounds/pilot-card-15-manga-v1.png",
+        _ => "ui-backgrounds/pilot-card-18-manga-v1.png"
+    };
+
+    private static Image? LoadMetricIcon(string path)
+    {
+        try
+        {
+            if (!File.Exists(path)) return null;
+            using var source = Image.FromFile(path);
+            return new Bitmap(source);
+        }
+        catch (Exception error)
+        {
+            CareerLog.Warn("ui", $"icona metrica non caricata: {error.Message}");
+            return null;
+        }
     }
 
     private static void ConfigureActionButton(Button action, string text, Color accent, Action onAction)
@@ -227,10 +442,27 @@ public sealed class BudgetPanel : Panel
     public void Update(CareerState career)
     {
         var cash = career.Cash;
+        var eta = career.BirthYear <= 0 ? 12 : Math.Max(10, career.StoryDate.Year - career.BirthYear);
+        var figurePath = AssetPaths.File(DriverFigurinaAsset(eta));
+        if (pilotCard != null
+            && !string.Equals(pilotCard.Tag as string, figurePath, StringComparison.OrdinalIgnoreCase)
+            && File.Exists(figurePath))
+        {
+            pilotCard.SetBackdrop(figurePath, Color.FromArgb(92, UiTheme.Background));
+            pilotCard.Tag = figurePath;
+        }
+        var school = Scuola.Livello(career);
+        pilotName.Text = string.IsNullOrWhiteSpace(career.Driver) ? "Pilota" : career.Driver;
+        pilotDetails.Text = $"{eta} ANNI\n{Scuola.Classe(career).ToUpperInvariant()}";
+        pilotSchool.Text = $"SCUOLA · {school}/100 · {GiudizioScuola(school)}";
+        pilotSchool.ForeColor = school < Scuola.SogliaDiDivieto ? UiTheme.Accent
+            : school < Scuola.SogliaDiPromozione ? UiTheme.Warning : UiTheme.Positive;
         amount.Text = $"€ {cash:N0}";
         amount.ForeColor = UiTheme.MoneyColor(cash);
-        fitnessValue.Text = $"{Math.Clamp(career.Fitness, 0, 100)}/100";
-        fitnessValue.ForeColor = career.Fitness < 30 ? UiTheme.Warning : UiTheme.Positive;
+        var fitness = Math.Clamp(career.Fitness, 0, 100);
+        fitnessValue.Text = $"{fitness}/100";
+        fitnessValue.ForeColor = fitness < 30 ? UiTheme.Warning : UiTheme.Positive;
+        SetProgress(fitnessProgress, fitness, fitnessValue.ForeColor);
         // Il riquadro ha come azione «SOCIAL · PILOTA + AMICI» ma mostrava la
         // fiducia dei team: due grandezze diverse sotto la stessa etichetta,
         // e infatti il numero qui non corrispondeva mai alla popolarità citata
@@ -238,6 +470,10 @@ public sealed class BudgetPanel : Panel
         var influencer = Math.Clamp(career.ReputationProfile?.PublicPopularity ?? 0, 0, 100);
         trustValue.Text = $"{influencer}/100";
         trustValue.ForeColor = influencer < 30 ? UiTheme.Warning : UiTheme.Info;
+        SetProgress(influencerProgress, influencer, trustValue.ForeColor);
+        schoolValue.Text = $"{school}/100";
+        schoolValue.ForeColor = Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.Warning;
+        SetProgress(schoolProgress, school, schoolValue.ForeColor);
 
         var day = DriverDay.EnsureToday(career);
         fitnessAction.Text = $"⚡  ATTIVITÀ DEL PILOTA · {day.DriverHoursLeft}h libere";
@@ -283,6 +519,14 @@ public sealed class BudgetPanel : Panel
         lastCash = cash;
     }
 
+    private static string GiudizioScuola(int livello) => livello switch
+    {
+        >= 80 => "OTTIMO",
+        >= 60 => "BUONO",
+        >= 40 => "SUFFICIENTE",
+        _ => "DA RECUPERARE"
+    };
+
     private void StartPulse()
     {
         if (!CareerTransitions.PulsesEnabled) return;
@@ -323,10 +567,10 @@ public sealed class BudgetPanel : Panel
         base.Dispose(disposing);
     }
 
-    /// <summary>Mostra una volta sola il tour guidato dei tre indicatori.</summary>
+    /// <summary>Mostra una volta sola il tour guidato dei quattro indicatori.</summary>
     public void ShowBudgetTutorial(Action completed)
     {
-        if (tutorialOverlay != null || tutorialTargets.Length < 3) return;
+        if (tutorialOverlay != null || tutorialTargets.Length < 4) return;
         var host = FindForm();
         if (host == null) return;
         tutorialStep = 0;
@@ -348,7 +592,7 @@ public sealed class BudgetPanel : Panel
         tutorialNext.Click += (_, _) =>
         {
             tutorialStep++;
-            if (tutorialStep >= 3)
+            if (tutorialStep >= 4)
             {
                 tutorialOverlay?.Dispose(); tutorialOverlay = null;
                 completed(); Invalidate(); return;
@@ -370,10 +614,12 @@ public sealed class BudgetPanel : Panel
             // valori si riferisse.
             0 => ("1 di 3  ·  QUESTO È IL BUDGET",
                 "È la cifra che decide cosa puoi fare: iscrizioni, trasferte, riparazioni. Per farla crescere si manda Haru a cercare sponsor, dal pannello OGGI in alto a destra.", "AVANTI"),
-            1 => ("2 di 3  ·  QUESTA È LA FORMA FISICA",
+            1 => ("2 di 4  ·  QUESTA È LA FORMA FISICA",
                 "Sale con allenamento e riposo, scende con le gare. Più è alta, più il pilota tiene il passo nei giri finali. Palestra, corsa e riposo stanno nel pannello OGGI, in alto a destra.", "AVANTI"),
-            _ => ("3 di 3  ·  QUESTO È IL LIVELLO INFLUENCER",
-                "È quanto il tuo nome circola fuori dalla pista: social, interviste, presenze. Cresce con i risultati e con il lavoro d'immagine, che si sceglie dal pannello OGGI. Quando è alto arrivano ingaggi promozionali e sponsor; quando è basso, nessuno ti cerca.", "INIZIA")
+            2 => ("3 di 4  ·  QUESTO È IL LIVELLO INFLUENCER",
+                "È quanto il tuo nome circola fuori dalla pista: social, interviste, presenze. Cresce con i risultati e con il lavoro d'immagine, che si sceglie dal pannello OGGI. Quando è alto arrivano ingaggi promozionali e sponsor; quando è basso, nessuno ti cerca.", "AVANTI"),
+            _ => ("4 di 4  ·  QUESTO È IL LIVELLO SCUOLA",
+                "Misura il rendimento scolastico. È separato dall'influencer: frequentare e studiare lo tengono alto, saltare la scuola lo abbassa e può bloccare temporaneamente gli appuntamenti in pista.", "INIZIA")
         };
     }
 

@@ -95,8 +95,8 @@ public static class StoryAngles
         Name = "costo-ritiro",
         Relevance = f => f.Abandoned ? 110 : 0,
         Write = (f, bank) => bank.Pick("angle-withdrawal-cost",
-            $"Il conto lo si vede sul contorno: reputazione in calo, rapporto con {f.TeamName} raffreddato, {f.SponsorName} che chiede spiegazioni. Un ritiro dal weekend non è neutro, ed è il motivo per cui non conviene trattarlo come una via d'uscita.",
-            $"Un weekend non concluso lascia tracce fuori dalla classifica: fiducia del box, pazienza dello sponsor e budget, perché la trasferta è stata comunque sostenuta.",
+            $"Il conto lo si vede sul contorno: reputazione in calo, livello influencer raffreddato, {f.SponsorName} che chiede spiegazioni. Un ritiro dal weekend non è neutro, ed è il motivo per cui non conviene trattarlo come una via d'uscita.",
+            $"Un weekend non concluso lascia tracce fuori dalla classifica: livello influencer, pazienza dello sponsor e budget, perché la trasferta è stata comunque sostenuta.",
             $"Restano le conseguenze: {f.TeamName} annota, {f.SponsorName} annota, e la reputazione di {f.Driver} scende. Il round consumato è la parte più costosa, perché non si recupera.")
     };
 
@@ -299,17 +299,17 @@ public static class StoryAngles
     private static readonly StoryAngle SponsorAndTeam = new()
     {
         Name = "sponsor",
-        Relevance = f => f.SponsorRelation <= 25 || f.TeamRelation <= 25 ? 82 : f.SponsorStatus == "Raggiunto" ? 44 : f.HasRace ? 22 : 30,
+        Relevance = f => f.SponsorRelation <= 25 || f.Fanbase <= 25 ? 82 : f.SponsorStatus == "Raggiunto" ? 44 : f.HasRace ? 22 : 30,
         Write = (f, bank) =>
         {
             if (f.SponsorRelation <= 25 && f.HasSponsor)
                 return bank.Pick("angle-sponsor-crisis",
                     $"Fuori dalla pista la situazione è tesa: il rapporto con {f.SponsorName} è a {f.SponsorRelation} su cento. Uno sponsor che si raffredda non fa comunicati, riduce il budget — e il budget è la vera classifica di questo mestiere.",
                     $"{f.SponsorName} sta valutando. Con un rapporto commerciale a {f.SponsorRelation}/100 e l'obiettivo stagionale ancora «{f.SponsorStatus.ToLowerInvariant()}», il rinnovo non è una formalità.");
-            if (f.TeamRelation <= 25 && f.HasTeam)
+            if (f.Fanbase <= 25 && f.HasTeam)
                 return bank.Pick("angle-team-crisis",
-                    $"Nel box l'aria è cambiata: il rapporto con {f.TeamName} è scivolato a {f.TeamRelation}/100. Quando la fiducia interna si incrina, il pilota è sempre la variabile più facile da sostituire.",
-                    $"Il rapporto con {f.TeamName} è a {f.TeamRelation} punti su cento, e questo pesa su come vengono distribuite le risorse tecniche prima ancora che sul mercato.");
+                    $"Fuori dalla pista l'attenzione si è raffreddata: il livello influencer è scivolato a {f.Fanbase}/100. Quando il pubblico smette di guardare, ogni opportunità diventa più difficile.",
+                    $"Il livello influencer è a {f.Fanbase} punti su cento, e questo pesa sulla visibilità prima ancora che sul mercato.");
             if (f.SponsorStatus == "Raggiunto" && f.HasSponsor)
                 return bank.Pick("angle-sponsor-ok",
                     $"Sul fronte commerciale l'obiettivo di {f.SponsorName} è stato raggiunto, con un rapporto a {f.SponsorRelation}/100. Significa bonus incassati e una trattativa di rinnovo che parte dalla posizione giusta.",
@@ -328,10 +328,10 @@ public static class StoryAngles
                     $"Nessun box lo ha ancora messo sotto contratto. L'unico legame è con {f.SponsorName}, e regge su {f.SponsorRelation} punti su cento.");
             if (!f.HasSponsor)
                 return bank.Pick("angle-no-sponsor",
-                    $"Con {f.TeamName} il rapporto è a {f.TeamRelation}/100, ma sulla tuta non c'è ancora un marchio: il fronte commerciale resta tutto da aprire.",
-                    $"{f.TeamName} lo tiene, e il rapporto vale {f.TeamRelation}/100. Manca invece uno sponsor, e senza quello ogni stagione si costruisce sul filo.");
+                    $"Il livello influencer è a {f.Fanbase}/100, ma sulla tuta non c'è ancora un marchio: il fronte commerciale resta tutto da aprire.",
+                    $"Il seguito vale {f.Fanbase}/100. Manca invece uno sponsor, e senza quello ogni stagione si costruisce sul filo.");
             return bank.Pick("angle-sponsor-neutral",
-                $"Il contorno contrattuale resta questo: obiettivo «{f.ContractObjective}» in stato «{f.ContractObjectiveStatus.ToLowerInvariant()}», rapporto con {f.SponsorName} a {f.SponsorRelation}/100 e con {f.TeamName} a {f.TeamRelation}/100.",
+                $"Il contorno contrattuale resta questo: obiettivo «{f.ContractObjective}» in stato «{f.ContractObjectiveStatus.ToLowerInvariant()}», rapporto con {f.SponsorName} a {f.SponsorRelation}/100 e livello influencer a {f.Fanbase}/100.",
                 $"Sullo sfondo ci sono gli impegni: {f.SponsorName} osserva il rapporto ({f.SponsorRelation}/100) e l'obiettivo contrattuale «{f.ContractObjective}» resta «{f.ContractObjectiveStatus.ToLowerInvariant()}».");
         }
     };
@@ -380,16 +380,12 @@ public static class StoryAngles
     private static readonly StoryAngle OffTrack = new()
     {
         Name = "fuoripista",
-        Relevance = f => string.IsNullOrWhiteSpace(f.LastActivity) ? 0 : f.Fatigue >= 60 ? 72 : f.LastActivitySuccess ? 28 : 56,
+        Relevance = f => string.IsNullOrWhiteSpace(f.LastActivity) ? 0 : f.LastActivitySuccess ? 28 : 56,
         Write = (f, bank) =>
         {
-            if (f.Fatigue >= 60)
-                return bank.Pick("angle-offtrack-tired",
-                    $"Va detto anche questo: la condizione di {f.Driver} è a {f.Fatigue}/100 di stanchezza accumulata, dopo {f.LastActivity.ToLowerInvariant()}. Un calendario di impegni riempito senza recupero si paga, e si paga in pista.",
-                    $"L'agenda fuori dal circuito ha lasciato il segno — {f.LastActivity.ToLowerInvariant()}, stanchezza a {f.Fatigue}/100. Nessun preparatore firmerebbe un programma così alla vigilia di un weekend.");
             return f.LastActivitySuccess
                 ? bank.Pick("angle-offtrack-good",
-                    $"Fra i due weekend c'era stata {f.LastActivity.ToLowerInvariant()}, andata a buon fine: il seguito di {f.Driver} è a {f.Fanbase} e il rapporto con {f.TeamName} a {f.TeamRelation}/100. Il lavoro che non si vede conta nel mercato.",
+                    $"Fra i due weekend c'era stata {f.LastActivity.ToLowerInvariant()}, andata a buon fine: il livello influencer di {f.Driver} è a {f.Fanbase}/100. Il lavoro che non si vede conta nel mercato.",
                     $"Nel frattempo, lontano dalla pista: {f.LastActivity.ToLowerInvariant()}, con esito positivo. Sono i mattoni che costruiscono un seguito ({f.Fanbase}) e una credibilità professionale.")
                 : bank.Pick("angle-offtrack-bad",
                     $"C'è anche un capitolo fuori dal circuito da mettere a bilancio: {f.LastActivity.ToLowerInvariant()} non è andata come previsto. Piccoli danni d'immagine che, sommati, arrivano al tavolo delle trattative.",
@@ -432,9 +428,8 @@ public static class StoryAngles
             var parts = new List<string>();
             if (f.ActivityReputation != 0) parts.Add($"reputazione {f.ActivityReputation:+#;-#;0}");
             if (f.ActivityFanbase != 0) parts.Add($"seguito {f.ActivityFanbase:+#;-#;0}");
-            if (f.ActivityTeamRelation != 0) parts.Add($"rapporto con {f.TeamName} {f.ActivityTeamRelation:+#;-#;0}");
+            if (f.ActivityTeamRelation != 0) parts.Add($"livello influencer {f.ActivityTeamRelation:+#;-#;0}");
             if (f.ActivitySponsorRelation != 0) parts.Add($"rapporto con {f.SponsorName} {f.ActivitySponsorRelation:+#;-#;0}");
-            if (f.ActivityFatigue != 0) parts.Add($"condizione {f.ActivityFatigue:+#;-#;0}");
             if (f.ActivityMoney != 0) parts.Add($"bilancio € {f.ActivityMoney:N0}");
             var ledger = parts.Count == 0 ? "nessuna conseguenza misurabile" : string.Join(", ", parts);
             var repetition = f.ActivityTimesDone > 1 ? $" È la {f.ActivityTimesDone}ª volta in stagione: il ritorno cala a ogni replica." : "";

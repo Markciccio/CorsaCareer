@@ -9,6 +9,7 @@
 bin/
 obj/
 publish/
+publish-*/
 installer/payload.zip
 installer/release/
 .setup-payload/

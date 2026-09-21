@@ -156,7 +156,7 @@ public static class CareerScheduler
                 Country = opening?.Country ?? "",
                 Season = season,
                 GeneratedBy = "Prova superata: un team ti offre un weekend, a tue spese",
-                Objective = "La prima gara vera: arrivare in fondo e battere qualcuno",
+                Objective = "Gara vera: arrivare al traguardo e chiudere almeno a metà gruppo",
                 EntryFee = FirstRaceFee,
                 ProposedBy = attempts % 2 == 0 ? "Minato Apex Kart" : "Hoshi Kart Works"
             };
@@ -200,7 +200,7 @@ public static class CareerScheduler
                 Country = track?.Country ?? "",
                 Season = season,
                 GeneratedBy = $"{attempts} prove senza il riferimento richiesto: arriva un invito a una gara minore",
-                Objective = "Farsi notare in gara, dove il cronometro non è l'unico criterio",
+                Objective = "Gara vera: chiudere davanti ad almeno un avversario",
                 EntryFee = lateralFee,
                 ProposedBy = attempts % 2 == 0 ? "Kaido Motorsport" : "Minato Apex Racing"
             };
@@ -345,6 +345,7 @@ public static class CareerScheduler
         // lunghezza da kart è inequivocabile. Deep Forest non potrà più entrarci.
         if (kart) return isKartTrack || (track.LengthMeters is > 0 and <= 1600);
         return !isKartTrack
+            && !(track.LengthMeters is > 0 and <= 1600)
             && !track.Category.Equals("hillclimb", StringComparison.OrdinalIgnoreCase)
             && !track.Category.Equals("special", StringComparison.OrdinalIgnoreCase);
     }
@@ -473,14 +474,23 @@ public static class CareerScheduler
     {
         if (tracks.Count == 0) return null;
         var compatible = TracksForCategory(tracks, category);
-        var pool = compatible.Count > 0 ? compatible : tracks.ToList();
+        var pool = compatible.Count > 0
+            ? compatible
+            : category.Contains("kart", StringComparison.OrdinalIgnoreCase)
+                ? tracks.ToList()
+                : tracks.Where(x => !IsDedicatedKartTrack(x)
+                    && !(x.LengthMeters is > 0 and <= 1600)).ToList();
+        if (pool.Count == 0) pool = tracks.ToList();
         if (category.Contains("kart", StringComparison.OrdinalIgnoreCase))
         {
-            // Prima un kartodromo vero. Le piste sotto 1,6 km restano un
-            // ripiego utile per cataloghi poveri, non devono battere Tokushima
-            // o un altro impianto kart installato.
-            var dedicated = pool.Where(IsDedicatedKartTrack).ToList();
-            if (dedicated.Count > 0) pool = dedicated;
+            // Manteniamo tutti i tracciati compatibili: un kartodromo dedicato
+            // ha la precedenza solo sulla qualità del filtro, non deve però
+            // monopolizzare ogni gara quando nel catalogo esiste anche un
+            // layout breve utilizzabile. In questo modo Tokushima, Mobara,
+            // Tsukuba short e simili entrano davvero nella rotazione.
+            var kartTracks = pool.Where(x => IsDedicatedKartTrack(x)
+                || (x.LengthMeters is > 0 and <= 1600)).ToList();
+            if (kartTracks.Count > 0) pool = kartTracks;
             var japanese = pool.Where(IsJapaneseTrack).ToList();
             if (japanese.Count > 0) pool = japanese;
         }

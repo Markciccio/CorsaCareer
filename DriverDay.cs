@@ -278,12 +278,10 @@ public static class DriverDay
     /// </summary>
     public static double PaceShift(int fitness, int fatigue)
     {
-        // La forma dà, la stanchezza toglie. Una forma alta con molta stanchezza
-        // non compensa: si arriva alla gara già consumati.
+        // La forma fisica è l'unico parametro che modifica il passo. Il vecchio
+        // campo Fatigue resta solo per compatibilità con i salvataggi.
         var fromFitness = (Math.Clamp(fitness, 0, MaxFitness) - 50) * 0.05;
-        var excess = Math.Max(0, Math.Clamp(fatigue, 0, MaxFatigue) - TiredThreshold);
-        var fromFatigue = -excess * 0.12;
-        return Math.Round(fromFitness + fromFatigue, 2);
+        return Math.Round(fromFitness, 2);
     }
 
     /// <summary>
@@ -292,8 +290,6 @@ public static class DriverDay
     /// </summary>
     public static string ConditionLabel(int fitness, int fatigue)
     {
-        if (fatigue >= 85) return "esausto";
-        if (fatigue >= TiredThreshold) return "stanco";
         if (fitness >= 75) return "in ottima forma";
         if (fitness >= 45) return "in condizione";
         return "fuori forma";

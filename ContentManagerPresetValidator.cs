@@ -51,7 +51,8 @@ public static class ContentManagerPresetValidator
             if (!gridRoot.TryGetProperty("CarIds", out var cars) || cars.ValueKind != JsonValueKind.Array || cars.GetArrayLength() == 0) { error = "nessuna auto in griglia"; return false; }
             if (!cars.EnumerateArray().Any(x => string.Equals(x.GetString(), car, StringComparison.OrdinalIgnoreCase))) { error = "l’auto del pilota non è nella griglia"; return false; }
             var opponents = gridRoot.TryGetProperty("OpponentsNumber", out var opponentsValue) ? opponentsValue.GetInt32() : -1;
-            if (opponents < 0 || opponents > cars.GetArrayLength() - 1) { error = "numero avversari incoerente"; return false; }
+            if (opponents < 1) { error = "la gara non ha alcun avversario"; return false; }
+            if (opponents > 19) { error = "numero avversari incoerente"; return false; }
             if (availableCars != null && !availableCars.Contains(car, StringComparer.OrdinalIgnoreCase)) { error = $"auto non più installata: {car}"; return false; }
             if (availableTracks != null && !availableTracks.Contains(track, StringComparer.OrdinalIgnoreCase)) { error = $"circuito non più installato: {track}"; return false; }
             return true;

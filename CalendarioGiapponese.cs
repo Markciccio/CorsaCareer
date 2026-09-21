@@ -64,6 +64,35 @@ public static class CalendarioGiapponese
     }
 
     /// <summary>
+    /// Ricorrenza leggibile da mostrare nell'agenda. Comprende sia le feste
+    /// nazionali (che chiudono la scuola) sia alcune giornate tradizionali o
+    /// affettive che rendono riconoscibile il Giappone senza bloccare le lezioni.
+    /// </summary>
+    public static string? Ricorrenza(DateTime giorno)
+    {
+        var d = giorno.Date;
+        var festa = Festa(d);
+        if (festa != null)
+            return d.Month == 1 && d.Day <= 3
+                ? $"Si festeggia {festa}: il paese è fermo e la scuola è chiusa."
+                : $"Si celebra {festa}: oggi le scuole restano chiuse.";
+
+        if (d.Month == 2 && d.Day == 3)
+            return "È Setsubun: si scacciano gli spiriti cattivi e si prepara l'arrivo della primavera.";
+        if (d.Month == 2 && d.Day == 14)
+            return "Si festeggia San Valentino: in Giappone si regalano soprattutto cioccolatini fatti a mano.";
+        if (d.Month == 3 && d.Day == 14)
+            return "È il White Day: chi ha ricevuto un dono a San Valentino ricambia con un pensiero.";
+        if (d.Month == 7 && d.Day == 7)
+            return "È Tanabata, la festa delle stelle: si appendono desideri ai rami di bambù.";
+        if (d.Month == 8 && d.Day is >= 13 and <= 16)
+            return "È l'Obon: le famiglie ricordano gli antenati e il paese rallenta per qualche giorno.";
+        if (d.Month == 12 && d.Day == 25)
+            return "È Natale: una giornata speciale, ma non una festa nazionale; la scuola segue il calendario feriale.";
+        return null;
+    }
+
+    /// <summary>
     /// Vero se in questo giorno si puo' correre o provare.
     ///
     /// Sabato, domenica o festa nazionale — cioe' i giorni in cui uno studente

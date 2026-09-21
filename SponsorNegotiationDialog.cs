@@ -84,11 +84,15 @@ public sealed class SponsorNegotiationDialog : CareerDialog
 
     private Control Bottone(SponsorMossa mossa)
     {
-        var pannello = new Panel
-        {
-            Dock = DockStyle.Fill, BackColor = UiTheme.Surface, Margin = new Padding(0, 0, 14, 0),
-            Cursor = Cursors.Hand, Padding = new Padding(18, 16, 18, 16)
-        };
+        var pannello = UiTheme.BackdropPanel(
+            ImmaginePerScelta(mossa.Etichetta),
+            Color.FromArgb(164, UiTheme.Surface), imageAlpha: 196,
+            padding: new Padding(18, 16, 18, 16));
+        pannello.Dock = DockStyle.Fill;
+        pannello.Margin = new Padding(0, 0, 14, 0);
+        pannello.Cursor = Cursors.Hand;
+        pannello.Paint += (_, e) => UiTheme.DrawRoundedBorder(e.Graphics,
+            new Rectangle(0, 0, pannello.Width - 1, pannello.Height - 1), UiTheme.Border, 1, 12);
         var titolo = new Label
         {
             Text = mossa.Etichetta.ToUpperInvariant(), Dock = DockStyle.Top, Height = 26,
@@ -120,6 +124,17 @@ public sealed class SponsorNegotiationDialog : CareerDialog
         }
         return pannello;
     }
+
+    private static string ImmaginePerScelta(string etichetta) =>
+        etichetta.ToLowerInvariant() switch
+        {
+            // Qui deve esserci Haru: è lui che porta il progetto al tavolo,
+            // non il pilota e non un interlocutore generico.
+            "i numeri" => "character-haru-senda-anxious-data.jpg",
+            "la gente" => "anime-haru-sponsor-sushi-poke-incontro.jpg",
+            "la verità" => "haru-accordo-stretta-mano-nuovo.jpg",
+            _ => "character-haru-senda-anxious-data.jpg"
+        };
 
     private void Applica(SponsorMossa mossa)
     {

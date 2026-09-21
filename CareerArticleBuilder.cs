@@ -18,13 +18,81 @@ public static class CareerArticleBuilder
 {
     public static BrowserPortalContent Build(CareerState career, CareerEventRecord? story, IReadOnlyList<Round>? calendar = null)
     {
-        var article = story?.Type is "EVALUATION_PASSED" or "EVALUATION_REVIEW"
+        var article = IsRaceStory(story)
+            ? BuildRaceFeature(career, story!)
+            : story?.Type is "EVALUATION_PASSED" or "EVALUATION_REVIEW"
             ? BuildEvaluationFeature(career, story)
             : NarrativeEngine.Compose(career, story, calendar);
         PhraseBank.Remember(career, article.UsedPhrases);
         AttachClassification(career, story, article);
         var text = ComposePlainText(article);
         return new BrowserPortalContent(article.Title, article.Standfirst, ComposePortalArticle(article), text, Headlines(career, article));
+    }
+
+    private static bool IsRaceStory(CareerEventRecord? story) => story?.Type is
+        "FIRST_VICTORY" or "VICTORY" or "FIRST_PODIUM" or "PODIUM" or
+        "RETIREMENT" or "RACE_FINISHED" or "INVITATION_BREAKTHROUGH" or
+        "INVITATION_DEBUT" or "INVITATION_SETBACK" or "WILDCARD";
+
+    /// <summary>Articolo lineare del referto: cronaca, box e prospettiva.</summary>
+    private static NewsArticle BuildRaceFeature(CareerState career, CareerEventRecord story)
+    {
+        var race = career.RaceHistory
+            .Where(x => x.Track.Equals(story.Track, StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(x => x.DateUtc)
+            .FirstOrDefault();
+        if (race == null) return NarrativeEngine.Compose(career, story);
+        var driver = DisplayName(career.Driver);
+        var track = UiText.Track(race.Track);
+        var car = UiText.Car(race.Car);
+        var firstWin = story.Type == "FIRST_VICTORY";
+        var positionText = race.Dnf ? "si è ritirato" : $"ha chiuso P{race.Position} su {Math.Max(1, race.Classification.Count)} partenti";
+        var article = new NewsArticle
+        {
+            Kicker = race.Dnf ? "GARA · REFERTO" : race.Position == 1 ? "GARA · VITTORIA" : "GARA · CRONACA",
+            Title = race.Dnf
+                ? $"Gara interrotta per {driver}: il box cerca risposte a {track}"
+                : race.Position == 1
+                    ? (firstWin ? $"{driver} sorprende al debutto: prima vittoria a {track}" : $"{driver} vince a {track} e conferma la crescita")
+                    : race.Position <= 3 ? $"{driver} sale sul podio a {track}: il lavoro comincia a pagare"
+                    : $"{driver} chiude P{Math.Max(1, race.Position)} a {track}: una gara utile per crescere",
+            Standfirst = race.Dnf
+                ? $"Il referto consegna un ritiro dopo {race.Laps} giri con la {car}; il team prepara il lavoro per il prossimo appuntamento."
+                : race.Position == 1
+                    ? $"Il debuttante {driver} vince la gara sul circuito di {track} con la {car}. Un risultato netto, costruito sulla posizione e non soltanto sul cronometro."
+                    : $"Il debuttante {driver} {positionText} sul circuito di {track} con la {car}. Il risultato entra nella storia della stagione e offre al box un riferimento concreto.",
+            Byline = $"di {career.Journalist?.Name ?? "Noa Minazuki"} · {career.Journalist?.Publication ?? "Grand Prix CorsaCareer"}",
+            DateLine = $"{track} · {story.StoryDate:d MMMM yyyy}",
+            CoverageLevel = race.Position == 1 ? 5 : race.Position <= 3 ? 4 : 3,
+            Impact = story.Importance,
+            Rating = NarrativeEngine.Rating(StoryFacts.From(career, story)),
+            Angles = ["cronaca-gara"]
+        };
+        var cronaca = race.Dnf
+            ? $"Il weekend di {driver} si è chiuso prima della bandiera a scacchi. A {track}, la {car} ha completato {race.Laps} giri prima del ritiro: nessuna posizione utile, ma un referto abbastanza preciso da indicare al box dove cominciare l'analisi."
+            : race.Position == 1
+                ? $"Il debuttante {driver} ha vinto la gara sul circuito di {track}. Partito {(race.StartingPosition > 0 ? $"da P{race.StartingPosition}" : "da una posizione non registrata")}, ha portato la {car} al traguardo dopo {race.Laps} giri, davanti a {Math.Max(0, race.Classification.Count - 1)} avversari."
+                : $"Sul circuito di {track}, {driver} ha chiuso in P{race.Position} con la {car}. Partito {(race.StartingPosition > 0 ? $"da P{race.StartingPosition}" : "da una posizione non registrata")}, ha completato {race.Laps} giri davanti a {Math.Max(0, race.Classification.Count - race.Position)} avversari e ha trasformato la gara in un riferimento concreto per il team.";
+        article.Paragraphs.Add(cronaca);
+        var dettagli = new List<string>();
+        if (race.BestLapMilliseconds > 0) dettagli.Add($"Il miglior giro è stato {RookieTargetEngine.Format(race.BestLapMilliseconds)}");
+        if (race.GapMilliseconds > 0) dettagli.Add($"il distacco dal vincitore {race.GapMilliseconds / 1000d:0.000} secondi");
+        if (race.PenaltySeconds > 0) dettagli.Add($"con {race.PenaltySeconds:0} secondi di penalità");
+        article.Paragraphs.Add(dettagli.Count == 0
+            ? "La classifica resta il dato principale della giornata: il risultato viene valutato sulla posizione finale, come in una gara reale."
+            : string.Join(", ", dettagli) + ". Sono i numeri che il team userà nel debrief tecnico, insieme alla posizione finale.");
+        var manager = career.StoryCast?.FirstOrDefault(x => x.Id == StoryCastService.Manager)?.Name ?? "Rei Kisaragi";
+        var friend = career.StoryCast?.FirstOrDefault(x => x.Id == StoryCastService.Friend)?.Name ?? "Haru Senda";
+        article.Paragraphs.Add(race.Dnf
+            ? $"Nel box {manager} ha chiesto di ricostruire l'accaduto senza cercare alibi, mentre {friend} ha invitato il pilota a non leggere il ritiro come una bocciatura. Il tono è quello di una squadra che prepara la risposta, non di un gruppo che archivia la stagione."
+            : $"«Ottima prova del debuttante», è stato il primo commento di {manager}. {friend} ha sottolineato la capacità di restare davanti fino al traguardo: una lettura semplice, coerente con il risultato e con quello che si è visto in pista.");
+        article.Paragraphs.Add(race.Dnf
+            ? $"Il prossimo appuntamento dirà se si è trattato di un episodio o dell'inizio di un problema. Per {driver}, la priorità è tornare a completare una gara."
+            : $"La vittoria porta {driver} al centro dell'attenzione, ma non chiude il percorso. Adesso serviranno continuità, una seconda prestazione credibile e la capacità di confermarsi quando gli avversari correranno sapendo chi battere.");
+        article.Verdict = race.Dnf ? "Verdetto: giornata da analizzare e lasciarsi alle spalle." : race.Position == 1 ? "Verdetto: una vittoria pesa davvero quando diventa l'inizio di una serie." : "Verdetto: risultato concreto, ora serve continuità.";
+        var influencer = Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100);
+        article.Sidebar = [$"Risultato: {positionText}", $"Circuito: {track}", $"Auto: {car}", $"Budget: € {career.Cash:N0}", $"Livello influencer: {influencer}/100"];
+        return article;
     }
 
     /// <summary>
@@ -60,7 +128,8 @@ public static class CareerArticleBuilder
         if (race.PenaltySeconds > 0) sintesi.Add($"Penalità: {race.PenaltySeconds:0} s.");
         if (race.Points > 0) sintesi.Add($"Punti conquistati: {race.Points}.");
         if (race.Prize > 0) sintesi.Add($"Premio: € {race.Prize:N0}.");
-        article.Paragraphs.Add("COME È ANDATA\n" + string.Join(" ", sintesi));
+        if (!article.Angles.Contains("cronaca-gara", StringComparer.OrdinalIgnoreCase))
+            article.Paragraphs.Add("COME È ANDATA\n" + string.Join(" ", sintesi));
 
         var righe = race.Classification
             .OrderBy(x => x.Position)
@@ -97,12 +166,13 @@ public static class CareerArticleBuilder
         article.Paragraphs.Add($"Un debutto che non è passato inosservato. Nei test disputati al {track}, {driver} ha fatto segnare il miglior tempo della sessione alla guida della {UiText.Car(test?.Car ?? career.Car)}, fermando il cronometro su {lap}.");
         article.Paragraphs.Add($"Il confronto con il riferimento, fissato a {RookieTargetEngine.Format(target)}, rende la misura della prestazione: {gapText}. Il programma ha registrato {test?.Laps ?? 0} giri, sufficienti per prendere confidenza con vettura e tracciato e per lasciare un primo dato tecnico sul tavolo.");
         article.Paragraphs.Add($"Per {driver} era la prima uscita nel programma rookie, senza un contratto né uno sponsor alle spalle. Il test non assegna punti o premi, ma è un passaggio concreto per attirare l'attenzione dei team e costruire credibilità. A seguire il lavoro in pista c'erano {manager}, responsabile del programma rookie, {mechanic}, il meccanico della vettura, e {rival}, primo riferimento diretto del pilota.");
-        article.Paragraphs.Add($"Dopo questa prova, il livello di fiducia dei followers sale a {career.TeamRelation}/100, mentre il budget disponibile resta di € {career.Cash:N0}. Sul mercato i primi segnali arrivano da {interest}: interesse, non ancora un sedile garantito.");
+        var influencer = Math.Clamp(career.ReputationProfile?.PublicPopularity ?? career.Fanbase, 0, 100);
+        article.Paragraphs.Add($"Dopo questa prova, il livello influencer sale a {influencer}/100, mentre il budget disponibile resta di € {career.Cash:N0}. Sul mercato i primi segnali arrivano da {interest}: interesse, non ancora un sedile garantito.");
         article.Paragraphs.Add(passed
             ? $"Non è il momento di parlare di un contratto sicuro, ma il messaggio lasciato dalla pista è chiaro: {driver} ha iniziato la propria avventura con un tempo che merita attenzione. Per trasformare il debutto in un'opportunità concreta serviranno continuità, risultati e la capacità di confermarsi nelle prossime uscite."
             : $"Il cronometro non ha ancora aperto tutte le porte, ma il test ha fissato una base reale da cui ripartire. Per trasformarla in un'opportunità concreta serviranno chilometri, continuità e un'altra prestazione convincente.");
         article.Verdict = passed ? "Prospettiva: l'esordio ha acceso l'attenzione; adesso serve conferma." : "Prospettiva: il progetto resta aperto, ma la prossima uscita peserà di più.";
-        article.Sidebar = [$"Tempo: {lap}", $"Riferimento: {RookieTargetEngine.Format(target)}", $"Scarto: {gapText}", $"Cassa: € {career.Cash:N0}", $"Livello di fiducia dei followers: {career.TeamRelation}/100"];
+        article.Sidebar = [$"Tempo: {lap}", $"Riferimento: {RookieTargetEngine.Format(target)}", $"Scarto: {gapText}", $"Cassa: € {career.Cash:N0}", $"Livello influencer: {influencer}/100"];
         return article;
     }
 

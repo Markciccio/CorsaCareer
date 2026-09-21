@@ -190,9 +190,8 @@ public static class LifeCalendar
         else if (item.Kind == "track-training")
         {
             career.Fitness = Math.Clamp(career.Fitness + 6, 0, DriverDay.MaxFitness);
-            career.Fatigue = Math.Clamp(career.Fatigue + 12, 0, DriverDay.MaxFatigue);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + 1, 0, 100);
-            career.News.Add($"Allenamento in pista completato a {item.TrackName}: forma +6, stanchezza +12.");
+            career.News.Add($"Allenamento in pista completato a {item.TrackName}: forma +6.");
         }
         else if (item.Kind == "sponsor-visit")
         {
@@ -203,10 +202,7 @@ public static class LifeCalendar
         else if (item.Kind == "fitness")
         {
             career.Fitness = Math.Clamp(career.Fitness + 3, 0, DriverDay.MaxFitness);
-            career.Fatigue = Math.Clamp(career.Fatigue + 5, 0, DriverDay.MaxFatigue);
         }
-        else
-            career.Fatigue = Math.Clamp(career.Fatigue - 10, 0, DriverDay.MaxFatigue);
         profile.SyncLegacyFields(career);
         career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = item.Kind == "school" ? "SCHOOL_DONE" : "TRAINING_DONE", Headline = item.Title + " completato.", Track = item.TrackName, Importance = 28 });
     }

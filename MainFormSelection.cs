@@ -71,6 +71,11 @@ public sealed partial class MainForm
             .ToList();
         if (previous.Any(x => x.Outcome == nameof(SelectionOutcome.Promoted))) return null;
         var secondChance = previous.Any(x => x.Outcome == nameof(SelectionOutcome.SecondChance));
+        // Una convocazione e, se meritata, una sola seconda chance. Senza il
+        // limite la simulazione poteva riaprire lo stesso provino a ogni
+        // giornata, generando una sequenza infinita di quattro giorni e di
+        // commenti duplicati.
+        if (previous.Count >= 2) return null;
         if (previous.Count > 0 && !secondChance) return null;
 
         var car = contentIndex.Cars
@@ -276,6 +281,10 @@ public sealed partial class MainForm
         else SaveCareer();
         RefreshUi();
 
+        // Il banco simulato richiama questo metodo senza una finestra davanti:
+        // non deve restare bloccato su un dialogo che il giocatore reale vede
+        // solo dopo una giornata importata.
+        if (CareerMessages.Unattended) return;
         using var dialog = new SelectionDialog(trial, career.Cash, DebugSimulationAvailable);
         if (dialog.ShowDialog(this) == DialogResult.OK && dialog.ChosenDay != null)
         {
