@@ -86,6 +86,10 @@ public static class RaceChoice
         profile.SportingPrestige = Math.Clamp(profile.SportingPrestige + cost.SportingReputation, 0, 100);
         if (cost.TeamTrust != 0)
             profile.TeamTrust = Math.Clamp(profile.TeamTrust + cost.TeamTrust, 0, 100);
+        // Ogni altro punto che tocca il profilo chiude con questa riga: senza,
+        // i campi legacy (Fanbase, TeamRelation) restano quelli di prima finche'
+        // qualcos'altro non li risincronizza per conto suo.
+        profile.SyncLegacyFields(career);
 
         race.Status = CareerScheduler.StatusSkipped;
         career.Results.Add($"Gara saltata: {race.TrackName}");

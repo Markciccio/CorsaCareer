@@ -174,9 +174,13 @@ public sealed class DayPlan
 /// <summary>
 /// Le regole della giornata.
 ///
-/// Il vincolo che tiene in piedi tutto è la stanchezza: senza, converrebbe
-/// sempre riempire ogni ora disponibile, e non ci sarebbe nessuna scelta da
-/// fare. Allenarsi stanca; correre stanchi rende meno.
+/// Il vincolo che tiene in piedi tutto sono le fasce: ogni giornata ha un
+/// numero fisso di finestre, ognuna con dentro UNA cosa sola, e riempirle
+/// tutte non serve comunque a niente di più che riempirne la metà con le
+/// cose giuste. Prima era la stanchezza a fare questo lavoro — costava caro
+/// riempire ogni ora — ma il parametro è stato tolto dal gameplay: il campo
+/// <c>CareerState.Fatigue</c> resta solo per leggere senza errori le
+/// carriere salvate prima del cambio.
 /// </summary>
 public static class DriverDay
 {

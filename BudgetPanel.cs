@@ -29,9 +29,6 @@ public sealed class BudgetPanel : Panel
     private readonly Label pilotDetails = new();
     private readonly Label pilotSchool = new();
     private ThemedBackdropPanel? pilotCard;
-    private readonly Button fitnessAction = new();
-    private readonly Button sponsorAction = new();
-    private readonly Button communityAction = new();
     private TableLayoutPanel? metricGrid;
     private Panel? tutorialOverlay;
     private Label? tutorialTitle;
@@ -42,9 +39,12 @@ public sealed class BudgetPanel : Panel
     /// <summary>La scheda del tutorial: viene spostata accanto al riquadro spiegato.</summary>
     private Panel? tutorialCard;
 
-    public event EventHandler? FitnessRequested;
-    public event EventHandler? SponsorRequested;
-    public event EventHandler? CommunityRequested;
+    // FitnessRequested, SponsorRequested e CommunityRequested sono spariti da
+    // qui: erano gli eventi dei tre pulsanti che i riquadri avevano prima di
+    // diventare puri numeri. Nessuno li sottoscriveva piu' da nessuna parte —
+    // i tre pulsanti a cui erano legati (fitnessAction, sponsorAction,
+    // communityAction) non venivano piu' aggiunti a nessun layout — quindi
+    // erano diventati un click che non poteva mai arrivare a nessuno.
 
     private readonly System.Windows.Forms.Timer pulseTimer = new() { Interval = CareerTransitions.FrameMilliseconds };
     private int pulseFrame;
@@ -140,7 +140,6 @@ public sealed class BudgetPanel : Panel
         // Adesso la giornata si decide in un posto solo, il sottomenu' OGGI,
         // e questi riquadri fanno quello che il loro titolo promette: mostrano
         // un numero.
-        sponsorAction.Visible = false;
         accountLayout.Controls.Add(status, 0, 2);
         accountLayout.Controls.Add(breakdown, 0, 3);
         account.Controls.Add(accountLayout);
@@ -151,7 +150,7 @@ public sealed class BudgetPanel : Panel
         tutorialTargets = [account];
 
         grid.Controls.Add(CreateMetricCard("FORMA FISICA", fitnessValue, "", UiTheme.Positive,
-            () => FitnessRequested?.Invoke(this, EventArgs.Empty), fitnessAction, showAction: false,
+            () => { }, new Button(), showAction: false,
             iconAsset: "metric-fitness-manga-v1.png", progressBar: fitnessProgress), firstMetricColumn + 1, 0);
         grid.Controls.Add(CreateMetricCard("LIVELLO INFLUENCER", trustValue, "", UiTheme.Info,
             () => { }, new Button(), showAction: false, iconAsset: "metric-influencer-manga-v1.png", progressBar: influencerProgress), firstMetricColumn + 2, 0);
@@ -474,11 +473,6 @@ public sealed class BudgetPanel : Panel
         schoolValue.Text = $"{school}/100";
         schoolValue.ForeColor = Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.Warning;
         SetProgress(schoolProgress, school, schoolValue.ForeColor);
-
-        var day = DriverDay.EnsureToday(career);
-        fitnessAction.Text = $"⚡  ATTIVITÀ DEL PILOTA · {day.DriverHoursLeft}h libere";
-        sponsorAction.Text = $"★  SPONSORIZZAZIONI · Haru {day.AgentHoursLeft}h libere";
-        communityAction.Text = $"★  SOCIAL · PILOTA + AMICI · {day.DriverHoursLeft}h/{day.AgentHoursLeft}h";
 
         // Lo stato economico in parole: dice se quella cifra basta o no.
         // Quando la cassa è al limite l'avviso prende il posto dello stato: dire

@@ -4709,7 +4709,11 @@ public sealed partial class MainForm : Form
             career.AbandonedSessions++;
             career.Reputation = Math.Clamp(career.Reputation + outcome.Reputation, 0, 100);
             var profile = career.ReputationProfile ??= new ReputationProfile();
-            profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.TeamRelation, 0, 100);
+            // Un ritiro non tocca il seguito pubblico: tocca quanto la
+            // squadra si fida di te. TeamRelation e' sempre negativo qui
+            // (WithdrawalRules.cs), ed era finito dentro PublicPopularity —
+            // TeamTrust non calava mai per un ritiro, in nessuna delle prove.
+            profile.TeamTrust = Math.Clamp(profile.TeamTrust + outcome.TeamRelation, 0, 100);
             profile.SyncLegacyFields(career);
             if (career.CareerPhase.Equals("Evaluation", StringComparison.OrdinalIgnoreCase))
                 career.RookieEvaluationStatus = "In corso — prova non completata";
@@ -4761,9 +4765,17 @@ public sealed partial class MainForm : Form
         career.AbandonedSessions++;
         career.Reputation = Math.Clamp(career.Reputation + outcome.Reputation, 0, 100);
         var profile = career.ReputationProfile ??= new ReputationProfile();
-        profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.TeamRelation, 0, 100);
+        // Stesso difetto del ritiro da un test: la penalita' di relazione con
+        // la squadra finiva nel seguito pubblico invece che nella fiducia
+        // del team.
+        profile.TeamTrust = Math.Clamp(profile.TeamTrust + outcome.TeamRelation, 0, 100);
+        // E la penalita' sullo sponsor toccava il campo legacy DOPO la
+        // sincronizzazione, non il profilo: sopravviveva solo fino alla
+        // prossima SyncLegacyFields — che gira dopo quasi ogni altra azione —
+        // e poi veniva sovrascritta dal valore (invariato) di SponsorAppeal.
+        // Un ritiro di gara con penalita' sullo sponsor non lasciava traccia.
+        profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal + outcome.SponsorRelation, 0, 100);
         profile.SyncLegacyFields(career);
-        career.SponsorRelation = Math.Clamp(career.SponsorRelation + outcome.SponsorRelation, 0, 100);
         // Anche una spesa subita non puo portare la cassa sotto zero: si paga
         // quello che c'e, il resto resta un costo che non si e potuto sostenere.
         var logistics = Math.Min(outcome.LogisticsCost, Math.Max(0, career.Cash));
@@ -6397,7 +6409,10 @@ public sealed partial class MainForm : Form
         var effects = new List<string>();
         if (record.Reputation != 0) effects.Add($"reputazione {record.Reputation:+#;-#;0}");
         if (record.Fanbase != 0) effects.Add($"seguito {record.Fanbase:+#;-#;0}");
-        if (record.TeamRelation != 0) effects.Add($"livello influencer {record.TeamRelation:+#;-#;0}");
+        // Era "livello influencer": la stessa confusione per cui il valore
+        // finiva applicato a PublicPopularity invece che a TeamTrust. E'
+        // la fiducia della squadra, non il seguito sui social.
+        if (record.TeamRelation != 0) effects.Add($"fiducia della squadra {record.TeamRelation:+#;-#;0}");
         if (record.SponsorRelation != 0) effects.Add($"appeal sponsor {record.SponsorRelation:+#;-#;0}");
         if (record.Money != 0) effects.Add($"budget {record.Money:+€ #,##0;-€ #,##0;€ 0}");
         var summary = effects.Count == 0 ? "Nessuna variazione numerica." : "Conseguenze: " + string.Join(" · ", effects) + ".";
@@ -6461,7 +6476,12 @@ public sealed partial class MainForm : Form
         var profile = career.ReputationProfile ??= new ReputationProfile();
         profile.SportingPrestige = Math.Clamp(profile.SportingPrestige + outcome.Effect.Reputation, 0, 100);
         profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.Effect.Fanbase, 0, 100);
-        profile.PublicPopularity = Math.Clamp(profile.PublicPopularity + outcome.Effect.TeamRelation, 0, 100);
+        // Era PublicPopularity una seconda volta: la fiducia della squadra
+        // finiva raddoppiata dentro il seguito pubblico, e TeamTrust non
+        // si muoveva mai per nessuna di queste attivita' — anche per quelle
+        // pensate apposta per costruirla (le giornate in fabbrica, le visite
+        // al team). Un copia-incolla della riga sopra con il campo sbagliato.
+        profile.TeamTrust = Math.Clamp(profile.TeamTrust + outcome.Effect.TeamRelation, 0, 100);
         profile.SponsorAppeal = Math.Clamp(profile.SponsorAppeal + outcome.Effect.SponsorRelation, 0, 100);
         profile.SyncLegacyFields(career);
         // I giorni passano UNO ALLA VOLTA, non tutti insieme.
