@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou GT4",
+  "brand": "Kagerou",
+  "class": "GT4",
+  "tags": [
+    "GT4"
+  ],
+  "specs": {
+    "power": "388 bhp",
+    "weight": "1346 kg"
+  },
+  "power": "388",
+  "mass": "1346 kg",
+  "year": 2021
+}

@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Diagnostics;
 using System.Windows.Forms;
 
@@ -45,10 +45,11 @@ public sealed class AudioDialog : CareerDialog
         list.SelectedIndexChanged += (_, _) => ShowScript(list.SelectedIndex); stop.Click += (_, _) => NarrationService.Stop(); listen.Click += (_, _) => Listen(); export.Click += (_, _) => ExportWav(); Controls.Add(list); Controls.Add(script); Controls.Add(source); Controls.Add(voice); Controls.Add(stop); Controls.Add(listen); Controls.Add(export);
         Controls.Add(new Label { Text = $"{voice.Items.Count - 1} voci italiane rilevate · pause e prosodia attive.  |  L'audio non inventa risultati.", Left = 350, Top = 455, AutoSize = true, ForeColor = Color.FromArgb(245, 190, 65) });
         var manageVoices = new Button { Text = "Gestisci / installa voci Windows", Left = 22, Top = 480, Width = 300, Height = 32, BackColor = Color.FromArgb(65, 75, 92), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-        manageVoices.Click += (_, _) => { try { Process.Start(new ProcessStartInfo { FileName = "ms-settings:speech", UseShellExecute = true }); } catch (Exception error) { MessageBox.Show($"Impossibile aprire le impostazioni vocali: {error.Message}", "Voci Windows", MessageBoxButtons.OK, MessageBoxIcon.Warning); } };
+        manageVoices.Click += (_, _) => { try { Process.Start(new ProcessStartInfo { FileName = "ms-settings:speech", UseShellExecute = true }); } catch (Exception error) { CareerMessages.Show(this, $"Impossibile aprire le impostazioni vocali: {error.Message}", "Voci Windows", MessageBoxButtons.OK, MessageBoxIcon.Warning); } };
         Controls.Add(manageVoices);
         Controls.Add(new Label { Text = "Per una voce Natural/Neural installala in Windows, poi riapri questo pannello.", Left = 350, Top = 485, Width = 535, Height = 28, ForeColor = Color.Gainsboro });
         if (scripts.Count > 0) list.SelectedIndex = 0;
+        AggiungiChiusura();
     }
 
     private void ShowScript(int index)
@@ -67,9 +68,9 @@ public sealed class AudioDialog : CareerDialog
         try
         {
             NarrationService.ExportWav(scripts[index].Text, output, SelectedVoice());
-            MessageBox.Show($"Esportazione avviata. Il WAV verrà salvato in:\n{output}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, $"Esportazione avviata. Il WAV verrà salvato in:\n{output}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception error) { MessageBox.Show($"Impossibile avviare la voce locale: {error.Message}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Impossibile avviare la voce locale: {error.Message}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
 
     private void Listen()
@@ -77,7 +78,7 @@ public sealed class AudioDialog : CareerDialog
         var index = list.SelectedIndex;
         if (index < 0 || index >= scripts.Count) return;
         try { NarrationService.Speak(scripts[index].Text, SelectedVoice()); }
-        catch (Exception error) { MessageBox.Show($"Impossibile avviare la voce locale: {error.Message}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Impossibile avviare la voce locale: {error.Message}", "Servizio audio", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private string SelectedVoice() => voice.SelectedItem?.ToString()?.StartsWith("Automatica", StringComparison.OrdinalIgnoreCase) == true ? "" : voice.SelectedItem?.ToString() ?? "";
 }

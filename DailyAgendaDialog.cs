@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -32,7 +32,20 @@ public sealed class DailyAgendaDialog : CareerDialog
         AutoScroll = true, Padding = new Padding(28, 18, 28, 18)
     };
 
-    private const int Larghezza = 820;
+    /// <summary>
+    /// Larghezza di ripiego, usata come valore predefinito dei parametri.
+    /// Quella vera la decide la finestra a ogni ricostruzione.
+    /// </summary>
+    private const int LarghezzaBase = 820;
+
+    /// <summary>
+    /// La larghezza delle schede in costruzione adesso: piena per le righe di
+    /// intestazione, meta' per le schede dentro le due colonne.
+    /// </summary>
+    private int larghezza = LarghezzaBase;
+
+    /// <summary>La larghezza utile dell'intera schermata, ricalcolata a ogni ricostruzione.</summary>
+    private int larghezzaPiena = LarghezzaBase;
 
     public DailyAgendaDialog(CareerState career, ContentIndexRecord content, Action launchTraining, Action save,
                              Action<DayReport>? onScene = null)
@@ -51,6 +64,17 @@ public sealed class DailyAgendaDialog : CareerDialog
         Ricostruisci();
     }
 
+    /// <summary>
+    /// Alla comparsa la finestra ha la sua misura vera — CareerDialog la
+    /// massimizza dopo il costruttore — quindi l'impaginazione va rifatta:
+    /// costruita prima, resterebbe della larghezza di ripiego.
+    /// </summary>
+    protected override void OnShown(EventArgs e)
+    {
+        base.OnShown(e);
+        Ricostruisci();
+    }
+
     private int Eta => career.BirthYear <= 0 ? 12 : Math.Max(10, career.StoryDate.Year - career.BirthYear);
 
     private void Ricostruisci()
@@ -58,6 +82,15 @@ public sealed class DailyAgendaDialog : CareerDialog
         flow.SuspendLayout();
         foreach (Control c in flow.Controls) c.Dispose();
         flow.Controls.Clear();
+
+        // La larghezza si prende dalla finestra, non da una costante.
+        //
+        // Le schede erano larghe 820 pixel fissi su una finestra massimizzata:
+        // su un monitor da 1920 restava meta' schermo nero. Si usa lo spazio
+        // che c'e', con un tetto perche' una riga di testo larga duemila pixel
+        // non si legge piu'.
+        larghezzaPiena = Math.Min(1500, Math.Max(760, flow.ClientSize.Width - 64));
+        larghezza = larghezzaPiena;
 
         var giorno = DriverDay.EnsureToday(career);
         var data = career.StoryDate.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("it-IT"));
@@ -90,10 +123,30 @@ public sealed class DailyAgendaDialog : CareerDialog
                 career.RepeatingYear || Scuola.ARischio(career) ? UiTheme.Accent : UiTheme.TextSecondary,
                 14));
 
-        Colonna("LA TUA GIORNATA", DaySlots.Pilota(career.StoryDate, Eta, career.RepeatingYear),
-            giorno.FascePilota, DayActor.Driver, giorno);
-        Colonna("LA GIORNATA DI HARU", DaySlots.Haru(career.StoryDate),
-            giorno.FasceHaru, DayActor.Agent, giorno);
+        // Le due giornate stanno AFFIANCATE, non una sotto l'altra.
+        //
+        // Erano impilate: la colonna del pilota, e sotto — oltre il bordo
+        // dello schermo — quella di Haru. Su una finestra massimizzata (e
+        // CareerDialog le massimizza tutte) il risultato era una striscia di
+        // contenuto larga ottocento pixel con mille pixel di nero accanto, e
+        // Haru che bisognava andare a cercare scorrendo. Le stesse due colonne
+        // del pannello OGGI, nello stesso ordine, ma con lo spazio per
+        // leggerle.
+        var mezza = (larghezzaPiena - 18) / 2;
+        var colonne = new TableLayoutPanel
+        {
+            Width = larghezzaPiena, ColumnCount = 2, RowCount = 1, AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, BackColor = Color.Transparent,
+            Margin = new Padding(0, 6, 0, 0), Padding = new Padding(0)
+        };
+        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, mezza + 9));
+        colonne.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, mezza + 9));
+        colonne.Controls.Add(Colonna("LA TUA GIORNATA",
+            DaySlots.Pilota(career.StoryDate, Eta, career.RepeatingYear),
+            giorno.FascePilota, DayActor.Driver, giorno, mezza), 0, 0);
+        colonne.Controls.Add(Colonna("LA GIORNATA DI HARU", DaySlots.Haru(career.StoryDate),
+            giorno.FasceHaru, DayActor.Agent, giorno, mezza), 1, 0);
+        flow.Controls.Add(colonne);
 
         var chiudi = UiTheme.SecondaryButton("TORNA AL PORTALE");
         chiudi.Dock = DockStyle.None; chiudi.Width = 260; chiudi.Height = 42;
@@ -103,12 +156,20 @@ public sealed class DailyAgendaDialog : CareerDialog
         flow.ResumeLayout();
     }
 
-    private void Colonna(string titolo, IReadOnlyList<FasciaDelGiorno> fasce, List<string> occupate,
-                         DayActor chi, DayPlan giorno)
+    private Control Colonna(string titolo, IReadOnlyList<FasciaDelGiorno> fasce, List<string> occupate,
+                            DayActor chi, DayPlan giorno, int larghezzaColonna)
     {
-        flow.Controls.Add(Titolo(titolo));
+        larghezza = larghezzaColonna;
+        var colonna = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = larghezzaColonna + 8,
+            BackColor = Color.Transparent, Margin = new Padding(0, 0, 8, 0), Padding = new Padding(0)
+        };
+        colonna.Controls.Add(Titolo(titolo));
         for (var i = 0; i < fasce.Count; i++)
-            flow.Controls.Add(SchedaFascia(fasce[i], i, occupate, chi, giorno));
+            colonna.Controls.Add(SchedaFascia(fasce[i], i, occupate, chi, giorno));
+        return colonna;
     }
 
     private Control SchedaFascia(FasciaDelGiorno fascia, int indice, List<string> occupate,
@@ -119,16 +180,16 @@ public sealed class DailyAgendaDialog : CareerDialog
 
         if (fascia.Fissa)
         {
-            dentro.Controls.Add(Riga($"{fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.Kicker, UiTheme.TextMuted, 2, Larghezza - 44));
+            dentro.Controls.Add(Riga($"{fascia.Orario} · {fascia.Nome.ToUpperInvariant()}", UiTheme.Kicker, UiTheme.TextMuted, 2, larghezza - 44));
             dentro.Controls.Add(Riga("Obbligatoria: non si sceglie. È la ragione per cui il pomeriggio è corto.",
-                UiTheme.Small, UiTheme.TextSecondary, 0, Larghezza - 44));
+                UiTheme.Small, UiTheme.TextSecondary, 0, larghezza - 44));
             return card;
         }
 
         if (gia.Length > 0)
         {
-            dentro.Controls.Add(Riga($"{fascia.Orario} · {gia.ToUpperInvariant()}", UiTheme.Kicker, UiTheme.Positive, 2, Larghezza - 44));
-            dentro.Controls.Add(Riga("Fatto. Questa fascia della giornata è passata.", UiTheme.Small, UiTheme.TextSecondary, 0, Larghezza - 44));
+            dentro.Controls.Add(Riga($"{fascia.Orario} · {gia.ToUpperInvariant()}", UiTheme.Kicker, UiTheme.Positive, 2, larghezza - 44));
+            dentro.Controls.Add(Riga("Fatto. Questa fascia della giornata è passata.", UiTheme.Small, UiTheme.TextSecondary, 0, larghezza - 44));
             return card;
         }
 
@@ -143,10 +204,10 @@ public sealed class DailyAgendaDialog : CareerDialog
             if (impegno != null)
             {
                 dentro.Controls.Add(Riga($"{fascia.Orario} · {(impegno.Required ? "OBBLIGATORIO" : "IN AGENDA")}",
-                    UiTheme.Kicker, impegno.Required ? UiTheme.Warning : UiTheme.Info, 2, Larghezza - 44));
-                dentro.Controls.Add(Riga(impegno.Title, UiTheme.BodyStrong, UiTheme.TextPrimary, 2, Larghezza - 44));
+                    UiTheme.Kicker, impegno.Required ? UiTheme.Warning : UiTheme.Info, 2, larghezza - 44));
+                dentro.Controls.Add(Riga(impegno.Title, UiTheme.BodyStrong, UiTheme.TextPrimary, 2, larghezza - 44));
                 dentro.Controls.Add(Riga(impegno.Detail + (impegno.TrackName.Length > 0 ? "\nLuogo: " + impegno.TrackName : ""),
-                    UiTheme.Small, UiTheme.TextSecondary, 8, Larghezza - 44));
+                    UiTheme.Small, UiTheme.TextSecondary, 8, larghezza - 44));
                 dentro.Controls.Add(Pulsanti(
                     impegno.Kind switch
                     {
@@ -172,16 +233,16 @@ public sealed class DailyAgendaDialog : CareerDialog
 
         var possibili = (chi == DayActor.Agent ? DayActivityCatalog.ForAgent() : DayActivityCatalog.ForDriver())
             .Where(x => x.Hours <= fascia.Ore)
-            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, out _))
+            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, career, out _))
             .ToList();
 
         dentro.Controls.Add(Riga($"{fascia.Orario} · LIBERA", UiTheme.Kicker,
-            chi == DayActor.Agent ? UiTheme.Info : UiTheme.TextPrimary, 6, Larghezza - 44));
+            chi == DayActor.Agent ? UiTheme.Info : UiTheme.TextPrimary, 6, larghezza - 44));
 
         if (possibili.Count == 0)
         {
             dentro.Controls.Add(Riga("Niente che ci stia dentro: le ore non bastano, i soldi non bastano, o l'hai già fatto oggi.",
-                UiTheme.Small, UiTheme.TextMuted, 0, Larghezza - 44));
+                UiTheme.Small, UiTheme.TextMuted, 0, larghezza - 44));
             return card;
         }
 
@@ -191,12 +252,12 @@ public sealed class DailyAgendaDialog : CareerDialog
                         + (attivita.Cost > 0 ? $"  ·  € {attivita.Cost:N0}" : "")
                         + (attivita.IsCertain ? "  ·  esito sicuro" : "  ·  esito incerto");
             var b = UiTheme.SecondaryButton(testa);
-            b.Dock = DockStyle.None; b.Width = Larghezza - 44; b.Height = 30;
+            b.Dock = DockStyle.None; b.Width = larghezza - 44; b.Height = 30;
             b.Font = UiTheme.Small; b.Margin = new Padding(0, 0, 0, 2);
             var scelta = attivita;
             b.Click += (_, _) => Esegui(scelta, indice, occupate);
             dentro.Controls.Add(b);
-            dentro.Controls.Add(Riga(attivita.Promise, UiTheme.Small, UiTheme.TextMuted, 8, Larghezza - 52));
+            dentro.Controls.Add(Riga(attivita.Promise, UiTheme.Small, UiTheme.TextMuted, 8, larghezza - 52));
         }
         return card;
     }
@@ -230,14 +291,14 @@ public sealed class DailyAgendaDialog : CareerDialog
     {
         var card = new Panel
         {
-            Width = Larghezza, BackColor = spento ? UiTheme.Surface : UiTheme.SurfaceRaised,
+            Width = larghezza, BackColor = spento ? UiTheme.Surface : UiTheme.SurfaceRaised,
             Padding = new Padding(16, 12, 16, 12), Margin = new Padding(0, 0, 0, 10),
             AutoSize = true, AutoSizeMode = AutoSizeMode.GrowAndShrink
         };
         var colonna = new FlowLayoutPanel
         {
             FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoSize = true,
-            AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = Larghezza - 40,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink, Width = larghezza - 40,
             BackColor = Color.Transparent, Margin = new Padding(0), Padding = new Padding(0)
         };
         card.Controls.Add(colonna);
@@ -247,7 +308,7 @@ public sealed class DailyAgendaDialog : CareerDialog
 
     private Control Titolo(string testo)
     {
-        var l = Riga(testo, UiTheme.HeadlineSmall, UiTheme.TextPrimary, 6);
+        var l = Riga(testo, UiTheme.HeadlineSmall, UiTheme.TextPrimary, 6, larghezza);
         l.Margin = new Padding(0, 18, 0, 6);
         return l;
     }
@@ -279,7 +340,7 @@ public sealed class DailyAgendaDialog : CareerDialog
     /// un'altezza fissa e una promessa di tre righe veniva tagliata a metà —
     /// cioè spariva proprio l'unica cosa che serve per decidere.
     /// </summary>
-    private Label Riga(string testo, Font font, Color colore, int sotto, int larghezza = Larghezza)
+    private Label Riga(string testo, Font font, Color colore, int sotto, int larghezza = LarghezzaBase)
     {
         var l = new Label
         {

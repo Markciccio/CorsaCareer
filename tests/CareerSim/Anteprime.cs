@@ -27,6 +27,19 @@ internal static class Anteprime
         var fatte = 0;
         var problemi = new List<string>();
 
+        // Le animazioni d'ingresso vanno spente PRIMA di aprire qualsiasi
+        // finestra.
+        //
+        // CareerDialog fa entrare le schermate con una dissolvenza, e due di
+        // esse con un sipario o un lampo: due bande che si ritirano lasciando
+        // un filo rosso sul bordo. L'anteprima scattava a meta' transizione, e
+        // il risultato era una fotografia con due righe rosse orizzontali in
+        // mezzo alla schermata e l'opacita' a meta'. Cercandole nel codice
+        // della schermata quelle righe non esistono: sono il sipario colto a
+        // meta' strada. Uno strumento di verifica che mostra artefatti propri
+        // fa perdere piu' tempo di quanto ne faccia risparmiare.
+        Environment.SetEnvironmentVariable("CORSACAREER_NO_ANIM", "1");
+
         log.WriteLine(new string('=', 78));
         log.WriteLine("ANTEPRIME DELLE SCHERMATE");
         log.WriteLine($"cartella: {cartella}");
@@ -145,9 +158,21 @@ internal static class Anteprime
             "Campionato nazionale", "Stagione 4 · dodici gare in calendario"));
 
         // 5. L'epilogo della carriera.
+        // L'epilogo va costruito con i contenuti veri e con un motivo di
+        // ritiro coerente con il pilota del fixture.
+        //
+        // Prima riceveva una lista auto VUOTA — quindi «categoria piu' alta»
+        // usciva sempre «—», che sembrava un difetto della schermata — e un
+        // motivo di ritiro scritto a mano che diceva «hai 39 anni» mentre il
+        // sommario sopra, calcolato dai dati veri, diceva «si ritira a 26
+        // anni». Tre incoerenze in una fotografia sola, tutte e tre
+        // dell'anteprima e nessuna del gioco: esattamente il tipo di falso
+        // allarme che manda a cercare bug dove non ci sono.
+        var epilogo = CareerEpilogue.Compute(carriera, indice.Cars);
         Scatta("epilogo", () => new CareerEpilogueDialog(
-            CareerEpilogue.Compute(carriera, []),
-            "Hai 39 anni e sono 4 stagioni che non vinci. Puoi continuare, ma la domanda è se ha ancora senso.",
+            epilogo,
+            $"Hai {epilogo.EtaAlRitiro} anni e {epilogo.Gare} gare in carriera. "
+            + "Puoi continuare, ma la domanda è se ha ancora senso.",
             ""));
 
         log.WriteLine("");

@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -33,12 +33,14 @@ public sealed class PortalTransitionOverlay : Form
             using var pen = new Pen(UiTheme.Warning, 2);
             e.Graphics.DrawRectangle(pen, 0, 0, centre.Width - 1, centre.Height - 1);
         };
-        centre.Controls.Add(new Label
-        {
-            Dock = DockStyle.Bottom, Height = 28, Font = UiTheme.Small,
-            ForeColor = UiTheme.TextMuted, TextAlign = ContentAlignment.MiddleLeft,
-            Text = "PORTALE AGGIORNATO · la scheda OGGI contiene il nuovo passo"
-        });
+        // L'ordine di inserimento conta: chi riempie va aggiunto per PRIMO.
+        //
+        // In WinForms l'ancoraggio si risolve dall'ULTIMO controllo inserito
+        // al primo, e chi ha Dock.Fill si prende tutto lo spazio ancora
+        // libero al proprio turno. Aggiunto per ultimo, quindi servito per
+        // primo, copriva con il proprio sfondo sia il titolo sia la riga in
+        // basso. Inserendolo per primo viene servito per ultimo e riceve solo
+        // quello che resta fra le due fasce.
         centre.Controls.Add(new Label
         {
             Dock = DockStyle.Fill, Font = new Font(UiTheme.FamilySans, 18F, FontStyle.Bold),
@@ -50,6 +52,12 @@ public sealed class PortalTransitionOverlay : Form
             Dock = DockStyle.Top, Height = 48, Font = new Font(UiTheme.FamilySemibold, 20F, FontStyle.Bold),
             ForeColor = UiTheme.Warning, TextAlign = ContentAlignment.TopLeft,
             Text = nextTitle
+        });
+        centre.Controls.Add(new Label
+        {
+            Dock = DockStyle.Bottom, Height = 28, Font = UiTheme.Small,
+            ForeColor = UiTheme.TextMuted, TextAlign = ContentAlignment.MiddleLeft,
+            Text = "PORTALE AGGIORNATO · la scheda OGGI contiene il nuovo passo"
         });
         Controls.Add(centre);
         Resize += (_, _) => centre.Location = new Point((ClientSize.Width - centre.Width) / 2, (ClientSize.Height - centre.Height) / 2);

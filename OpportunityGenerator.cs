@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>Fotografia dello stato su cui il generatore decide cosa proporre.</summary>
 public sealed class OpportunityContext
@@ -143,6 +143,30 @@ public sealed class OpportunityContext
     public int TestsWithCurrentCar { get; set; }
 
     /// <summary>
+    /// I sedili gia' firmati in questa stagione.
+    ///
+    /// Un sedile si firma per una stagione e quella stagione si corre. Qui
+    /// invece bastava che il calendario si svuotasse perche' il mercato
+    /// riaprisse, e nel banco il 2005 conteneva quattro firme — tre con la
+    /// STESSA squadra — che si scambiavano fra loro vetture quasi identiche
+    /// della stessa classe. Ogni firma faceva poi scattare un test privato
+    /// «prima volta con questa vettura», e cosi' la stessa macchina finiva
+    /// provata due volte nello stesso anno.
+    /// </summary>
+    public int SeatsSignedThisSeason { get; set; }
+
+    /// <summary>
+    /// Le vetture gia' provate in una giornata di test, in tutta la carriera.
+    ///
+    /// Il contatore TestsWithCurrentCar dice la stessa cosa per la sola auto
+    /// del momento, e si e' rivelato insufficiente: fra la proposta e la
+    /// giornata di prova passano tre settimane, e in mezzo la vettura di
+    /// carriera puo' cambiare piu' volte. L'insieme non cambia sotto i piedi
+    /// di nessuno.
+    /// </summary>
+    public HashSet<string> TestedCars { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
     /// La strada scelta al bivio dopo il kart: monoposto, durata o turismo.
     ///
     /// Vuota finché il pilota non ha scelto. Era un dato salvato e mai letto:
@@ -256,7 +280,14 @@ public static class OpportunityGenerator
             // nessun contratto — e la timeline tornava a riempirsi di prove in
             // mezzo alle gare. Il test è la giornata in cui si prende le misure
             // a una vettura mai guidata: fatta quella, si corre.
-            var primaVoltaConQuestaVettura = context.TestsWithCurrentCar == 0;
+            // La vettura non deve essere gia' stata provata: ne' adesso, ne'
+            // in passato sotto un altro contratto. Con il solo contatore
+            // dell'auto corrente la stessa macchina finiva provata due volte
+            // nello stesso anno, perche' fra l'accordo e la giornata di prova
+            // la vettura di carriera cambiava e poi tornava.
+            var primaVoltaConQuestaVettura = context.TestsWithCurrentCar == 0
+                && !string.IsNullOrWhiteSpace(context.CurrentCarId)
+                && !context.TestedCars.Contains(context.CurrentCarId);
             var appenaSalito = context.RacesAtStep <= 1;
             if (primaVoltaConQuestaVettura && appenaSalito)
             {
@@ -299,8 +330,10 @@ public static class OpportunityGenerator
                 var stepUp = BuildChampionshipStepUp(context, seed);
                 if (stepUp != null) results.Add(stepUp);
 
-                // Il sedile di campionato: la forma dipende da quanto vale il pilota.
-                var seat = BuildSeat(context, seed);
+                // Il sedile di campionato: la forma dipende da quanto vale il
+                // pilota. Uno per stagione: chi ha gia' firmato quest'anno ha
+                // gia' il suo posto, e il mercato lo ritrova l'anno prossimo.
+                var seat = context.SeatsSignedThisSeason > 0 ? null : BuildSeat(context, seed);
                 if (seat != null) results.Add(seat);
             }
 
@@ -588,6 +621,11 @@ public static class OpportunityGenerator
             Tier = tier,
             TrackId = track.Id,
             TrackName = track.Name,
+            // La prova appartiene a UNA vettura: quella che si guida adesso.
+            // Senza, l'appuntamento partiva senza auto e la giornata di test
+            // finiva per misurare qualunque macchina il pilota avesse quel
+            // giorno — che e' il contrario di prendere le misure.
+            CarId = context.CurrentCarId,
             Date = context.Today.AddDays(14),
             Deadline = context.Today.AddDays(10),
             Cost = fee,

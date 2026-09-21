@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Globalization;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -109,7 +109,7 @@ public sealed class MediaDialog : CareerDialog
     }
     private void StartSequence()
     {
-        if (sequenceEvents.Count == 0) { MessageBox.Show("Questa rassegna non ha ancora servizi disponibili.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (sequenceEvents.Count == 0) { CareerMessages.Show(this, "Questa rassegna non ha ancora servizi disponibili.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
         feed.SelectedIndex = 0;
         RememberSequencePosition();
         feed.Focus();
@@ -144,7 +144,7 @@ public sealed class MediaDialog : CareerDialog
         if (item.Archived) return;
         item.Archived = true; save();
         RefreshSequence();
-        MessageBox.Show("Media archiviato: resta disponibile nella sequenza ‘Archivio (archiviati)’ e nel salvataggio, ma non verrà più proposto nelle rassegne normali.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        CareerMessages.Show(this, "Media archiviato: resta disponibile nella sequenza ‘Archivio (archiviati)’ e nel salvataggio, ma non verrà più proposto nelle rassegne normali.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
     private void UpdateNavigation()
     {
@@ -156,7 +156,7 @@ public sealed class MediaDialog : CareerDialog
     private void OpenCurrentNewspaper()
     {
         var item = CurrentEvent() ?? events.FirstOrDefault(x => !x.Archived) ?? events.FirstOrDefault();
-        if (item == null) { MessageBox.Show("Non ci sono ancora eventi editoriali archiviati.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (item == null) { CareerMessages.Show(this, "Non ci sono ancora eventi editoriali archiviati.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
         using var page = new NewspaperDialog(career, item); page.ShowDialog(this);
     }
     private void ListenCurrent()
@@ -168,21 +168,21 @@ public sealed class MediaDialog : CareerDialog
             if (career.PreferredVoice.StartsWith("Browser", StringComparison.OrdinalIgnoreCase)) NarrationService.OpenBrowserPortal(CareerArticleBuilder.Build(career, item));
             else NarrationService.Speak(AudioCommentaryBuilder.ForEvent(career, item).Text, career.PreferredVoice);
         }
-        catch (Exception error) { MessageBox.Show($"Impossibile avviare il servizio audio: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Impossibile avviare il servizio audio: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private async Task CaptureAssettoCorsa()
     {
-        MessageBox.Show("Tra tre secondi verrà catturata la finestra reale di Assetto Corsa. Porta il simulatore in primo piano e scegli prima la camera TV, una visuale esterna o un replay: verrà archiviato esattamente ciò che è visibile, senza trasformare una visuale cockpit.", "Cattura reale", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        CareerMessages.Show(this, "Tra tre secondi verrà catturata la finestra reale di Assetto Corsa. Porta il simulatore in primo piano e scegli prima la camera TV, una visuale esterna o un replay: verrà archiviato esattamente ciò che è visibile, senza trasformare una visuale cockpit.", "Cattura reale", MessageBoxButtons.OK, MessageBoxIcon.Information);
         await Task.Delay(3000);
         var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Assetto Corsa", "CorsaCareer", "media", "captures");
         var path = Path.Combine(dir, $"capture-{DateTime.Now:yyyyMMdd-HHmmss}.png");
-        if (!ScreenCaptureService.TryCaptureAssettoCorsa(path, out var error)) { MessageBox.Show(error, "Cattura reale non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (!ScreenCaptureService.TryCaptureAssettoCorsa(path, out var error)) { CareerMessages.Show(this, error, "Cattura reale non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         var view = captureView.SelectedItem?.ToString() ?? "Camera TV / esterna";
         var captureHash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(path)));
         File.WriteAllText(path + ".meta.json", System.Text.Json.JsonSerializer.Serialize(new { source = "Assetto Corsa foreground window", copiedUtc = DateTime.UtcNow, sha256 = captureHash, view, kind = "ASSETTO_CORSA_SCREENSHOT" }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
         var item = new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SCREENSHOT_CAPTURED", Headline = $"Cattura reale della sessione Assetto Corsa archiviata nel Media Center ({view}).", Track = "Sessione reale", Importance = 40, PhotoPath = path, PhotoView = view };
         career.Events.Add(item); career.News.Add(item.Headline); save(); events.Insert(0, item); RefreshSequence();
-        MessageBox.Show("Cattura reale archiviata nel Media Center.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        CareerMessages.Show(this, "Cattura reale archiviata nel Media Center.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
     private void ImportPhoto()
     {
@@ -201,29 +201,29 @@ public sealed class MediaDialog : CareerDialog
             events.Insert(0, photoEvent);
             if (wasEmpty) feed.Items.Clear();
             RefreshSequence();
-            MessageBox.Show("Foto archiviata nella carriera.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, "Foto archiviata nella carriera.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception error) { MessageBox.Show($"Importazione non riuscita: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Importazione non riuscita: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private void ImportLatestAssettoScreenshot()
     {
         try
         {
             var sourceDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Assetto Corsa", "screens");
-            if (!Directory.Exists(sourceDir)) { MessageBox.Show("La cartella degli screenshot di Assetto Corsa non esiste ancora.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (!Directory.Exists(sourceDir)) { CareerMessages.Show(this, "La cartella degli screenshot di Assetto Corsa non esiste ancora.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             var source = Directory.EnumerateFiles(sourceDir, "*.*", SearchOption.AllDirectories)
                 .Where(x => new[] { ".png", ".jpg", ".jpeg", ".bmp" }.Contains(Path.GetExtension(x), StringComparer.OrdinalIgnoreCase))
                 .Select(x => new FileInfo(x)).OrderByDescending(x => x.LastWriteTimeUtc).FirstOrDefault();
-            if (source == null) { MessageBox.Show("Nessuno screenshot AC trovato nella cartella screens.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (source == null) { CareerMessages.Show(this, "Nessuno screenshot AC trovato nella cartella screens.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "Assetto Corsa", "CorsaCareer", "media", "captures"); Directory.CreateDirectory(dir);
             var destination = Path.Combine(dir, $"{DateTime.Now:yyyyMMdd_HHmmss}_{source.Name}"); File.Copy(source.FullName, destination, true);
             var hash = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(destination)));
             File.WriteAllText(destination + ".meta.json", System.Text.Json.JsonSerializer.Serialize(new { source = source.FullName, copiedUtc = DateTime.UtcNow, sha256 = hash, view = "visuale non dichiarata", kind = "ASSETTO_CORSA_SCREENSHOT" }, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
             var item = new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "SCREENSHOT_CAPTURED", Headline = $"Screenshot reale importato da Assetto Corsa: {source.Name}.", Track = "Archivio AC", Importance = 40, PhotoPath = destination, PhotoView = "visuale non dichiarata" };
             career.Events.Add(item); career.News.Add(item.Headline); save(); events.Insert(0, item); RefreshSequence();
-            MessageBox.Show("L’ultimo screenshot reale di Assetto Corsa è stato archiviato.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, "L’ultimo screenshot reale di Assetto Corsa è stato archiviato.", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception error) { MessageBox.Show($"Importazione screenshot non riuscita: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Importazione screenshot non riuscita: {error.Message}", "Media Center", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
     private void OpenMagazineFolder()
     {

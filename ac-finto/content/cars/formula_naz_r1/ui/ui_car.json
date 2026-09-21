@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou F3",
+  "brand": "Kagerou",
+  "class": "formula 3",
+  "tags": [
+    "formula 3"
+  ],
+  "specs": {
+    "power": "233 bhp",
+    "weight": "632 kg"
+  },
+  "power": "233",
+  "mass": "632 kg",
+  "year": 2021
+}

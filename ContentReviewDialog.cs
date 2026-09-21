@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Security.Cryptography;
 using System.Windows.Forms;
 
@@ -55,21 +55,21 @@ public sealed class ContentReviewDialog : CareerDialog
     {
         if (string.IsNullOrWhiteSpace(index.AssettoCorsaRoot) || !Directory.Exists(index.AssettoCorsaRoot))
         {
-            MessageBox.Show("Prima scegli una radice valida di Assetto Corsa: il pacchetto non può essere installato senza una destinazione verificata.", "Installazione contenuti", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            CareerMessages.Show(this, "Prima scegli una radice valida di Assetto Corsa: il pacchetto non può essere installato senza una destinazione verificata.", "Installazione contenuti", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         using var picker = new OpenFileDialog { Filter = "Pacchetti mod ZIP|*.zip", Title = "Seleziona un pacchetto Assetto Corsa verificato" };
         if (picker.ShowDialog(this) != DialogResult.OK) return;
-        if (MessageBox.Show("Il pacchetto verrà estratto nella cartella Assetto Corsa rilevata. Continuare?", "Installazione contenuti", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
-        if (!ContentPackageInstaller.TryInstall(picker.FileName, index.AssettoCorsaRoot, out var count, out var error)) { MessageBox.Show(error, "Installazione non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (CareerMessages.Show(this, "Il pacchetto verrà estratto nella cartella Assetto Corsa rilevata. Continuare?", "Installazione contenuti", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+        if (!ContentPackageInstaller.TryInstall(picker.FileName, index.AssettoCorsaRoot, out var count, out var error)) { CareerMessages.Show(this, error, "Installazione non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         RecordPackage(Path.GetFileName(picker.FileName), picker.FileName, count);
-        save(); refresh?.Invoke(); MessageBox.Show($"Pacchetto installato: {count} file. La revisione verrà riaperta sulla scansione aggiornata.", "Installazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information); DialogResult = DialogResult.OK; Close();
+        save(); refresh?.Invoke(); CareerMessages.Show(this, $"Pacchetto installato: {count} file. La revisione verrà riaperta sulla scansione aggiornata.", "Installazione completata", MessageBoxButtons.OK, MessageBoxIcon.Information); DialogResult = DialogResult.OK; Close();
     }
     private void OpenRoot()
     {
         if (string.IsNullOrWhiteSpace(index.AssettoCorsaRoot) || !Directory.Exists(index.AssettoCorsaRoot))
         {
-            MessageBox.Show("La radice di Assetto Corsa non è disponibile: aggiorna prima la scansione dei contenuti.", "Cartella non trovata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            CareerMessages.Show(this, "La radice di Assetto Corsa non è disponibile: aggiorna prima la scansione dei contenuti.", "Cartella non trovata", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = "explorer.exe", Arguments = $"\"{index.AssettoCorsaRoot}\"", UseShellExecute = true });
@@ -78,22 +78,22 @@ public sealed class ContentReviewDialog : CareerDialog
     {
         if (string.IsNullOrWhiteSpace(index.AssettoCorsaRoot) || !Directory.Exists(index.AssettoCorsaRoot))
         {
-            MessageBox.Show("Prima scegli una radice valida di Assetto Corsa: il download non può installare file senza una destinazione verificata.", "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            CareerMessages.Show(this, "Prima scegli una radice valida di Assetto Corsa: il download non può installare file senza una destinazione verificata.", "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
         using var dialog = new VerifiedDownloadDialog();
         if (dialog.ShowDialog(this) != DialogResult.OK) return;
-        if (!ContentDownloadService.ValidateRequest(dialog.Url, dialog.Sha256, out var validationError)) { MessageBox.Show(validationError, "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (!ContentDownloadService.ValidateRequest(dialog.Url, dialog.Sha256, out var validationError)) { CareerMessages.Show(this, validationError, "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         try
         {
             Cursor = Cursors.WaitCursor;
             var package = await ContentDownloadService.DownloadVerifiedAsync(dialog.Url, dialog.Sha256, Path.Combine(Path.GetTempPath(), "CorsaCareerDownloads"));
-            if (!ContentPackageInstaller.TryInstall(package, index.AssettoCorsaRoot, out var count, out var installError)) { try { File.Delete(package); } catch { } MessageBox.Show(installError, "Installazione non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+            if (!ContentPackageInstaller.TryInstall(package, index.AssettoCorsaRoot, out var count, out var installError)) { try { File.Delete(package); } catch { } CareerMessages.Show(this, installError, "Installazione non riuscita", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
             RecordPackage(dialog.Url, package, count, dialog.Sha256);
             try { File.Delete(package); } catch { }
-            save(); refresh?.Invoke(); MessageBox.Show($"Download verificato e installato: {count} file. La revisione verrà riaperta sulla scansione aggiornata.", "Download completato", MessageBoxButtons.OK, MessageBoxIcon.Information); DialogResult = DialogResult.OK; Close();
+            save(); refresh?.Invoke(); CareerMessages.Show(this, $"Download verificato e installato: {count} file. La revisione verrà riaperta sulla scansione aggiornata.", "Download completato", MessageBoxButtons.OK, MessageBoxIcon.Information); DialogResult = DialogResult.OK; Close();
         }
-        catch (Exception error) { MessageBox.Show($"Download non completato: {error.Message}", "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Download non completato: {error.Message}", "Download verificato", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
         finally { Cursor = Cursors.Default; }
     }
     private void RecordPackage(string source, string hashSourcePath, int count, string? knownHash = null)

@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -381,7 +381,11 @@ public sealed partial class MainForm
         var dove = CareerScheduler.TrackLabel(appuntamento);
         if (appuntamento.IsTest)
         {
-            Riga($"test · {dove} · obiettivo {FormatLap(career.EvaluationTargetMilliseconds)}");
+            // Nessun obiettivo scritto PRIMA della prova: quello in carriera
+            // e' ancora il riferimento della prova precedente, e finiva nel
+            // registro come se fosse il bersaglio di oggi. Il numero vero si
+            // conosce solo dopo, e lo stampa RaccontaSessione.
+            Riga($"test · {dove}");
             LaunchTestSession();
         }
         else if (appuntamento.Kind == ScheduledEventKind.Invitation)
@@ -644,7 +648,12 @@ public sealed partial class MainForm
             Riga($"   → P{(ultima.Dnf ? "ritiro" : ultima.Position.ToString())} · {ultima.Track} · {ultima.Car} · " +
                  $"punti {career.Points} · cassa € {career.Cash:N0} · reputazione {career.Reputation}");
         else if (test != null)
-            Riga($"   → test: {FormatLap(test.BestLapMilliseconds)} contro {FormatLap(career.EvaluationTargetMilliseconds)} · " +
+            // Il riferimento e' quello archiviato con la prova — calcolato
+            // per la vettura e la pista di quella giornata. Il campo di
+            // carriera resta buono solo finche' la valutazione rookie e'
+            // aperta, e usarlo dopo faceva comparire per anni lo stesso
+            // tempo di un kartodromo del 2003.
+            Riga($"   → test: {FormatLap(test.BestLapMilliseconds)} contro {FormatLap(test.TargetLapMilliseconds > 0 ? test.TargetLapMilliseconds : career.EvaluationTargetMilliseconds)} · " +
                  $"{career.RookieEvaluationStatus} · cassa € {career.Cash:N0}");
     }
 
@@ -824,16 +833,25 @@ public sealed partial class MainForm
         // tutte prima della prima gara della carriera.
         var primaGara = storico.FirstOrDefault()?.StoryDate ?? DateTime.MaxValue;
         var proveComprate = career.TestHistory.Where(x => x.StoryDate >= primaGara).ToList();
+        // Il raggruppamento tiene conto della STAGIONE.
+        //
+        // Contava una vettura sola su tutta la carriera, e segnalava come
+        // difetto una cosa normale: ventisette stagioni, e la stessa macchina
+        // provata due volte a tre anni di distanza — un sedile lasciato e poi
+        // ripreso, una prova di preparazione a inizio anno. Quello che non sta
+        // in piedi e' provare due volte la stessa macchina nella STESSA
+        // stagione: li' la giornata di misure non e' servita a niente, ed e'
+        // il difetto per cui questo controllo e' nato.
         var provePerVettura = proveComprate
-            .GroupBy(x => x.Car ?? "", StringComparer.OrdinalIgnoreCase)
-            .Select(x => (Auto: x.Key, Quante: x.Count()))
+            .GroupBy(x => (Auto: x.Car ?? "", x.StoryDate.Year))
+            .Select(x => (Auto: x.Key.Auto, Anno: x.Key.Year, Quante: x.Count()))
             .Where(x => x.Quante > 1)
             .OrderByDescending(x => x.Quante)
             .ToList();
         if (provePerVettura.Count > 0)
         {
-            var dettaglio = string.Join(", ", provePerVettura.Take(3).Select(x => $"{x.Auto} x{x.Quante}"));
-            problemi.Add($"prove private ripetute sulla stessa vettura: {dettaglio}.");
+            var dettaglio = string.Join(", ", provePerVettura.Take(3).Select(x => $"{x.Auto} x{x.Quante} nel {x.Anno}"));
+            problemi.Add($"prove private ripetute sulla stessa vettura nella stessa stagione: {dettaglio}.");
         }
         // E comunque non possono essere piu' delle vetture guidate.
         var vettureGuidate = storico.Select(x => x.Car ?? "").Distinct(StringComparer.OrdinalIgnoreCase).Count();

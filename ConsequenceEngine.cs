@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>Una conseguenza applicata allo stato, con la sua motivazione.</summary>
 public sealed record Consequence(string Kind, string Text, int Amount = 0);
@@ -235,8 +235,33 @@ public static class ConsequenceEngine
     private static void ExpireOpportunities(CareerState career, ConsequenceReport report)
     {
         career.Opportunities ??= [];
+        // Le vetture su cui una giornata di prove e' gia' stata fatta.
+        var giaProvate = (career.TestHistory ?? [])
+            .Select(x => x.Car ?? "")
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         foreach (var opportunity in career.Opportunities.Where(x => x.IsOpen).ToList())
         {
+            // Una proposta di test decade quando quella vettura e' stata
+            // provata.
+            //
+            // Il generatore non ne crea piu' per un'auto gia' misurata, ma la
+            // guardia agisce al momento in cui la proposta NASCE: due inviti
+            // emessi nella stessa finestra restavano entrambi sul tavolo, e
+            // accettandoli tutti e due si pagava una seconda giornata di
+            // misure per la stessa macchina. Nel banco erano tre test in tre
+            // mesi sulla stessa monoposto.
+            if (opportunity.IsTest
+                && !string.IsNullOrWhiteSpace(opportunity.CarId)
+                && giaProvate.Contains(opportunity.CarId))
+            {
+                opportunity.Status = Opportunity.StatusExpired;
+                opportunity.ClosedStoryDate = career.StoryDate;
+                report.Applied.Add(new Consequence("occasione-superata",
+                    $"Ritirata: «{opportunity.Title}» — quella vettura è già stata provata"));
+                continue;
+            }
             if (career.StoryDate <= opportunity.Deadline) continue;
             opportunity.Status = Opportunity.StatusExpired;
             opportunity.ClosedStoryDate = career.StoryDate;

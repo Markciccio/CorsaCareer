@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -271,13 +271,13 @@ public sealed class ActivitiesDialog : CareerDialog
         var choice = SelectedChoice();
         if (activity.RequiresDecision && choice == null)
         {
-            MessageBox.Show($"{activity.Name} richiede una decisione.\n\n{activity.Question}", "Agenda del pilota", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, $"{activity.Name} richiede una decisione.\n\n{activity.Question}", "Agenda del pilota", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         var outcome = perform(activity, choice);
         if (!outcome.Performed)
         {
-            MessageBox.Show(outcome.Reason, "Agenda non disponibile", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, outcome.Reason, "Agenda non disponibile", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         var record = career.ActivityHistory.LastOrDefault();

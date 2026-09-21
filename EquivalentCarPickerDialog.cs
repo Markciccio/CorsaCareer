@@ -1,4 +1,4 @@
-using System.Windows.Forms;
+﻿using System.Windows.Forms;
 
 namespace CorsaCareer;
 
@@ -38,7 +38,7 @@ public sealed class EquivalentCarPickerDialog : CareerDialog
         var confirm = new Button { Text = "USA COME EQUIVALENTE", Left = 393, Top = 548, Width = 280, Height = 34, BackColor = Color.FromArgb(224, 24, 58), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
         confirm.Click += (_, _) =>
         {
-            if (list.SelectedIndex < 0) { MessageBox.Show("Scegli prima un'auto dalla tua installazione.", "Equivalente manuale", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (list.SelectedIndex < 0) { CareerMessages.Show(this, "Scegli prima un'auto dalla tua installazione.", "Equivalente manuale", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             SelectedCar = cars[list.SelectedIndex];
             DialogResult = DialogResult.OK;
             Close();

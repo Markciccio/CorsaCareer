@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou F2",
+  "brand": "Kagerou",
+  "class": "formula 2",
+  "tags": [
+    "formula 2"
+  ],
+  "specs": {
+    "power": "601 bhp",
+    "weight": "770 kg"
+  },
+  "power": "601",
+  "mass": "770 kg",
+  "year": 2021
+}

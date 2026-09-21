@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou TCR",
+  "brand": "Kagerou",
+  "class": "TCR",
+  "tags": [
+    "TCR"
+  ],
+  "specs": {
+    "power": "330 bhp",
+    "weight": "1275 kg"
+  },
+  "power": "330",
+  "mass": "1275 kg",
+  "year": 2021
+}

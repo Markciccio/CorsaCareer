@@ -1,0 +1,15 @@
+{
+  "name": "Shiranui TCR",
+  "brand": "Shiranui",
+  "class": "TCR",
+  "tags": [
+    "TCR"
+  ],
+  "specs": {
+    "power": "347 bhp",
+    "weight": "1231 kg"
+  },
+  "power": "347",
+  "mass": "1231 kg",
+  "year": 2021
+}

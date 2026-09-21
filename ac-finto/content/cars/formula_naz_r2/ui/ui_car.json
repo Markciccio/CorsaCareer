@@ -1,0 +1,15 @@
+{
+  "name": "Tsubame F3",
+  "brand": "Tsubame",
+  "class": "formula 3",
+  "tags": [
+    "formula 3"
+  ],
+  "specs": {
+    "power": "245 bhp",
+    "weight": "611 kg"
+  },
+  "power": "245",
+  "mass": "611 kg",
+  "year": 2021
+}

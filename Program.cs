@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Globalization;
@@ -33,6 +33,12 @@ public sealed class CareerState
     /// <summary>Come è stato ottenuto l'obiettivo: stima dai metadati o tempo reale.</summary>
     public string EvaluationTargetBasis { get; set; } = "";
     public string EvaluationTargetTrack { get; set; } = "";
+    /// <summary>
+    /// La vettura per cui l'obiettivo e' stato calcolato. Serve quanto la
+    /// pista: lo stesso tracciato con una monoposto al posto di un kart e' un
+    /// riferimento completamente diverso.
+    /// </summary>
+    public string EvaluationTargetCar { get; set; } = "";
     public bool LaunchStoriesOpened { get; set; }
     public int Season { get; set; } = 1;
     public string Tier { get; set; } = "Rookie";
@@ -785,6 +791,7 @@ public sealed partial class MainForm : Form
         else if (migrated) SaveCareer();
         career.EvaluationTargetBasis ??= "";
         career.EvaluationTargetTrack ??= "";
+        career.EvaluationTargetCar ??= "";
         career.Schedule ??= new List<ScheduledEvent>();
         // Le selezioni sono arrivate dopo: una carriera salvata prima non ne ha,
         // e la lista vuota e lo stato giusto, non un dato mancante da inventare.
@@ -3015,7 +3022,20 @@ public sealed partial class MainForm : Form
             NextTrackId());
         var track = contentIndex.Tracks.Any(x => x.Id.Equals(round.Track, StringComparison.OrdinalIgnoreCase)) ? round.Track : contentIndex.Tracks.FirstOrDefault()?.Id ?? "";
         if (track.Length == 0) { CareerMessages.Show(null, "Nessun circuito installato per il test.", "CorsaCareer — test", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
-        var testCar = raceableCars.Any(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase)) ? career.Car : raceableCars[0].Id;
+        // La vettura del test e' quella per cui il test e' stato fissato.
+        //
+        // Qui si usava sempre career.Car: se fra l'accordo e la giornata di
+        // prova il pilota firmava altrove — e succede, sono due settimane —
+        // la prova si svolgeva con la macchina NUOVA. Cosi' la stessa vettura
+        // finiva provata due volte (la guardia che impedisce di ripetere un
+        // test conta le prove fatte con l'auto corrente, e quella conta era
+        // giusta: era la prova a essersi spostata) e il test perdeva il suo
+        // senso, che e' prendere le misure a una macchina in particolare.
+        // La vettura viaggia gia' con l'appuntamento: basta leggerla.
+        var carDaAgenda = scheduled?.IsTest == true ? scheduled.CarId ?? "" : "";
+        var testCar = raceableCars.Any(x => x.Id.Equals(carDaAgenda, StringComparison.OrdinalIgnoreCase))
+            ? carDaAgenda
+            : raceableCars.Any(x => x.Id.Equals(career.Car, StringComparison.OrdinalIgnoreCase)) ? career.Car : raceableCars[0].Id;
         var testCarRecord = contentIndex.Cars.FirstOrDefault(x => x.Id.Equals(testCar, StringComparison.OrdinalIgnoreCase));
         var requestedTrack = contentIndex.Tracks.FirstOrDefault(x => x.Id.Equals(track, StringComparison.OrdinalIgnoreCase));
         if (testCarRecord != null && requestedTrack != null && !CareerScheduler.IsTrackCompatible(requestedTrack, testCarRecord.Category))
@@ -5158,6 +5178,7 @@ public sealed partial class MainForm : Form
         career.EvaluationTargetMilliseconds = target.TargetMilliseconds;
         career.EvaluationTargetBasis = target.Basis;
         career.EvaluationTargetTrack = trackId;
+        career.EvaluationTargetCar = carId;
         return target;
     }
 
@@ -5277,7 +5298,17 @@ public sealed partial class MainForm : Form
         // L'obiettivo appartiene alla combinazione che si è appena corsa: se la
         // prova si è svolta altrove va ricalcolato per quella pista, non per la
         // prossima in agenda.
-        if (!RaceImportIdentity.TracksMatch(career.EvaluationTargetTrack, imported.Track))
+        // Vale anche per la VETTURA, non solo per la pista.
+        //
+        // Il controllo guardava solo il tracciato: una prova sullo stesso
+        // circuito con una macchina diversa — ed e' il caso normale, si prova
+        // proprio perche' la macchina e' nuova — veniva giudicata con il
+        // riferimento della vettura precedente. Un kart e una monoposto sullo
+        // stesso kartodromo hanno riferimenti lontani decine di secondi: il
+        // verdetto era «superata» o «disastro» a seconda di quale delle due
+        // fosse arrivata prima, non di come si fosse guidato.
+        if (!RaceImportIdentity.TracksMatch(career.EvaluationTargetTrack, imported.Track)
+            || !string.Equals(career.EvaluationTargetCar, imported.Car, StringComparison.OrdinalIgnoreCase))
             RefreshEvaluationTarget(imported.Track, imported.Car);
         var target = career.EvaluationTargetMilliseconds <= 0 ? RookieTargetEngine.FallbackTargetMilliseconds : career.EvaluationTargetMilliseconds;
         var verdict = RookieTargetEngine.Evaluate(best, target);
@@ -6678,6 +6709,14 @@ public sealed partial class MainForm : Form
             CurrentSponsor = career.Sponsor ?? "",
             CurrentSponsorAppeal = career.SponsorSignedAppeal,
             ChosenPath = career.ChosenPath ?? "",
+            SeatsSignedThisSeason = (career.Opportunities ?? [])
+                .Count(x => x.IsSeat
+                            && x.Status.Equals(Opportunity.StatusAccepted, StringComparison.OrdinalIgnoreCase)
+                            && x.ClosedStoryDate.Year == career.StoryDate.Year),
+            TestedCars = (career.TestHistory ?? [])
+                .Select(x => x.Car ?? "")
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase),
             TestsWithCurrentCar = (career.TestHistory ?? [])
                 .Count(x => !string.IsNullOrWhiteSpace(career.Car)
                             && x.Car.Equals(career.Car, StringComparison.OrdinalIgnoreCase)),

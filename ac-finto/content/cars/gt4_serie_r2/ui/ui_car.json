@@ -1,0 +1,15 @@
+{
+  "name": "Tsubame GT4",
+  "brand": "Tsubame",
+  "class": "GT4",
+  "tags": [
+    "GT4"
+  ],
+  "specs": {
+    "power": "408 bhp",
+    "weight": "1300 kg"
+  },
+  "power": "408",
+  "mass": "1300 kg",
+  "year": 2021
+}

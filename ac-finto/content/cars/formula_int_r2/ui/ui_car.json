@@ -1,0 +1,15 @@
+{
+  "name": "Tsubame F2",
+  "brand": "Tsubame",
+  "class": "formula 2",
+  "tags": [
+    "formula 2"
+  ],
+  "specs": {
+    "power": "632 bhp",
+    "weight": "744 kg"
+  },
+  "power": "632",
+  "mass": "744 kg",
+  "year": 2021
+}

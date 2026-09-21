@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Text.Json;
 using System.Windows.Forms;
 
@@ -99,14 +99,14 @@ public sealed class CareerSlotsDialog : CareerDialog
 
     private void LoadSelected()
     {
-        if (slots.SelectedItems.Count != 1) { MessageBox.Show("Seleziona una sola carriera da caricare.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (slots.SelectedItems.Count != 1) { CareerMessages.Show(this, "Seleziona una sola carriera da caricare.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
         var path = Path.Combine(directory, SlotName((string)slots.SelectedItems[0]!) + ".json");
         try
         {
             var state = JsonSerializer.Deserialize<CareerState>(File.ReadAllText(path));
             if (state != null) { load(state); DialogResult = DialogResult.OK; Close(); }
         }
-        catch (Exception error) { MessageBox.Show($"Salvataggio non leggibile: {error.Message}", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Salvataggio non leggibile: {error.Message}", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
 
     /// <summary>
@@ -117,11 +117,11 @@ public sealed class CareerSlotsDialog : CareerDialog
     private void DeleteSelected()
     {
         var names = slots.SelectedItems.Cast<string>().Select(SlotName).ToList();
-        if (names.Count == 0) { MessageBox.Show("Seleziona almeno una carriera da cancellare.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+        if (names.Count == 0) { CareerMessages.Show(this, "Seleziona almeno una carriera da cancellare.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
         var list = string.Join("\n", names.Take(12).Select(x => "· " + x)) + (names.Count > 12 ? $"\n… e altre {names.Count - 12}" : "");
-        var answer = MessageBox.Show(
+        var answer = CareerMessages.Show(this, 
             $"Cancellare definitivamente {names.Count} carriera/e archiviata/e?\n\n{list}\n\nLa carriera attualmente in corso non viene toccata. L'operazione non è annullabile.",
-            "Cancella carriere salvate", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, MessageBoxDefaultButton.Button2);
+            "Cancella carriere salvate", MessageBoxButtons.YesNo, MessageBoxIcon.Warning, DialogResult.No);
         if (answer != DialogResult.Yes) return;
 
         var removed = 0;
@@ -145,7 +145,7 @@ public sealed class CareerSlotsDialog : CareerDialog
         RefreshSlots();
         var report = $"Cancellate {removed} carriera/e.";
         if (failures.Count > 0) report += $"\n\nNon cancellate:\n{string.Join("\n", failures)}";
-        MessageBox.Show(report, "Carriere salvate", MessageBoxButtons.OK, failures.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
+        CareerMessages.Show(this, report, "Carriere salvate", MessageBoxButtons.OK, failures.Count > 0 ? MessageBoxIcon.Warning : MessageBoxIcon.Information);
     }
 
     /// <summary>
@@ -157,12 +157,12 @@ public sealed class CareerSlotsDialog : CareerDialog
         const int keep = 5;
         try
         {
-            if (!Directory.Exists(backupDirectory)) { MessageBox.Show("Nessuna cartella di backup presente.", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (!Directory.Exists(backupDirectory)) { CareerMessages.Show(this, "Nessuna cartella di backup presente.", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             var files = Directory.GetFiles(backupDirectory, "career-*.json").OrderByDescending(File.GetLastWriteTimeUtc).ToList();
             var stale = files.Skip(keep).ToList();
-            if (stale.Count == 0) { MessageBox.Show($"Ci sono {files.Count} backup: nessuno da eliminare (se ne conservano {keep}).", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (stale.Count == 0) { CareerMessages.Show(this, $"Ci sono {files.Count} backup: nessuno da eliminare (se ne conservano {keep}).", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
             var size = stale.Sum(x => new FileInfo(x).Length) / 1024.0;
-            if (MessageBox.Show($"Eliminare {stale.Count} backup più vecchi ({size:0.#} KB) conservando i {keep} più recenti?", "Pulizia backup", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2) != DialogResult.Yes) return;
+            if (CareerMessages.Show(this, $"Eliminare {stale.Count} backup più vecchi ({size:0.#} KB) conservando i {keep} più recenti?", "Pulizia backup", MessageBoxButtons.YesNo, MessageBoxIcon.Question, DialogResult.No) != DialogResult.Yes) return;
             var removed = 0;
             foreach (var file in stale)
             {
@@ -170,9 +170,9 @@ public sealed class CareerSlotsDialog : CareerDialog
             }
             CareerLog.Info("carriere", $"backup eliminati: {removed}");
             RefreshSummary();
-            MessageBox.Show($"Eliminati {removed} backup. Ne restano {Math.Min(keep, files.Count)}.", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, $"Eliminati {removed} backup. Ne restano {Math.Min(keep, files.Count)}.", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
-        catch (Exception error) { MessageBox.Show($"Pulizia non completata: {error.Message}", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Pulizia non completata: {error.Message}", "Pulizia backup", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
 
     private void RestoreLatestBackup()
@@ -180,12 +180,12 @@ public sealed class CareerSlotsDialog : CareerDialog
         try
         {
             var backup = Directory.Exists(backupDirectory) ? Directory.GetFiles(backupDirectory, "career-*.json").OrderByDescending(File.GetLastWriteTimeUtc).FirstOrDefault() : null;
-            if (backup == null) { MessageBox.Show("Nessun backup versionato disponibile.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
-            if (MessageBox.Show($"Ripristinare il backup più recente?\n\n{Path.GetFileName(backup)}\n\nLa carriera corrente resterà intatta finché non confermi il caricamento.", "Ripristino backup", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
+            if (backup == null) { CareerMessages.Show(this, "Nessun backup versionato disponibile.", "Carriere salvate", MessageBoxButtons.OK, MessageBoxIcon.Information); return; }
+            if (CareerMessages.Show(this, $"Ripristinare il backup più recente?\n\n{Path.GetFileName(backup)}\n\nLa carriera corrente resterà intatta finché non confermi il caricamento.", "Ripristino backup", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes) return;
             var state = JsonSerializer.Deserialize<CareerState>(File.ReadAllText(backup));
             if (state == null) throw new InvalidDataException("Backup vuoto o non valido.");
             load(state); DialogResult = DialogResult.OK; Close();
         }
-        catch (Exception error) { MessageBox.Show($"Backup non leggibile: {error.Message}", "Ripristino backup", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
+        catch (Exception error) { CareerMessages.Show(this, $"Backup non leggibile: {error.Message}", "Ripristino backup", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
 }

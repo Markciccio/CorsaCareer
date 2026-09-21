@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou F4",
+  "brand": "Kagerou",
+  "class": "formula 4",
+  "tags": [
+    "formula 4"
+  ],
+  "specs": {
+    "power": "175 bhp",
+    "weight": "581 kg"
+  },
+  "power": "175",
+  "mass": "581 kg",
+  "year": 2021
+}

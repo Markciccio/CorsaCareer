@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -280,7 +280,7 @@ public sealed class DriverDayDialog : CareerDialog
         var report = DayEngine.Perform(career, career.Today!, activity);
         if (report.Refused)
         {
-            MessageBox.Show(report.Refusal, "CorsaCareer — non si può", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, report.Refusal, "CorsaCareer — non si può", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
 
@@ -315,7 +315,7 @@ public sealed class DriverDayDialog : CareerDialog
         var unused = day.DriverHoursLeft + day.AgentHoursLeft;
         if (unused >= 6)
         {
-            var answer = MessageBox.Show(
+            var answer = CareerMessages.Show(this, 
                 $"Restano {day.DriverHoursLeft} ore a te e {day.AgentHoursLeft} a Haru. Passare a domani senza usarle?",
                 "CorsaCareer — giornata non finita", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
             if (answer != DialogResult.Yes) return;
@@ -336,7 +336,7 @@ public sealed class DriverDayDialog : CareerDialog
     {
         if (career.DaysUntilNextRound <= 0) return;
         var days = career.DaysUntilNextRound;
-        var answer = MessageBox.Show(
+        var answer = CareerMessages.Show(this, 
             $"Avanzare automaticamente di {days} giorni fino al prossimo appuntamento?\n\n"
             + "Il pilota userà attività conservative (riposo, corsa leggera e preparazione); "
             + "costi ed effetti seguono comunque le regole normali. Nessuna gara verrà simulata.",
@@ -371,7 +371,7 @@ public sealed class DriverDayDialog : CareerDialog
 
         save();
         Refresh_();
-        MessageBox.Show(
+        CareerMessages.Show(this, 
             $"Pianificazione completata dal {startDate:dd/MM/yyyy} al {career.StoryDate:dd/MM/yyyy}.\n"
             + $"Giornate preparate: {days}. Attività registrate: {performed}.\n\n"
             + "Controlla il diario e prepara il prossimo test o la prossima gara.",

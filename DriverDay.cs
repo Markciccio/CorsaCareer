@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>
 /// Chi svolge un'attività: il pilota, o Haru Senda.
@@ -303,9 +303,33 @@ public static class DriverDay
     /// Vero se l'attività si può inserire nella giornata: ore sufficienti, soldi
     /// sufficienti, e non già svolta oggi.
     /// </summary>
+    /// <summary>
+    /// Le attivita' che portano il pilota IN PISTA. Sono le uniche che il
+    /// divieto scolastico deve poter fermare.
+    /// </summary>
+    public static bool InPista(DayActivity activity) =>
+        activity.Id is "kart-training" or "track-training";
+
     public static bool CanDo(DayPlan day, DayActivity activity, int cash, out string refusal)
+        => CanDo(day, activity, cash, null, out refusal);
+
+    /// <summary>
+    /// Con la carriera in mano si puo' applicare anche il divieto scolastico.
+    ///
+    /// Senza, la giornata di un ripetente sospeso dalle gare offriva lo stesso
+    /// «Turni liberi in kart»: in cima allo schermo c'era scritto SOSPESO
+    /// DALLE GARE e due centimetri sotto un pulsante per andare a girare. Il
+    /// divieto valeva sui cinque ingressi in pista del portale e non qui, che
+    /// e' il sesto.
+    /// </summary>
+    public static bool CanDo(DayPlan day, DayActivity activity, int cash, CareerState? career, out string refusal)
     {
         refusal = "";
+        if (career != null && InPista(activity) && Scuola.Vieta(career))
+        {
+            refusal = Scuola.Divieto(career);
+            return false;
+        }
         if (day.Done.Contains(activity.Id, StringComparer.OrdinalIgnoreCase))
         {
             refusal = "Già fatto oggi.";

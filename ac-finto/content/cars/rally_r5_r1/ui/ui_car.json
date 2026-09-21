@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou R5",
+  "brand": "Kagerou",
+  "class": "rally",
+  "tags": [
+    "rally"
+  ],
+  "specs": {
+    "power": "291 bhp",
+    "weight": "1255 kg"
+  },
+  "power": "291",
+  "mass": "1255 kg",
+  "year": 2021
+}

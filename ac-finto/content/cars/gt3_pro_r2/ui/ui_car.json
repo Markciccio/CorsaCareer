@@ -1,0 +1,15 @@
+{
+  "name": "Shiranui GT3",
+  "brand": "Shiranui",
+  "class": "GT3",
+  "tags": [
+    "GT3"
+  ],
+  "specs": {
+    "power": "561 bhp",
+    "weight": "1226 kg"
+  },
+  "power": "561",
+  "mass": "1226 kg",
+  "year": 2021
+}

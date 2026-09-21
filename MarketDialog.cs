@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -43,7 +43,7 @@ public sealed class MarketDialog : CareerDialog
             // Il rifiuto non deve essere muto: senza questo avviso il pulsante
             // sembrava semplicemente rotto.
             DialogResult = DialogResult.None;
-            MessageBox.Show(this,
+            CareerMessages.Show(this,
                 offers.Items.Count == 0 || offers.Items[0] is not TeamOffer
                     ? "Non c'è nessun sedile da firmare: al momento nessuna squadra ha formalizzato un'offerta.\n\nUsa il radar e i contatti sponsor per farti notare, poi torna qui."
                     : "Seleziona prima un sedile dall'elenco a sinistra, poi premi «FIRMA / ACCETTA IL SEDILE».",
@@ -95,7 +95,7 @@ public sealed class MarketDialog : CareerDialog
         var available = career.SponsorProspects.Where(x => !x.Contacted).ToList();
         if (career.SponsorActionsRemaining <= 0 || available.Count == 0)
         {
-            MessageBox.Show("Haru non ha più contatti disponibili questa settimana. Le occasioni si rinnovano dopo il prossimo appuntamento.", "Sponsor", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, "Haru non ha più contatti disponibili questa settimana. Le occasioni si rinnovano dopo il prossimo appuntamento.", "Sponsor", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }
         using var picker = new Form { Text = "Haru Senda · contatti sponsor", ClientSize = new Size(620, 430), StartPosition = FormStartPosition.CenterParent, BackColor = UiTheme.Background, ForeColor = UiTheme.TextPrimary, Font = UiTheme.Body };
@@ -112,15 +112,28 @@ public sealed class MarketDialog : CareerDialog
             + (career.Wins > 0 ? 15 : 0) + (career.Podiums > 0 ? 10 : 0)
             + (career.ReputationProfile?.SportingPrestige >= 40 ? 8 : 0)
             + (career.SponsorRelation >= 50 ? 5 : 0), 5, 95);
-        var success = Random.Shared.Next(1, 101) <= chance;
+        // Esito stabile, non casuale.
+        //
+        // Qui c'era Random.Shared: l'unico punto di tutto il programma che
+        // decideva qualcosa tirando un dado vero. In un progetto dove ogni
+        // esito deve essere riproducibile dallo stesso stato — e' la ragione
+        // per cui esiste StableHash e per cui HashCode.Combine e' vietato —
+        // significava due cose: il banco non poteva verificare questa
+        // trattativa, e chi gioca poteva ricaricare il salvataggio e
+        // ricontattare lo stesso sponsor finche' diceva di si'.
+        //
+        // Il seme viene dal contatto: stesso pilota, stessa stagione, stesso
+        // sponsor, stessa risposta.
+        var tiro = Math.Abs(StableHash.Of(career.Driver, prospect.Name, career.Season, career.Races)) % 100 + 1;
+        var success = tiro <= chance;
         if (success)
         {
             prospect.Status = "Accettato"; career.SponsorBudget += prospect.Contribution; career.SponsorMoney += prospect.Contribution;
             career.Sponsor = prospect.Name; career.SponsorRelation = Math.Clamp(career.SponsorRelation + 8, 0, 100);
-            MessageBox.Show($"Haru ha chiuso il contatto con {prospect.Name}.\n\nContributo destinato alla prossima gara: € {prospect.Contribution:N0}.\nNon è denaro personale: resta nel budget sponsor.", "Sponsor accettato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, $"Haru ha chiuso il contatto con {prospect.Name}.\n\nContributo destinato alla prossima gara: € {prospect.Contribution:N0}.\nNon è denaro personale: resta nel budget sponsor.", "Sponsor accettato", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         else
-            MessageBox.Show($"{prospect.Name} per ora rimanda la decisione.\n\nHaru: «Non è un no per sempre, ma questa settimana abbiamo bruciato il contatto.»", "Sponsor rifiutato", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            CareerMessages.Show(this, $"{prospect.Name} per ora rimanda la decisione.\n\nHaru: «Non è un no per sempre, ma questa settimana abbiamo bruciato il contatto.»", "Sponsor rifiutato", MessageBoxButtons.OK, MessageBoxIcon.Information);
         SponsorChanged = true; compactRadarRefresh();
     }
 

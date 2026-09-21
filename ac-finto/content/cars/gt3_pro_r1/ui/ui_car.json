@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou GT3 Evo",
+  "brand": "Kagerou",
+  "class": "GT3",
+  "tags": [
+    "GT3"
+  ],
+  "specs": {
+    "power": "534 bhp",
+    "weight": "1270 kg"
+  },
+  "power": "534",
+  "mass": "1270 kg",
+  "year": 2021
+}

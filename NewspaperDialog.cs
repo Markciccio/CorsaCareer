@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -26,6 +26,7 @@ public sealed class NewspaperDialog : CareerDialog
         var portraitPath = AssetPaths.File("fictional-driver-portrait.png");
         if (File.Exists(portraitPath)) { var portrait = new PictureBox { Left = 52, Top = 470, Width = 150, Height = 180, SizeMode = PictureBoxSizeMode.Zoom, Image = Image.FromFile(portraitPath) }; page.Controls.Add(portrait); }
         var footer = new Label { Text = "Archivio CorsaCareer — contenuti editoriali costruiti da eventi verificati", Left = 230, Top = 625, AutoSize = true, Font = new Font("Georgia", 9, FontStyle.Italic), ForeColor = Color.FromArgb(80, 80, 80), BackColor = Color.Transparent }; page.Controls.Add(footer);
+        AggiungiChiusura();
     }
     public static string BuildArticle(CareerState career, CareerEventRecord? story, RaceHistoryEntry? race, StoryArcRecord? arc)
     {

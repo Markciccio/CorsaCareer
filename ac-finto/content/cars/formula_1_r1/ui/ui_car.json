@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou GP-01",
+  "brand": "Kagerou",
+  "class": "formula 1",
+  "tags": [
+    "formula 1"
+  ],
+  "specs": {
+    "power": "970 bhp",
+    "weight": "814 kg"
+  },
+  "power": "970",
+  "mass": "814 kg",
+  "year": 2022
+}

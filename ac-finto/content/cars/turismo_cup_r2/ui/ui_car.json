@@ -1,0 +1,15 @@
+{
+  "name": "Tsubame Cup",
+  "brand": "Tsubame",
+  "class": "cup",
+  "tags": [
+    "cup"
+  ],
+  "specs": {
+    "power": "265 bhp",
+    "weight": "1162 kg"
+  },
+  "power": "265",
+  "mass": "1162 kg",
+  "year": 2021
+}

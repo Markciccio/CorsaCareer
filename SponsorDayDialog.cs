@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -189,7 +189,7 @@ public sealed class SponsorDayDialog : CareerDialog
         var day = career.Today!;
         if (visit.Hours > day.AgentHoursLeft)
         {
-            MessageBox.Show($"Servono {visit.Hours} ore e ne restano {day.AgentHoursLeft}.",
+            CareerMessages.Show(this, $"Servono {visit.Hours} ore e ne restano {day.AgentHoursLeft}.",
                 "CorsaCareer — giornata finita", MessageBoxButtons.OK, MessageBoxIcon.Information);
             return;
         }

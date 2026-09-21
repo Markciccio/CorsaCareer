@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.Globalization;
 using System.Text.Json;
@@ -848,7 +848,7 @@ public sealed partial class MainForm
         var possibili = (chi == DayActor.Agent ? DayActivityCatalog.ForAgent() : DayActivityCatalog.ForDriver())
             .Where(x => x.Hours <= fascia.Ore)
             .Where(x => !giaProposte.Contains(x.Id))
-            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, out _))
+            .Where(x => DriverDay.CanDo(giorno, x, career.Cash, career, out _))
             .OrderBy(x => x.Id, StringComparer.Ordinal)
             .ToList();
         if (possibili.Count == 0) return null;

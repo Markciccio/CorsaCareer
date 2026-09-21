@@ -1,0 +1,15 @@
+{
+  "name": "Tsubame R5",
+  "brand": "Tsubame",
+  "class": "rally",
+  "tags": [
+    "rally"
+  ],
+  "specs": {
+    "power": "306 bhp",
+    "weight": "1212 kg"
+  },
+  "power": "306",
+  "mass": "1212 kg",
+  "year": 2021
+}

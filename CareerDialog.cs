@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 
@@ -39,6 +39,79 @@ public abstract class CareerDialog : Form
         MinimumSize = new Size(1120, 700);
         DoubleBuffered = true;
         Entrance = CareerTransitions.For(GetType().Name);
+    }
+
+    // ------------------------------------------------------------------ uscita rapida
+
+    /// <summary>
+    /// Vero se ESC chiude questa schermata. Le scene lo usano gia' per
+    /// saltare; una schermata che dovesse pretendere una risposta puo'
+    /// rifiutarlo sovrascrivendo questa proprieta'.
+    /// </summary>
+    protected virtual bool EscChiude => true;
+
+    /// <summary>
+    /// ESC chiude la schermata.
+    ///
+    /// Non lo faceva nessuna delle quarantatre finestre del programma: in
+    /// WinForms ESC chiude solo se la finestra dichiara un CancelButton, e
+    /// nessuna lo dichiarava. Per uscire bisognava ogni volta trovare il
+    /// pulsante giusto, che in qualche schermata sta in fondo a una colonna
+    /// scorrevole — e in tre casi (audio, centro carriera, giornale) non c'e'
+    /// affatto: restava solo la X di Windows, in un programma che per il resto
+    /// non ne ha l'aspetto.
+    ///
+    /// Sta nella classe base perche' la scorciatoia deve essere la stessa
+    /// dappertutto: una schermata dove ESC non funziona e' peggio di nessuna
+    /// scorciatoia.
+    /// </summary>
+    protected override bool ProcessCmdKey(ref Message msg, Keys keyData)
+    {
+        if (keyData == Keys.Escape && EscChiude)
+        {
+            Close();
+            return true;
+        }
+        return base.ProcessCmdKey(ref msg, keyData);
+    }
+
+    /// <summary>
+    /// Un pulsante di chiusura in alto a destra, per le schermate che non ne
+    /// hanno uno proprio.
+    ///
+    /// Tre pannelli — audio, centro carriera, giornale — si aprivano a tutto
+    /// schermo senza alcun modo dichiarato di tornare indietro: restava la X
+    /// di Windows, in un programma che per il resto non ne ha l'aspetto. ESC
+    /// adesso funziona dappertutto, ma una scorciatoia invisibile non e' un
+    /// modo di uscire: va vista.
+    ///
+    /// Va chiamato in fondo al costruttore, quando gli altri controlli ci sono
+    /// gia': si mette davanti a tutti e si tiene ancorato all'angolo.
+    /// </summary>
+    protected void AggiungiChiusura(string testo = "CHIUDI  (ESC)")
+    {
+        var chiudi = new Button
+        {
+            Text = testo,
+            Anchor = AnchorStyles.Top | AnchorStyles.Right,
+            Width = 150, Height = 34,
+            FlatStyle = FlatStyle.Flat,
+            BackColor = UiTheme.Surface,
+            ForeColor = UiTheme.TextPrimary,
+            Font = UiTheme.Small,
+            Cursor = Cursors.Hand
+        };
+        chiudi.FlatAppearance.BorderColor = UiTheme.Border;
+        chiudi.Click += (_, _) => Close();
+        Controls.Add(chiudi);
+        chiudi.BringToFront();
+        // La posizione si fissa quando la finestra ha la misura vera: nel
+        // costruttore e' ancora quella di ripiego, e il pulsante finirebbe in
+        // mezzo alla schermata.
+        void Sistema() => chiudi.Location = new Point(Math.Max(8, ClientSize.Width - chiudi.Width - 24), 16);
+        Sistema();
+        Shown += (_, _) => { Sistema(); chiudi.BringToFront(); };
+        Resize += (_, _) => Sistema();
     }
 
     // --------------------------------------------------------------- ingresso

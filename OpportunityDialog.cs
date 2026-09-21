@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -167,11 +167,14 @@ public sealed class OpportunityDialog : CareerDialog
         var opportunity = Selected();
         if (opportunity == null) return;
         var assessment = opportunity.Assess(career.Cash);
-        var confirm = MessageBox.Show(
+        var confirm = CareerMessages.Show(this, 
             $"{opportunity.Title}\n\n{assessment.Describe()}\n\nConfermi?",
             "Conferma la decisione", MessageBoxButtons.YesNo,
             assessment.Risk is FinancialRisk.High or FinancialRisk.Prohibitive ? MessageBoxIcon.Warning : MessageBoxIcon.Question,
-            assessment.Risk is FinancialRisk.High or FinancialRisk.Prohibitive ? MessageBoxDefaultButton.Button2 : MessageBoxDefaultButton.Button1);
+            // Senza nessuno davanti la conferma vale si': chi ha chiamato
+            // questa finestra aveva gia' deciso di accettare, e rispondere
+            // no farebbe sparire la decisione senza dirlo a nessuno.
+            DialogResult.Yes);
         if (confirm != DialogResult.Yes) return;
         if (!accept(opportunity)) return;
         // L'accettazione è una decisione di carriera, non un semplice refresh
@@ -188,12 +191,14 @@ public sealed class OpportunityDialog : CareerDialog
         var opportunity = Selected();
         if (opportunity == null) return;
         var penalty = opportunity.Kind is OpportunityKind.ProfessionalSeat or OpportunityKind.SubstituteDrive or OpportunityKind.PartiallyFundedSeat or OpportunityKind.FundedTest;
-        var confirm = MessageBox.Show(
+        var confirm = CareerMessages.Show(this, 
             $"Rifiutare «{opportunity.Title}»?\n\n" +
             (penalty
                 ? $"{opportunity.ProposedBy} registrerà il rifiuto e il livello influencer calerà: una proposta finanziata non si rifiuta senza conseguenze."
                 : "Nessuna conseguenza sui rapporti: è una proposta a pagamento senza impegni."),
-            "Rifiuta la proposta", MessageBoxButtons.YesNo, MessageBoxIcon.Question, MessageBoxDefaultButton.Button2);
+            "Rifiuta la proposta", MessageBoxButtons.YesNo, MessageBoxIcon.Question,
+            // Un rifiuto non si da' per scontato: senza risposta non si rifiuta.
+            DialogResult.No);
         if (confirm != DialogResult.Yes) return;
         decline(opportunity);
         Populate();

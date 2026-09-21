@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>Che cosa è successo svolgendo un'attività.</summary>
 public sealed class DayReport
@@ -28,7 +28,7 @@ public static class DayEngine
     /// </summary>
     public static DayReport Perform(CareerState career, DayPlan day, DayActivity activity)
     {
-        if (!DriverDay.CanDo(day, activity, career.Cash, out var refusal))
+        if (!DriverDay.CanDo(day, activity, career.Cash, career, out var refusal))
             return new DayReport { Activity = activity, Refused = true, Refusal = refusal };
 
         // Il costo si paga prima: se non si può pagare, l'attività non avviene.
@@ -177,7 +177,7 @@ public static class DayEngine
     {
         var catalogue = actor == DayActor.Driver ? DayActivityCatalog.ForDriver() : DayActivityCatalog.ForAgent();
         return catalogue
-            .Select(x => (x, DriverDay.CanDo(day, x, career.Cash, out var reason), reason))
+            .Select(x => (x, DriverDay.CanDo(day, x, career.Cash, career, out var reason), reason))
             .ToList();
     }
 

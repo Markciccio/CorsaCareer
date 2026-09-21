@@ -1,0 +1,15 @@
+{
+  "name": "Kagerou Cup",
+  "brand": "Kagerou",
+  "class": "cup",
+  "tags": [
+    "cup"
+  ],
+  "specs": {
+    "power": "252 bhp",
+    "weight": "1204 kg"
+  },
+  "power": "252",
+  "mass": "1204 kg",
+  "year": 2021
+}

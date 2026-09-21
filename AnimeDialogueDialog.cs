@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -108,6 +108,21 @@ public sealed class AnimeDialogueDialog : CareerDialog
         quoteLabel.Text = "";
         next.Text = NextLabel();
         LoadPortrait(line.PortraitFile);
+        // Senza animazioni la battuta e' gia' tutta li'.
+        //
+        // La macchina da scrivere era l'UNICO modo in cui il testo finiva nel
+        // balloon: con CORSACAREER_NO_ANIM il timer parte lo stesso ma nessuno
+        // lo guarda scrivere — e chi ha spento le animazioni, o chi rende le
+        // schermate fuori schermo, si trovava davanti a un fumetto vuoto con
+        // il nome del personaggio sopra. La scena c'era; la battuta no.
+        if (!AnimationsEnabled)
+        {
+            characterIndex = line.Text.Length;
+            quoteLabel.Text = $"“{line.Text}”";
+            completed = true;
+            next.Text = NextLabel();
+            return;
+        }
         typing.Start();
     }
 

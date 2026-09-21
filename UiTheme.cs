@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -438,6 +438,22 @@ public sealed class ThemedBackdropPanel : Panel
                 Color.FromArgb(84, 3, 10, 20), Color.FromArgb(0, 3, 10, 20),
                 System.Drawing.Drawing2D.LinearGradientMode.Vertical);
             e.Graphics.FillRectangle(gradient, 0, 0, Width, Math.Min(110, Height));
+        }
+        // E una in basso, per lo stesso motivo.
+        //
+        // C'era solo quella in alto: il piede della scheda restava
+        // l'illustrazione a piena luce, e le righe che ci stanno sopra — la
+        // riga d'invito di una scelta, la didascalia di una tavola — erano
+        // scritte in grigio tenue su una fotografia chiara. Si vedeva che
+        // c'era del testo, non che cosa dicesse.
+        var piede = Math.Min(96, Height);
+        if (piede > 0)
+        {
+            using var gradient = new System.Drawing.Drawing2D.LinearGradientBrush(
+                new Rectangle(0, Height - piede, Math.Max(1, Width), piede),
+                Color.FromArgb(0, 3, 10, 20), Color.FromArgb(120, 3, 10, 20),
+                System.Drawing.Drawing2D.LinearGradientMode.Vertical);
+            e.Graphics.FillRectangle(gradient, 0, Height - piede, Width, piede);
         }
     }
 

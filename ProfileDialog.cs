@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -56,7 +56,7 @@ public sealed class ProfileDialog : CareerDialog
         {
             if (string.IsNullOrWhiteSpace(first.Text) || string.IsNullOrWhiteSpace(last.Text))
             {
-                MessageBox.Show("Inserisci nome e cognome.", "Profilo pilota", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                CareerMessages.Show(this, "Inserisci nome e cognome.", "Profilo pilota", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
             }
 

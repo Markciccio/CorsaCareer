@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
 
@@ -152,6 +152,7 @@ public sealed class CareerHubDialog : CareerDialog
         body.Controls.Add(salvataggi, 2, 2);
 
         Controls.Add(body); Controls.Add(footer); Controls.Add(header);
+        AggiungiChiusura();
     }
 
     /// <summary>Quante carriere sono messe da parte, senza aprirle.</summary>
