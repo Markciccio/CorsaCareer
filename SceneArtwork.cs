@@ -13,7 +13,6 @@ namespace CorsaCareer;
 /// </summary>
 public static class SceneArtwork
 {
-    private static int sponsorRotation;
     /// <summary>Tavola per un'attività della giornata, dal suo identificativo.</summary>
     public static string ForActivity(string activityId, int variantSeed = 0)
     {
@@ -92,8 +91,19 @@ public static class SceneArtwork
     /// <summary>
     /// Tavola per una visita di Haru, scelta dal tipo di attività commerciale.
     /// Il fruttivendolo e l'assicuratore non sono la stessa scena.
+    ///
+    /// La rotazione era un contatore statico (<c>sponsorRotation++</c>): non
+    /// dipendeva dalla visita ne' dalla carriera, ma da quante volte questo
+    /// metodo era stato chiamato da quando il programma e' partito. La stessa
+    /// visita, nella stessa carriera, poteva mostrare una tavola diversa a
+    /// ogni riavvio — esattamente il difetto per cui in questo progetto
+    /// <c>Random</c> e <c>HashCode.Combine</c> sono vietati per i semi: qui
+    /// c'era la stessa cosa sotto un altro nome.
+    ///
+    /// Il seme adesso viene da chi chiama, derivato da un dato vero della
+    /// visita: stessa visita, stessa tavola, sempre.
     /// </summary>
-    public static string ForSponsorVisit(string trade, bool accepted)
+    public static string ForSponsorVisit(string trade, bool accepted, int variantSeed = 0)
     {
         var t = (trade ?? "").ToLowerInvariant();
         var scene =
@@ -111,7 +121,7 @@ public static class SceneArtwork
         if (scene.Length == 0 || !Exists(scene))
             scene = accepted ? "haru-accordo-stretta-mano-nuovo.jpg" : "haru-rifiuto-porta.jpg";
 
-        var rotated = PickVariant("sponsor", sponsorRotation++);
+        var rotated = PickVariant("sponsor", variantSeed);
         if (!string.IsNullOrWhiteSpace(rotated)) return rotated;
         return Exists(scene) ? scene : "";
     }

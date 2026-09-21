@@ -136,11 +136,12 @@ public static class DayEngine
     }
 
     /// <summary>
-    /// Passa al giorno successivo. La notte recupera un po' di stanchezza, ma
-    /// non azzera: chi si consuma per una settimana arriva consumato alla gara.
-    /// </summary>
-    /// <summary>
     /// Fa passare un giorno.
+    ///
+    /// La stanchezza si azzera qui: il parametro e' stato tolto dal gioco, e
+    /// prima di questa riga il commento diceva il contrario — "non azzera:
+    /// chi si consuma per una settimana arriva consumato alla gara" — una
+    /// frase rimasta a descrivere un meccanismo che non c'e' piu'.
     ///
     /// La nuova giornata nasceva qui con le ore vecchie — le due costanti
     /// <c>DriverDay.DriverHours</c> e <c>AgentHours</c>, sempre le stesse — e

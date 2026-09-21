@@ -1943,17 +1943,20 @@ public sealed partial class MainForm : Form
             CareerLog.Info("pilota", $"weekend in macchina: forma da {prima} a {career.Fitness}");
     }
 
+    /// <summary>
+    /// La pausa dopo un weekend di gara.
+    ///
+    /// Calcolava un recupero graduale legato all'eta' — DriverAge.FattoreRecupero,
+    /// un tetto di ventuno notti, DayEngine.NightRecovery — ma da quando la
+    /// stanchezza e' stata tolta dal gioco (DayEngine.Perform non la applica
+    /// piu', e Advance la azzera ogni notte) quel calcolo veniva fatto e
+    /// buttato via: la variabile non serviva a nient'altro che a "Fatigue = 0",
+    /// che e' il valore che ha comunque sempre, ovunque. Il conto restava,
+    /// l'effetto no.
+    /// </summary>
     private void RecoverForElapsedDays(DateTime primaDi)
     {
         if (primaDi == default || career.StoryDate <= primaDi) return;
-        var notti = (career.StoryDate.Date - primaDi.Date).Days;
-        if (notti <= 0) return;
-        // Il recupero ha un tetto: due settimane di pausa rimettono in sesto,
-        // sei mesi non danno un vantaggio.
-        // E rallenta con gli anni: a quarant'anni un weekend si smaltisce in
-        // quasi il doppio del tempo che serviva a venti. È il modo in cui l'età
-        // si sente prima ancora che nel cronometro.
-        var recupero = (int)Math.Round(Math.Min(notti, 21) * DayEngine.NightRecovery * DriverAge.FattoreRecupero(EtaPilota()));
         career.Fatigue = 0;
     }
 
@@ -6204,7 +6207,10 @@ public sealed partial class MainForm : Form
         var lines = new List<AnimeDialogueLine>
         {
             new(visit.Target, reply.Line,
-                SceneArtwork.ForSponsorVisit(visit.Trade, reply.Accepted),
+                // Seme deterministico dalla visita, non un contatore che
+                // cambia a ogni riavvio: stessa visita, stessa tavola.
+                SceneArtwork.ForSponsorVisit(visit.Trade, reply.Accepted,
+                    Math.Abs(StableHash.Of(career.Driver, visit.Id, visit.Target))),
                 reply.Accepted ? "convinto" : "dispiaciuto"),
             new("Haru Senda",
                 reply.Accepted
