@@ -3010,6 +3010,17 @@ public sealed partial class MainForm : Form
     private void LaunchTestSession()
     {
         if (!PuoScendereInPista()) return;
+        // Il primo giro cronometrato della vita si racconta PRIMA di scendere
+        // in pista.
+        //
+        // La scena stava in RecordTest, cioe' dopo l'importazione del referto:
+        // il testo e' un briefing («adesso ti metto il cronometro addosso,
+        // guarda dove metti le ruote all'uscita dell'ultima curva») e arrivava
+        // a cronometro gia' fermo, fuori contesto. Toglierla del tutto pero'
+        // la rendeva irraggiungibile: la tavola e le battute esistono, e non
+        // le vedeva piu' nessuno. La chiave «primo-test» garantisce da sola
+        // che succeda una volta sola in carriera.
+        RaccontaMomento(MomentoDiCarriera.PrimoTest, CareerFirsts.Test);
         var uiAutomation = Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1";
         if (awaitingResult) return;
         var raceableCars = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).ToList();
@@ -3886,8 +3897,12 @@ public sealed partial class MainForm : Form
         if (ritiro && !career.Firsts.Has(CareerFirsts.Dnf))
         { RaccontaMomento(MomentoDiCarriera.PrimaBattuta, CareerFirsts.Dnf); return; }
 
-        if (!career.Firsts.Has(CareerFirsts.Race))
-        { RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race); return; }
+        // La vigilia della prima gara si racconta PRIMA di scendere in pista
+        // (vedi LaunchInvitation/LaunchWeekend): qui la scena e' gia' stata
+        // vista o non lo sara' mai, non spetta a questo metodo deciderlo. Un
+        // ramo identico restava anche qui, e con lui il difetto: chi caricava
+        // una carriera gia' avviata rivedeva un discorso della sera prima a
+        // gara conclusa.
 
         // Niente prime volte: restano i momenti del campionato, che si possono
         // ripetere ma non nella stessa stagione.
@@ -4849,6 +4864,50 @@ public sealed partial class MainForm : Form
         if (File.Exists(pendingPath)) File.Move(pendingPath, Path.Combine(saveDir, $"completed_weekend-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json"), true);
         awaitingResult = false; launchTimeUtc = DateTime.MinValue; pendingResultHash = ""; lastRejectedResultSignature = "";
         CloseLaunchedContentManager();
+        CloseAssettoCorsaWindows();
+    }
+
+    /// <summary>
+    /// Chiude quello che resta aperto di Assetto Corsa dopo che il referto e'
+    /// stato importato.
+    ///
+    /// CloseLaunchedContentManager chiude il PROCESSO che Process.Start ha
+    /// restituito — ma Content Manager e' a istanza singola: se era gia'
+    /// aperto, il lancio successivo si limita a passargli l'URI e il processo
+    /// appena avviato termina subito da solo. L'handle che teniamo in mano a
+    /// quel punto e' gia' morto, e chiuderlo non chiude niente: restava
+    /// aperta la finestra di gara vera, quella di "acs.exe", che e' un
+    /// processo tutto suo lanciato da Content Manager e mai da noi. Qui si
+    /// chiude per nome, non per handle: e' l'unico modo di trovarla.
+    ///
+    /// Si prova prima CloseMainWindow — cede il controllo al gioco, che salva
+    /// quel che deve salvare — e solo se non basta si termina il processo.
+    /// Nessuna eccezione qui deve poter interrompere il ritorno alla Home:
+    /// il portale deve restare pulito anche se un processo si rifiuta di
+    /// chiudersi.
+    /// </summary>
+    private static void CloseAssettoCorsaWindows()
+    {
+        string[] nomiProcesso = ["acs", "acs_x86", "acs_x64", "AssettoCorsa", "AssettoCorsa_x86", "AssettoCorsa_x64"];
+        foreach (var nome in nomiProcesso)
+        {
+            Process[] trovati;
+            try { trovati = Process.GetProcessesByName(nome); }
+            catch (Exception error) { CareerLog.Warn("assetto", $"ricerca processo {nome} non riuscita: {error.Message}"); continue; }
+            foreach (var processo in trovati)
+            {
+                try
+                {
+                    if (!processo.HasExited)
+                    {
+                        processo.CloseMainWindow();
+                        if (!processo.WaitForExit(1500) && !processo.HasExited) processo.Kill(entireProcessTree: true);
+                    }
+                }
+                catch (Exception error) { CareerLog.Warn("assetto", $"chiusura di {nome} (pid {processo.Id}) non riuscita: {error.Message}"); }
+                finally { processo.Dispose(); }
+            }
+        }
     }
     private void Record(ImportedRaceResult imported, string photoPath, string resultFile)
     {
@@ -5961,6 +6020,11 @@ public sealed partial class MainForm : Form
         // weekend si prendeva il pendingMode rimasto dal briefing precedente —
         // "test" — e la gara finiva archiviata fra le prove, senza posizione,
         // senza punti e senza premio.
+        // Vale anche qui: rarissimo (un contratto vero firmato prima di
+        // qualsiasi gara su invito) ma se succede la vigilia va raccontata
+        // comunque una volta sola, non dopo.
+        if (career.Races == 0) RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race);
+
         pendingMode = "race"; awaitingResult = true; launchTimeUtc = DateTime.UtcNow;
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var resultHashBeforeLaunch = HashFile(resultFile); pendingResultHash = resultHashBeforeLaunch;
@@ -6117,6 +6181,16 @@ public sealed partial class MainForm : Form
             career.Results.Add($"Iscrizione gara su invito {invitation.TrackName}: € -{entryFee:N0}");
             career.News.Add($"{career.Driver} accetta l'invito di {(string.IsNullOrWhiteSpace(invitation.ProposedBy) ? "un team ospitante" : invitation.ProposedBy)} a {invitation.TrackName}: iscrizione € {entryFee:N0}.");
         }
+        // La vigilia della prima gara vera si racconta PRIMA di scendere in
+        // pista, non dopo.
+        //
+        // Il testo e' un discorso della sera prima («domani e' la tua prima
+        // gara», «dormi, e' il consiglio migliore che ho»): stava agganciato
+        // al referto della gara, quindi arrivava a risultato gia' acquisito,
+        // con Assetto Corsa appena chiuso e la corsa gia' corsa. Chi giocava
+        // vedeva Haru dire «ho preparato tutto» a cose fatte.
+        if (career.Races == 0) RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race);
+
         pendingMode = "invitation"; awaitingResult = true; launchTimeUtc = DateTime.UtcNow;
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var resultHashBeforeLaunch = HashFile(resultFile); pendingResultHash = resultHashBeforeLaunch;

@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Imaging;
 using System.Windows.Forms;
 
@@ -96,23 +96,12 @@ internal static class Anteprime
         Scatta("citta-1", () => new TownWalkDialog(TownMap.Genera(1, "Officina Doppino"), "Haru", 70));
         Scatta("citta-2", () => new TownWalkDialog(TownMap.Genera(77, "Gomme Akatsuki"), "Haru", 70));
 
-        // 2. La trattativa, per ognuno dei quattro tipi di interlocutore: i
-        //    testi hanno lunghezze molto diverse ed e' li' che si tronca.
-        foreach (var (nome, mestiere) in new[]
-                 {
-                     ("trattativa-intenditore", "pneumatici e assetti"),
-                     ("trattativa-commerciante", "distribuzione bevande"),
-                     ("trattativa-paese", "ferramenta di paese"),
-                     ("trattativa-duro", "agenzia assicurativa")
-                 })
-        {
-            var visita = new SponsorVisit
-            {
-                Id = "anteprima", Target = "Assicurazioni Tomoshibi", Trade = mestiere,
-                Amount = 4600, Chance = 42, Pitch = "«Proviamo.»"
-            };
-            Scatta(nome, () => new SponsorNegotiationDialog(visita, carriera));
-        }
+        // 2. La trattativa a tre frasi non si fotografa piu': la visita allo
+        //    sponsor e' stata semplificata e quella schermata non si raggiunge
+        //    dal gioco. Uno strumento di debug che ritrae una schermata
+        //    irraggiungibile fa cercare difetti dove non possono farsi vedere.
+        //    Le ventiquattro risposte degli sponsor restano in uso e si
+        //    controllano con --contenuti.
 
         // 3. Le scene scritte. Tutte e venti: sono la parte con piu' testo e
         //    quella dove un balloon puo' non starci.

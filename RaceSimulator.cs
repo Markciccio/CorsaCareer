@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>
 /// Provenienza di un risultato. Fino a qui esisteva una sola strada: il referto
@@ -105,6 +105,25 @@ public static class RaceSimulator
         public int Laps { get; set; } = 10;
         /// <summary>Livello IA della sessione, come scritto nel preset.</summary>
         public double AiLevel { get; set; } = 88;
+
+        /// <summary>
+        /// Il livello di guida che il giro di riferimento rappresenta.
+        ///
+        /// Non e' la stessa cosa del livello IA, ed e' il motivo per cui e' un
+        /// campo a parte. Il livello IA dice quanto e' forte il GRUPPO: alzarlo
+        /// deve rendere difficile ARRIVARE DAVANTI, non rendere piu' lento il
+        /// pilota. Finche' il giro si misurava sul livello IA erano la stessa
+        /// cosa: portando la difficolta' dei kart da 76 a 90 il pilota simulato
+        /// perdeva sette secondi al giro senza che fosse cambiato niente in lui,
+        /// mancava il riferimento della valutazione rookie e la ripeteva sette
+        /// volte invece di due.
+        ///
+        /// Il riferimento arriva da RookieTargetEngine ed e' una stima fisica —
+        /// pista, potenza, massa — cioe' il giro di un pilota competente ma non
+        /// di vertice. Questo numero dice a quale livello corrisponde, e resta
+        /// fermo quando la difficolta' della griglia cambia.
+        /// </summary>
+        public double PaceBaselineLevel { get; set; } = 78.0;
         /// <summary>Riferimento di giro sul tracciato, in millisecondi.</summary>
         public int ReferenceLapMilliseconds { get; set; } = 100000;
         /// <summary>Competitivita della vettura rispetto al gruppo, 0-100.</summary>
@@ -300,7 +319,7 @@ public static class RaceSimulator
         {
             // Una prova non ha classifica: ha un giro. E la stessa regola del
             // referto reale, dove una sessione di prova non assegna posizioni.
-            var testLap = LapFor(reference, playerSkill, input.AiLevel, Jitter(input.Seed, 991));
+            var testLap = LapFor(reference, playerSkill, input.PaceBaselineLevel, Jitter(input.Seed, 991));
             return new ImportedRaceResult
             {
                 Track = input.Track, Car = input.Car, PlayerName = input.PlayerName,
@@ -336,7 +355,7 @@ public static class RaceSimulator
 
         var winnerPace = order[0].Pace;
         var playerPace = order[playerIndex].Pace;
-        var bestLap = LapFor(reference, playerSkill, input.AiLevel, Jitter(input.Seed, 17));
+        var bestLap = LapFor(reference, playerSkill, input.PaceBaselineLevel, Jitter(input.Seed, 17));
         // Il distacco nasce dalla differenza di passo sui giri percorsi: e una
         // conseguenza, non un numero deciso a parte. Il fattore e lo stesso che
         // converte i punti di passo in tempo sul giro, altrimenti distacco e
@@ -457,11 +476,12 @@ public static class RaceSimulator
         return scelto == playerIndex ? -1 : scelto;
     }
 
-    private static int LapFor(int reference, double playerSkill, double aiLevel, double jitter)
+    private static int LapFor(int reference, double playerSkill, double baselineLevel, double jitter)
     {
         // Piu abilita, giro piu vicino al riferimento. Il riferimento e il passo
-        // di un pilota al livello IA della sessione.
-        var delta = (aiLevel - playerSkill) * PaceToLapFraction + jitter * 0.004;
+        // di un pilota al livello che il riferimento stesso rappresenta — non
+        // al livello della griglia, che riguarda gli avversari.
+        var delta = (baselineLevel - playerSkill) * PaceToLapFraction + jitter * 0.004;
         return (int)Math.Round(reference * Math.Clamp(1.0 + delta, 0.94, 1.16));
     }
 

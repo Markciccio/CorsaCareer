@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>
 /// La tavola che accompagna una scena.
@@ -116,17 +116,25 @@ public static class SceneArtwork
             t.Contains("assicurativa") || t.Contains("assicurazioni") ? "haru-visita-assicurazioni.jpg" :
             "";
 
-        // Se la scena del luogo non c'è, l'esito ha comunque una sua tavola: un
-        // rifiuto e un accordo si raccontano diversamente.
-        if (scene.Length == 0 || !Exists(scene))
-            scene = accepted ? "haru-accordo-stretta-mano-nuovo.jpg" : "haru-rifiuto-porta.jpg";
-
-        // Per i commercianti riconosciuti la scena del luogo viene prima della
-        // rotazione generica: così un'officina mostra davvero Haru al banco e
-        // non una tavola casuale con un personaggio tagliato fuori campo.
+        // Il commerciante riconosciuto ha la SUA scena, e batte la rotazione:
+        // un'officina deve mostrare davvero Haru al banco, non una tavola
+        // qualsiasi con un personaggio tagliato fuori campo.
+        //
+        // La scorciatoia va decisa qui, prima del ripiego. Messa dopo,
+        // scattava anche sulle due tavole generiche di accordo e rifiuto — che
+        // sono il ripiego, non una scena riconosciuta — e la rotazione delle
+        // varianti sponsor diventava irraggiungibile: ogni visita a un negozio
+        // non riconosciuto mostrava sempre le stesse due immagini.
         if (scene.Length > 0 && Exists(scene)) return scene;
+
+        // Se la scena del luogo non c'è, si prova la rotazione: sono le tavole
+        // fatte apposta per non ripetersi.
         var rotated = PickVariant("sponsor", variantSeed);
         if (!string.IsNullOrWhiteSpace(rotated)) return rotated;
+
+        // E se non c'è nemmeno quella, l'esito ha comunque una sua tavola: un
+        // rifiuto e un accordo si raccontano diversamente.
+        scene = accepted ? "haru-accordo-stretta-mano-nuovo.jpg" : "haru-rifiuto-porta.jpg";
         return Exists(scene) ? scene : "";
     }
 
