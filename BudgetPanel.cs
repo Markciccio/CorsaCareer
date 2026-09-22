@@ -28,6 +28,7 @@ public sealed class BudgetPanel : Panel
     private readonly Label pilotName = new();
     private readonly Label pilotDetails = new();
     private readonly Label pilotSchool = new();
+    private readonly Label pilotResults = new();
     private ThemedBackdropPanel? pilotCard;
     private TableLayoutPanel? metricGrid;
     private Panel? tutorialOverlay;
@@ -223,7 +224,7 @@ public sealed class BudgetPanel : Panel
             using var rule = new Pen(Color.FromArgb(112, accent), 1);
             e.Graphics.DrawLine(rule, 14, 60, card.Width - 14, 60);
         };
-        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 4, BackColor = Color.Transparent };
+        var layout = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, BackColor = Color.Transparent };
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 62));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 48));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 24));
@@ -370,6 +371,7 @@ public sealed class BudgetPanel : Panel
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 54));
         layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
+        layout.RowStyles.Add(new RowStyle(SizeType.Absolute, 92));
         layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         pilotName.Dock = DockStyle.Fill; pilotName.Font = new Font(UiTheme.FamilySemibold, 16F, FontStyle.Bold);
         pilotName.ForeColor = UiTheme.TextPrimary; pilotName.AutoEllipsis = true; pilotName.UseMnemonic = false;
@@ -378,6 +380,10 @@ public sealed class BudgetPanel : Panel
         pilotDetails.AutoEllipsis = true; pilotDetails.UseMnemonic = false; pilotDetails.TextAlign = ContentAlignment.MiddleLeft;
         pilotSchool.Dock = DockStyle.Fill; pilotSchool.Font = new Font(UiTheme.FamilySemibold, 9F, FontStyle.Bold); pilotSchool.ForeColor = UiTheme.Positive;
         pilotSchool.AutoEllipsis = true; pilotSchool.UseMnemonic = false; pilotSchool.TextAlign = ContentAlignment.MiddleLeft;
+        pilotResults.Dock = DockStyle.Fill; pilotResults.Font = UiTheme.Small;
+        pilotResults.ForeColor = UiTheme.TextSecondary; pilotResults.AutoEllipsis = false;
+        pilotResults.UseMnemonic = false; pilotResults.TextAlign = ContentAlignment.TopLeft;
+        pilotResults.Padding = new Padding(0, 4, 0, 0);
         var quote = new Label
         {
             Text = "« PICCOLI PASSI\n   GRANDI TRAGUARDI »", Dock = DockStyle.Fill,
@@ -388,7 +394,8 @@ public sealed class BudgetPanel : Panel
         layout.Controls.Add(pilotName, 0, 0);
         layout.Controls.Add(pilotDetails, 0, 1);
         layout.Controls.Add(pilotSchool, 0, 2);
-        layout.Controls.Add(quote, 0, 3);
+        layout.Controls.Add(pilotResults, 0, 3);
+        layout.Controls.Add(quote, 0, 4);
         card.Controls.Add(layout);
         return card;
     }
@@ -456,6 +463,22 @@ public sealed class BudgetPanel : Panel
         pilotSchool.Text = $"SCUOLA · {school}/100 · {GiudizioScuola(school)}";
         pilotSchool.ForeColor = school < Scuola.SogliaDiDivieto ? UiTheme.Accent
             : school < Scuola.SogliaDiPromozione ? UiTheme.Warning : UiTheme.Positive;
+        var recentRaces = (career.RaceHistory ?? [])
+            .OrderByDescending(x => x.StoryDate)
+            .Take(4)
+            .Select(x =>
+            {
+                var championship = string.IsNullOrWhiteSpace(x.Championship)
+                    ? (x.Season == career.Season && !string.IsNullOrWhiteSpace(career.Championship)
+                        ? career.Championship : $"S{x.Season:00}")
+                    : x.Championship;
+                var result = x.Dnf ? "DNF" : x.Position > 0 ? $"P{x.Position}" : "n/d";
+                return $"{x.StoryDate:dd MMM} · {championship} · {x.Track} · {result}";
+            })
+            .ToList();
+        pilotResults.Text = recentRaces.Count == 0
+            ? "RISULTATI SPORTIVI\nNessuna gara archiviata."
+            : "RISULTATI SPORTIVI\n" + string.Join("\n", recentRaces);
         amount.Text = $"€ {cash:N0}";
         amount.ForeColor = UiTheme.MoneyColor(cash);
         var fitness = Math.Clamp(career.Fitness, 0, 100);

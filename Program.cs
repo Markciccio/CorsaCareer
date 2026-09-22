@@ -5892,7 +5892,6 @@ public sealed partial class MainForm : Form
         var candidates = grid.Candidates;
         var mixedGridFallback = grid.UsedMixedFallback;
         if (candidates.Length == 0) candidates = installedCars;
-        var opponentCount = Math.Max(0, Math.Min(7, candidates.Length - 1));
         if (candidates.Length < 2)
         {
             CareerMessages.Show(null, $"Il weekend {r.GrandPrix} non può essere preparato come gara reale: è installata una sola auto da competizione compatibile ({car}) e non esiste alcun avversario da inserire in griglia.\n\nInstalla almeno una seconda auto da gara compatibile, poi aggiorna i contenuti. Nessun risultato verrà simulato.", "CorsaCareer - griglia insufficiente", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -5925,6 +5924,7 @@ public sealed partial class MainForm : Form
             CareerMessages.Show(null, $"Non ci sono contenuti sufficienti per avviare il weekend {r.GrandPrix}.\n\nAuto trovate: {installedCars.Length}\nCircuiti trovati: {installedTracks.Length}\n\nInstalla almeno un'auto e un circuito compatibili, poi riprova.", "CorsaCareer - contenuti mancanti", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             return;
         }
+        var opponentCount = OpponentsForTrack(trackRecord);
         if (!requestedTrackFound || mixedGridFallback)
         {
             var missing = new List<string>();
@@ -6083,9 +6083,11 @@ public sealed partial class MainForm : Form
             invitation.TrackName = replacement.Name;
             invitation.Country = replacement.Country;
             CareerLog.Warn("agenda", $"invito riallineato: {car} spostata da {trackRecord.Id} a {replacement.Id}.");
+            trackRecord = replacement;
         }
         var plan = BuildSessionPlan(track, car, mixedGrid: grid.UsedMixedFallback, testSession: false);
-        var presetJson = ContentManagerPresetBuilder.Build(car, track, plan, grid.Candidates, grid.OpponentCount);
+        var opponentCount = OpponentsForTrack(trackRecord);
+        var presetJson = ContentManagerPresetBuilder.Build(car, track, plan, grid.Candidates, opponentCount);
         var presetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "AcTools Content Manager", "Presets", "Quick Drive");
         Directory.CreateDirectory(presetDir);
         var presetPath = Path.Combine(presetDir, $"CorsaCareer - Invito S{career.Season:00} {invitation.TrackName}.cmpreset");
@@ -6119,7 +6121,7 @@ public sealed partial class MainForm : Form
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var resultHashBeforeLaunch = HashFile(resultFile); pendingResultHash = resultHashBeforeLaunch;
         ArchiveSessionPlan(plan, "invitation", track, car);
-        var pending = new { mode = "invitation", round = 0, grandPrix = invitation.TrackName, country = invitation.Country, date = NarrativeCalendar.Format(invitation.Date), car, track, candidates = grid.Candidates, opponents = grid.OpponentCount, preset = presetPath, launchUtc = launchTimeUtc, resultHashBeforeLaunch, driver = career.Driver, team = career.Team, format = plan.FormatLabel, laps = plan.RaceLaps, weather = plan.WeatherId, temperature = plan.TemperatureC, timeOfDay = plan.TimeOfDaySeconds, aiLevel = plan.AiLevel };
+        var pending = new { mode = "invitation", round = 0, grandPrix = invitation.TrackName, country = invitation.Country, date = NarrativeCalendar.Format(invitation.Date), car, track, candidates = grid.Candidates, opponents = opponentCount, preset = presetPath, launchUtc = launchTimeUtc, resultHashBeforeLaunch, driver = career.Driver, team = career.Team, format = plan.FormatLabel, laps = plan.RaceLaps, weather = plan.WeatherId, temperature = plan.TemperatureC, timeOfDay = plan.TimeOfDaySeconds, aiLevel = plan.AiLevel };
         File.WriteAllText(Path.Combine(saveDir, "pending_weekend.json"), JsonSerializer.Serialize(pending, new JsonSerializerOptions { WriteIndented = true }));
         SaveCareer();
         // Come per la prova: il banco automatico verifica la preparazione, ma
@@ -6177,6 +6179,20 @@ public sealed partial class MainForm : Form
             MixedGrid = mixedGrid,
             TestSession = testSession
         });
+    }
+
+    /// <summary>
+    /// Numero massimo di avversari realmente schierabili dalla pista. CM
+    /// espone i posti box, che comprendono già la piazzola del pilota: tutti
+    /// gli altri posti possono quindi essere usati per la griglia. Quando un
+    /// contenuto non dichiara il dato usiamo il limite supportato dal preset,
+    /// evitando il vecchio valore fisso di sette avversari.
+    /// </summary>
+    private static int OpponentsForTrack(ContentTrackRecord? track)
+    {
+        var pitboxes = track?.Pitboxes ?? 0;
+        var available = pitboxes > 1 ? pitboxes - 1 : 19;
+        return Math.Clamp(available, 1, 19);
     }
 
     /// <summary>

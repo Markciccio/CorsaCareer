@@ -1979,19 +1979,10 @@ public sealed partial class MainForm
         var storyDate = career.StoryDate.ToString("dddd d MMMM yyyy", CultureInfo.GetCultureInfo("it-IT"));
         var scheduled = NextScheduled();
 
-        if (ContentAvailability.IsDebugFixture(contentIndex))
-            // La riga di avviso diceva al giocatore una cosa che ha scelto lui
-            // e che e' gia nella fascia dei dati: occupava la seconda riga della
-            // testata senza aggiungere niente.
-            headerRound.Text = "";
-        else if (!string.IsNullOrWhiteSpace(missingContent)) headerRound.Text = missingContent;
-        else if (evaluation)
-            headerRound.Text = scheduled == null
-                ? $"ROOKIE EVALUATION · in attesa del prossimo appuntamento"
-                : $"{(scheduled.Kind == ScheduledEventKind.ConfirmationTest ? "PROVA DI CONFERMA" : scheduled.Kind == ScheduledEventKind.Invitation ? "GARA SU INVITO" : "ROOKIE EVALUATION")} · tentativo {career.EvaluationAttempts + 1} · {(string.IsNullOrWhiteSpace(scheduled.TrackName) ? scheduled.TrackId : scheduled.TrackName)} · {ScheduledObjective(scheduled)}";
-        else if (rounds.Count == 0) headerRound.Text = $"STAGIONE {career.Season} · calendario non ancora pubblicato";
-        else if (career.Round >= rounds.Count) headerRound.Text = $"STAGIONE {career.Season} CONCLUSA · in attesa del passaggio di campionato";
-        else headerRound.Text = $"STAGIONE {career.Season} · ROUND {career.Round + 1}/{rounds.Count} · {rounds[career.Round].GrandPrix} · {rounds[career.Round].Date}";
+        // Il round e il circuito appartengono al pannello centrale della Home:
+        // ripeterli nella testata rubava spazio e rendeva ambiguo a cosa si
+        // riferisse la riga. Qui resta solo un eventuale avviso tecnico.
+        headerRound.Text = string.IsNullOrWhiteSpace(missingContent) ? "" : missingContent;
         headerRound.ForeColor = string.IsNullOrWhiteSpace(missingContent) ? UiTheme.TextPrimary : UiTheme.Accent;
         // Categoria della vettura, campionato e altezza raggiunta: prima qui
         // c'era solo il nome del campionato accanto alla categoria interna
@@ -2002,9 +1993,12 @@ public sealed partial class MainForm
         // gavetta si e'. Accanto ci va il numero, perche' le altezze sono due —
         // categoria e campionato — e il quadro e' completo solo con entrambe.
         var gradinoTestata = CareerLadder.Current(career, contentIndex.Cars);
-        headerChampionship.Text = ChampionshipLadder.Header(
+        var campionatoTestata = string.IsNullOrWhiteSpace(career.Championship)
+            ? "campionato non ancora pubblicato"
+            : career.Championship;
+        headerChampionship.Text = $"{campionatoTestata} · " + ChampionshipLadder.Header(
             gradinoTestata.Name, gradinoTestata.Step, CareerLadder.Steps, career.ChampionshipLevel)
-            + $" · {EtaPilota()} ANNI";
+            + $" · S{career.Season:00} · {EtaPilota()} ANNI";
 
         // La data e la situazione sono il punto di riferimento della giornata:
         // devono restare visibili anche quando non c'e' una gara fissata.

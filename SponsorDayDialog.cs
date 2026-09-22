@@ -194,13 +194,10 @@ public sealed class SponsorDayDialog : CareerDialog
             return;
         }
 
-        // Nessun minigioco di spostamento: Haru arriva e il giocatore decide
-        // soltanto il messaggio della trattativa. La carriera resta rapida.
-        using var trattativa = new SponsorNegotiationDialog(visit, career);
-        if (trattativa.ShowDialog(this) != DialogResult.OK) return;
-        var probabilita = trattativa.ProbabilitaFinale;
-
-        var reply = SponsorVisits.Resolve(visit, career, probabilita);
+        // La visita è già una proposta completa: niente fase intermedia con
+        // tre frasi dal risultato poco leggibile. Haru va dallo sponsor e la
+        // probabilità della visita determina direttamente sì o no.
+        var reply = SponsorVisits.Resolve(visit, career, visit.Chance);
 
         // Le ore si consumano comunque: anche una trattativa fallita è un
         // pomeriggio speso.
