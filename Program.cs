@@ -3010,17 +3010,11 @@ public sealed partial class MainForm : Form
     private void LaunchTestSession()
     {
         if (!PuoScendereInPista()) return;
-        // Il primo giro cronometrato della vita si racconta PRIMA di scendere
-        // in pista.
-        //
-        // La scena stava in RecordTest, cioe' dopo l'importazione del referto:
-        // il testo e' un briefing («adesso ti metto il cronometro addosso,
-        // guarda dove metti le ruote all'uscita dell'ultima curva») e arrivava
-        // a cronometro gia' fermo, fuori contesto. Toglierla del tutto pero'
-        // la rendeva irraggiungibile: la tavola e le battute esistono, e non
-        // le vedeva piu' nessuno. La chiave «primo-test» garantisce da sola
-        // che succeda una volta sola in carriera.
-        RaccontaMomento(MomentoDiCarriera.PrimoTest, CareerFirsts.Test);
+        // Nessun commento "alla vigilia": il pilota scende in pista senza un
+        // briefing in stile anime prima del test. Restano solo i commenti che
+        // arrivano DOPO — vittoria, podio, ritiro, rivalita', tappe di
+        // stagione — che sono quelli scritti a fatto avvenuto e quindi mai
+        // fuori contesto.
         var uiAutomation = Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") == "1";
         if (awaitingResult) return;
         var raceableCars = contentIndex.Cars.Where(ContentCategoryRules.IsRaceable).ToList();
@@ -3897,12 +3891,9 @@ public sealed partial class MainForm : Form
         if (ritiro && !career.Firsts.Has(CareerFirsts.Dnf))
         { RaccontaMomento(MomentoDiCarriera.PrimaBattuta, CareerFirsts.Dnf); return; }
 
-        // La vigilia della prima gara si racconta PRIMA di scendere in pista
-        // (vedi LaunchInvitation/LaunchWeekend): qui la scena e' gia' stata
-        // vista o non lo sara' mai, non spetta a questo metodo deciderlo. Un
-        // ramo identico restava anche qui, e con lui il difetto: chi caricava
-        // una carriera gia' avviata rivedeva un discorso della sera prima a
-        // gara conclusa.
+        // Non c'e' piu' una scena "prima gara" da raccontare qui: il
+        // commento alla vigilia e' stato tolto del tutto, non solo spostato.
+        // Restano solo le prime volte che si raccontano a cosa fatta.
 
         // Niente prime volte: restano i momenti del campionato, che si possono
         // ripetere ma non nella stessa stagione.
@@ -6020,11 +6011,15 @@ public sealed partial class MainForm : Form
         // weekend si prendeva il pendingMode rimasto dal briefing precedente —
         // "test" — e la gara finiva archiviata fra le prove, senza posizione,
         // senza punti e senza premio.
-        // Vale anche qui: rarissimo (un contratto vero firmato prima di
-        // qualsiasi gara su invito) ma se succede la vigilia va raccontata
-        // comunque una volta sola, non dopo.
-        if (career.Races == 0) RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race);
-
+        // Niente scena "alla vigilia" prima della gara.
+        //
+        // Il commento nasceva come discorso della sera prima ("domani e' la
+        // tua prima gara", "dormi, e' il consiglio migliore che ho"), in
+        // stile anime. Prima ci si limitava a spostarlo dal dopo-gara (dov'era
+        // fuori contesto, letto a risultato gia' acquisito) al pre-gara — ma
+        // resta un commento "alla vigilia", ed e' proprio quel genere di
+        // scena che qui non si vuole piu': restano solo i commenti che
+        // arrivano DOPO un test o una gara, mai prima.
         pendingMode = "race"; awaitingResult = true; launchTimeUtc = DateTime.UtcNow;
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var resultHashBeforeLaunch = HashFile(resultFile); pendingResultHash = resultHashBeforeLaunch;
@@ -6181,16 +6176,7 @@ public sealed partial class MainForm : Form
             career.Results.Add($"Iscrizione gara su invito {invitation.TrackName}: € -{entryFee:N0}");
             career.News.Add($"{career.Driver} accetta l'invito di {(string.IsNullOrWhiteSpace(invitation.ProposedBy) ? "un team ospitante" : invitation.ProposedBy)} a {invitation.TrackName}: iscrizione € {entryFee:N0}.");
         }
-        // La vigilia della prima gara vera si racconta PRIMA di scendere in
-        // pista, non dopo.
-        //
-        // Il testo e' un discorso della sera prima («domani e' la tua prima
-        // gara», «dormi, e' il consiglio migliore che ho»): stava agganciato
-        // al referto della gara, quindi arrivava a risultato gia' acquisito,
-        // con Assetto Corsa appena chiuso e la corsa gia' corsa. Chi giocava
-        // vedeva Haru dire «ho preparato tutto» a cose fatte.
-        if (career.Races == 0) RaccontaMomento(MomentoDiCarriera.PrimaGara, CareerFirsts.Race);
-
+        // Niente "vigilia": vedi il commento in LaunchWeekend per il perche'.
         pendingMode = "invitation"; awaitingResult = true; launchTimeUtc = DateTime.UtcNow;
         var resultFile = AssettoCorsaResultLocator.FindLatestExisting();
         var resultHashBeforeLaunch = HashFile(resultFile); pendingResultHash = resultHashBeforeLaunch;

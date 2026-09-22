@@ -103,10 +103,17 @@ internal static class Anteprime
         //    Le ventiquattro risposte degli sponsor restano in uso e si
         //    controllano con --contenuti.
 
-        // 3. Le scene scritte. Tutte e venti: sono la parte con piu' testo e
-        //    quella dove un balloon puo' non starci.
+        // 3. Le scene scritte: sono la parte con piu' testo e quella dove un
+        //    balloon puo' non starci.
+        //
+        //    PrimaGara e PrimoTest restano fuori: erano i due commenti
+        //    "alla vigilia" (il discorso della sera prima, il briefing
+        //    appena prima del cronometro) e sono stati tolti del tutto dal
+        //    gioco, non solo spostati. Fotografarli qui farebbe cercare
+        //    difetti in due schermate che non si vedono piu'.
         foreach (var momento in Enum.GetValues<MomentoDiCarriera>())
         {
+            if (momento is MomentoDiCarriera.PrimaGara or MomentoDiCarriera.PrimoTest) continue;
             var battute = CapetaScenes.Scena(momento, fatti);
             if (battute.Count == 0) continue;
             Scatta("scena-" + momento.ToString().ToLowerInvariant(),
