@@ -121,6 +121,10 @@ public static class SceneArtwork
         if (scene.Length == 0 || !Exists(scene))
             scene = accepted ? "haru-accordo-stretta-mano-nuovo.jpg" : "haru-rifiuto-porta.jpg";
 
+        // Per i commercianti riconosciuti la scena del luogo viene prima della
+        // rotazione generica: così un'officina mostra davvero Haru al banco e
+        // non una tavola casuale con un personaggio tagliato fuori campo.
+        if (scene.Length > 0 && Exists(scene)) return scene;
         var rotated = PickVariant("sponsor", variantSeed);
         if (!string.IsNullOrWhiteSpace(rotated)) return rotated;
         return Exists(scene) ? scene : "";

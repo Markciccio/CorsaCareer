@@ -209,7 +209,10 @@ public sealed partial class MainForm
         var grid = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, BackColor = Color.Transparent };
         grid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
         grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 58));
-        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 36));
+        // La barra aveva 36 px compresi 3+3 px di padding: i GhostButton da
+        // 32 px finivano quindi tagliati nella parte inferiore. Lasciamo
+        // respiro al controllo e al bordo arrotondato.
+        grid.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         grid.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
         header.Controls.Add(grid);
 

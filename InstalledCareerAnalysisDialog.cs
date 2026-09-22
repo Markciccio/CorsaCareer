@@ -81,6 +81,8 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         formula.Left = 38; formula.Top = 203; Controls.Add(formula);
         var closed = CareerPanel("UTILITARIE → TURISMO · GT · ENDURANCE", "Track day, trofei e turismo prima di GT4, GT3, prototipi e mondiale endurance. È una carriera distinta.", cars, false);
         closed.Left = 714; closed.Top = 203; Controls.Add(closed);
+        var circuits = CircuitPanel(index.Tracks);
+        circuits.Left = 38; circuits.Top = 670; Controls.Add(circuits);
 
         // Il bivio deve sembrare un bivio.
         //
@@ -154,12 +156,12 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
 
     private Panel CareerPanel(string title, string subtitle, List<ContentCarRecord> cars, bool formula)
     {
-        var panel = new Panel { Width = 644, Height = 600, BackColor = Color.FromArgb(20, 24, 33), BorderStyle = BorderStyle.FixedSingle };
+        var panel = new Panel { Width = 644, Height = 456, BackColor = Color.FromArgb(20, 24, 33), BorderStyle = BorderStyle.FixedSingle };
         panel.Controls.Add(new Label { Text = title, Left = 16, Top = 13, Width = 440, Height = 26, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65) });
         panel.Controls.Add(new Label { Text = subtitle, Left = 16, Top = 43, Width = 440, Height = 36, ForeColor = Color.Gainsboro });
         var cover = new PictureBox { Left = 485, Top = 12, Width = 140, Height = 67, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(28, 33, 44), Image = TryImage(formula ? "campionato-formula-minore.jpg" : "campionato-endurance.jpg") };
         panel.Controls.Add(cover);
-        var rows = new FlowLayoutPanel { Left = 12, Top = 86, Width = 616, Height = 502, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.FromArgb(20, 24, 33) };
+        var rows = new FlowLayoutPanel { Left = 12, Top = 86, Width = 616, Height = 358, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.FromArgb(20, 24, 33) };
         var levels = formula
             ? new[] { (1, "LIVELLO 1 · KART 4 TEMPI"), (2, "LIVELLO 2 · KART 2 TEMPI"), (3, "LIVELLO 3 · KART CON CAMBIO"), (4, "LIVELLO 4 · FORMULA D’INGRESSO"), (5, "LIVELLO 5 · FORMULA 3 / NAZIONALE"), (6, "LIVELLO 6 · FORMULA 2 / INTERNAZIONALE"), (7, "LIVELLO 7 · FORMULA 1") }
             : new[] { (1, "LIVELLO 1 · UTILITARIE / TRACK DAY"), (2, "LIVELLO 2 · TROFEO CLUB"), (3, "LIVELLO 3 · TURISMO REGIONALE"), (4, "LIVELLO 4 · GT4 / TROFEI / TURISMO"), (5, "LIVELLO 5 · GT3 / GT2 / TURISMO ALTO"), (6, "LIVELLO 6 · PROTOTIPI"), (7, "LIVELLO 7 · MONDIALE ENDURANCE / HYPERCAR") };
@@ -178,6 +180,40 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
             rows.Controls.Add(LevelCard(name, note, present, 585, present.Count == 0 ? MissingOptions(formula, level) : [], manual));
         }
         panel.Controls.Add(rows);
+        return panel;
+    }
+
+    private static Panel CircuitPanel(IEnumerable<ContentTrackRecord> tracks)
+    {
+        var panel = new Panel { Width = 1340, Height = 124, BackColor = Color.FromArgb(20, 24, 33), BorderStyle = BorderStyle.FixedSingle };
+        panel.Controls.Add(new Label
+        {
+            Text = "CIRCUITI INSTALLATI",
+            Left = 16, Top = 10, Width = 600, Height = 24,
+            Font = new Font("Segoe UI", 12, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65)
+        });
+        var list = new FlowLayoutPanel
+        {
+            Left = 12, Top = 40, Width = 1314, Height = 72,
+            FlowDirection = FlowDirection.LeftToRight, WrapContents = false,
+            AutoScroll = true, BackColor = Color.FromArgb(20, 24, 33), Padding = new Padding(0)
+        };
+        var entries = tracks.OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase).ToList();
+        if (entries.Count == 0)
+        {
+            list.Controls.Add(new Label { Text = "— nessun circuito installato —", Width = 300, Height = 32, ForeColor = Color.FromArgb(160, 170, 185) });
+        }
+        else foreach (var track in entries)
+        {
+            var name = string.IsNullOrWhiteSpace(track.Name) ? track.Id : track.Name;
+            var length = track.LengthMeters > 0 ? $"{track.LengthMeters / 1000d:0.00} km" : "lunghezza n/d";
+            var pit = track.Pitboxes > 0 ? $"{track.Pitboxes} box" : "box n/d";
+            var card = new Panel { Width = 208, Height = 58, Margin = new Padding(2), BackColor = Color.FromArgb(28, 34, 47), BorderStyle = BorderStyle.FixedSingle };
+            card.Controls.Add(new Label { Text = name, Left = 8, Top = 6, Width = 190, Height = 23, Font = new Font("Segoe UI", 8.5f, FontStyle.Bold), ForeColor = Color.White, AutoEllipsis = true });
+            card.Controls.Add(new Label { Text = $"{track.Country} · {length} · {pit}", Left = 8, Top = 31, Width = 190, Height = 18, Font = new Font("Segoe UI", 7.3f), ForeColor = Color.FromArgb(170, 180, 195), AutoEllipsis = true });
+            list.Controls.Add(card);
+        }
+        panel.Controls.Add(list);
         return panel;
     }
 

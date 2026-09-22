@@ -327,12 +327,13 @@ public static class UiTheme
         var button = new Button
         {
             Text = text, FlatStyle = FlatStyle.Flat, BackColor = Color.Transparent, ForeColor = TextSecondary,
-            Font = Body, Width = Math.Max(width, needed), Height = 32, UseVisualStyleBackColor = false, AutoEllipsis = true
+            Font = Body, Width = Math.Max(width, needed), Height = 34, UseVisualStyleBackColor = false, AutoEllipsis = true,
+            Margin = new Padding(0, 0, 6, 0), Padding = new Padding(8, 0, 8, 0)
         };
         button.FlatAppearance.BorderSize = 1;
         button.FlatAppearance.BorderColor = Border;
         button.FlatAppearance.MouseOverBackColor = SurfaceRaised;
-        RoundCorners(button, 7);
+        RoundCorners(button, 9);
         return button;
     }
 
