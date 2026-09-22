@@ -58,11 +58,11 @@ public sealed class SoundtrackDialog : CareerDialog
         footer.Controls.Add(nowPlaying); footer.Controls.Add(volume); footer.Controls.Add(play); footer.Controls.Add(pause); footer.Controls.Add(stop);
 
         Controls.Add(tracks); Controls.Add(footer); Controls.Add(header);
-        // Un tick ancora in coda dopo la chiusura avrebbe riavviato la traccia
-        // subito dopo lo Stop finale.
-        // Chiudendo si torna al silenzio: prima veniva chiamato Stop, ma la
-        // prima riproduzione automatica riaccendeva tutto un istante dopo.
-        FormClosed += (_, _) => { volumeDebounce.Stop(); SoundtrackService.SetEnabled(false); };
+        // Chiudere il pannello non equivale a premere STOP: il brano scelto
+        // deve restare in sottofondo e le fasi successive potranno sostituirlo
+        // con un tema coerente. Il silenzio resta una scelta esplicita del
+        // pulsante STOP.
+        FormClosed += (_, _) => volumeDebounce.Stop();
     }
 
     protected override void Dispose(bool disposing)

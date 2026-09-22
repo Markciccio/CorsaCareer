@@ -89,7 +89,7 @@ public sealed class CalendarDialog : CareerDialog
         if (items.Count > 0)
         {
             var nextIndex = items.FindIndex(x => x.IsNext);
-            timeline.SelectedIndex = nextIndex >= 0 ? nextIndex : items.Count - 1;
+            timeline.SelectedIndex = nextIndex >= 0 ? nextIndex : 0;
         }
         else detail.Text = "La cronologia è pronta: il primo test entrerà qui con dati, conseguenze e un seguito narrativo.";
         Disposed += (_, _) => archiveArt?.Dispose();
@@ -108,14 +108,19 @@ public sealed class CalendarDialog : CareerDialog
             items.Add(new CalendarItem(scheduled.Date, kind, scheduled.TrackName, scheduled.IsPlanned ? "IN PROGRAMMA" : scheduled.Status.ToUpperInvariant(), scheduled.IsPlanned, Scheduled: scheduled));
         }
         foreach (var race in career.RaceHistory)
-            items.Add(new CalendarItem(race.StoryDate, $"GARA · S{race.Season:00}", race.Track, race.Dnf ? "DNF" : $"P{race.Position}", false, Race: race));
+        {
+            var championship = ChampionshipForRace(race);
+            items.Add(new CalendarItem(race.StoryDate, $"GARA · S{race.Season:00}", $"{race.Track} · {championship}", race.Dnf ? "DNF" : $"P{race.Position}", false, Race: race));
+        }
         foreach (var round in rounds.Select((value, index) => (value, index)))
         {
             if (career.RaceHistory.Any(x => x.Season == career.Season && x.Round == round.index + 1)) continue;
             if (career.Schedule.Any(x => x.IsPlanned && x.TrackId.Equals(round.value.Track, StringComparison.OrdinalIgnoreCase))) continue;
             items.Add(new CalendarItem(ParseDate(round.value.Date, career.StoryDate), "GARA", round.value.GrandPrix, round.index == career.Round ? "PROSSIMA" : "PIANIFICATA", round.index == career.Round, Round: round.value));
         }
-        items.Sort((a, b) => a.Date.CompareTo(b.Date));
+        // Il calendario si legge come un archivio: il risultato più recente
+        // viene prima, mentre le gare più vecchie scendono in fondo.
+        items.Sort((a, b) => b.Date.CompareTo(a.Date));
     }
 
     private void DrawTimelineItem(object? sender, DrawItemEventArgs e)
@@ -149,7 +154,7 @@ public sealed class CalendarDialog : CareerDialog
                 : race.Position <= 3
                     ? $"Il podio porta visibilità: {race.Points} punti e un premio di € {race.Prize:N0} cambiano il margine per il prossimo appuntamento."
                     : $"Il risultato non porta punti né premio: il prossimo test dovrà spiegare dove recuperare il distacco senza consumare altra cassa.";
-            detail.Text = $"RISULTATO ARCHIVIATO · STAGIONE {race.Season}\n\n{race.StoryDate:dddd d MMMM yyyy} · {UiText.Track(race.Track)}\n\nDATI DI GARA\nAuto: {UiText.Car(race.Car)}\nEsito: {(race.Dnf ? "ritiro (DNF)" : $"P{race.Position}")} · partenza P{race.StartingPosition}\nGiri: {race.Laps} · miglior giro: {(race.BestLapMilliseconds > 0 ? FormatLap(race.BestLapMilliseconds) : "n/d")}\n\nBILANCIO DEL WEEKEND\nPunti: {race.Points}\nPremio: € {race.Prize:N0}\nBonus sponsor: € {race.SponsorBonus:N0}\nCosti logistica pagati: € {race.LogisticsPaid:N0}\nCosti danni pagati: € {race.DamagePaid:N0}\nCosti non sostenuti: € {race.UnpaidCosts:N0}\nSaldo dopo l'evento: € {race.CashAfter:N0}\nForma fisica: {(race.FitnessDelta >= 0 ? "+" : "")}{race.FitnessDelta} · {race.FitnessAfter}/100\nLivello di fiducia dei followers: {(race.TrustDelta >= 0 ? "+" : "")}{race.TrustDelta} · {race.TrustAfter}/100\nFonte: {(race.SourceKind == ResultProvenance.Simulated ? "DEBUG · sessione simulata" : "Assetto Corsa · referto importato")}\n\nCOMMENTO DEL PADDOCK\n{comment}\n\nCOSA CAMBIA ADESSO\n{consequence}\n\nIl risultato resta nel curriculum, nella reputazione e nei futuri articoli della carriera.";
+            detail.Text = $"RISULTATO ARCHIVIATO · STAGIONE {race.Season}\n\n{race.StoryDate:dddd d MMMM yyyy} · {UiText.Track(race.Track)}\nCAMPIONATO: {ChampionshipForRace(race)} · ROUND {race.Round}\n\nDATI DI GARA\nAuto: {UiText.Car(race.Car)}\nEsito: {(race.Dnf ? "ritiro (DNF)" : $"P{race.Position}")} · partenza P{race.StartingPosition}\nGiri: {race.Laps} · miglior giro: {(race.BestLapMilliseconds > 0 ? FormatLap(race.BestLapMilliseconds) : "n/d")}\n\nBILANCIO DEL WEEKEND\nPunti: {race.Points}\nPremio: € {race.Prize:N0}\nBonus sponsor: € {race.SponsorBonus:N0}\nCosti logistica pagati: € {race.LogisticsPaid:N0}\nCosti danni pagati: € {race.DamagePaid:N0}\nCosti non sostenuti: € {race.UnpaidCosts:N0}\nSaldo dopo l'evento: € {race.CashAfter:N0}\nForma fisica: {(race.FitnessDelta >= 0 ? "+" : "")}{race.FitnessDelta} · {race.FitnessAfter}/100\nLivello di fiducia dei followers: {(race.TrustDelta >= 0 ? "+" : "")}{race.TrustDelta} · {race.TrustAfter}/100\nFonte: {(race.SourceKind == ResultProvenance.Simulated ? "DEBUG · sessione simulata" : "Assetto Corsa · referto importato")}\n\nCOMMENTO DEL PADDOCK\n{comment}\n\nCOSA CAMBIA ADESSO\n{consequence}\n\nIl risultato resta nel curriculum, nella reputazione e nei futuri articoli della carriera.";
             return;
         }
         if (item.Scheduled is { } scheduled)
@@ -161,6 +166,14 @@ public sealed class CalendarDialog : CareerDialog
     }
 
     private static Color AccentFor(CalendarItem item) => item.IsNext ? UiTheme.Positive : item.Kind.StartsWith("TEST", StringComparison.OrdinalIgnoreCase) ? UiTheme.Warning : UiTheme.Info;
+    private string ChampionshipForRace(RaceHistoryEntry race)
+    {
+        if (!string.IsNullOrWhiteSpace(race.Championship)) return race.Championship;
+        var archived = career.SeasonArchive?.FirstOrDefault(x => x.Season == race.Season)?.Championship;
+        if (!string.IsNullOrWhiteSpace(archived)) return archived;
+        if (race.Season == career.Season && !string.IsNullOrWhiteSpace(career.Championship)) return career.Championship;
+        return $"Campionato stagione {race.Season}";
+    }
     private static bool SameDateAndTrack(DateTime storedDate, string storedTrack, DateTime scheduledDate, string scheduledTrackId, string scheduledTrackName) => storedDate != default && storedDate.Date == scheduledDate.Date && (storedTrack.Equals(scheduledTrackId, StringComparison.OrdinalIgnoreCase) || storedTrack.Equals(scheduledTrackName, StringComparison.OrdinalIgnoreCase));
     private static DateTime ParseDate(string value, DateTime fallback) => DateTime.TryParse(value, out var parsed) ? parsed : fallback;
     private sealed record CalendarItem(DateTime Date, string Kind, string Title, string Status, bool IsNext, TestSessionRecord? Test = null, ScheduledEvent? Scheduled = null, RaceHistoryEntry? Race = null, Round? Round = null);

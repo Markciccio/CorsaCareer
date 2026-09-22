@@ -56,7 +56,7 @@ public static class Scuola
     /// Con tre al giorno il livello crollava da settanta a zero in un mese e
     /// mezzo, e il pannello avrebbe proposto i libri tutti i santi giorni.
     /// </summary>
-    public const int CaloGiornaliero = 2;
+    public const int CaloGiornaliero = 1;
     public const int Studiare = 10;
 
     /// <summary>

@@ -2496,12 +2496,92 @@ public sealed partial class MainForm
         // --- dati essenziali: circuito, vettura, obiettivo, costo/rischio --
         stack.Controls.Add(CardRule(inner, 8, 7));
         stack.Controls.Add(BuildTodayFacts(TodayFactRows(briefing, next), inner));
+        var championshipSummary = BuildChampionshipSummary(inner);
+        if (championshipSummary != null)
+        {
+            stack.Controls.Add(CardRule(inner, 8, 7));
+            stack.Controls.Add(championshipSummary);
+        }
 
         card.Controls.Add(stack);
         // La larghezza definitiva arriva dopo, quando il pannello della Home
         // impagina: senza questo il testo resterebbe misurato su una stima.
         card.SizeChanged += (_, _) => FitCardLines(card, stack);
         return card;
+    }
+
+    /// <summary>
+    /// Sintesi sportiva direttamente sotto i dati dell'appuntamento: il pilota
+    /// deve sapere in quale campionato sta correndo e dove si trova senza aprire
+    /// ogni volta il dossier completo.
+    /// </summary>
+    private Control? BuildChampionshipSummary(int width)
+    {
+        var standings = (career.Standings ?? [])
+            .OrderByDescending(x => x.Points).ThenByDescending(x => x.Wins)
+            .ToList();
+        if (string.IsNullOrWhiteSpace(career.Championship)) return null;
+
+        var playerIndex = standings.FindIndex(x => x.Driver.Equals(career.Driver, StringComparison.OrdinalIgnoreCase));
+        var player = playerIndex >= 0 ? standings[playerIndex] : null;
+        var lines = new List<(string Text, bool Highlight)>();
+        var visible = Enumerable.Range(0, Math.Min(3, standings.Count)).ToList();
+        if (playerIndex >= 3)
+        {
+            visible.Add(playerIndex - 1);
+            visible.Add(playerIndex);
+            if (playerIndex + 1 < standings.Count) visible.Add(playerIndex + 1);
+        }
+        foreach (var index in visible.Distinct().OrderBy(x => x))
+        {
+            var entry = standings[index];
+            lines.Add(($"P{index + 1}  {entry.Driver}  ·  {entry.Points} pt  ·  {entry.Races} gare" , index == playerIndex));
+        }
+
+        var panel = new Panel
+        {
+            Width = width, Height = 38 + Math.Max(1, lines.Count) * 23, AutoSize = false,
+            BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty,
+            Tag = "championship-summary"
+        };
+        var title = new Label
+        {
+            Text = $"CLASSIFICA · {career.Championship.ToUpperInvariant()}", Dock = DockStyle.Top,
+            Height = 22, ForeColor = UiTheme.Warning, Font = UiTheme.Kicker,
+            AutoEllipsis = true
+        };
+        panel.Controls.Add(title);
+        var status = standings.Count == 0
+            ? "Nessuna gara disputata: la classifica si aprirà dal primo referto del campionato."
+            : player == null
+            ? "Classifica aperta: il pilota non è ancora presente nel referto."
+            : $"SEI P{playerIndex + 1} · {player.Points} PUNTI · {player.Races} GARE DISPUTATE / {Math.Max(1, rounds.Count)} ROUND";
+        var statusLabel = new Label
+        {
+            Text = status, Dock = DockStyle.Top, Height = 22, ForeColor = UiTheme.TextPrimary,
+            Font = UiTheme.BodyStrong, AutoEllipsis = true
+        };
+        panel.Controls.Add(statusLabel);
+        var rows = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false,
+            AutoScroll = false, BackColor = Color.Transparent, Margin = Padding.Empty, Padding = Padding.Empty
+        };
+        if (lines.Count == 0)
+            lines.Add(("In attesa del primo risultato ufficiale.", false));
+        foreach (var line in lines)
+        {
+            var row = new Label
+            {
+                Text = line.Text, Width = Math.Max(180, width - 4), Height = 21,
+                ForeColor = line.Highlight ? UiTheme.Warning : UiTheme.TextSecondary,
+                Font = line.Highlight ? UiTheme.BodyStrong : UiTheme.Small,
+                AutoEllipsis = true, Margin = new Padding(0, 0, 0, 2)
+            };
+            rows.Controls.Add(row);
+        }
+        panel.Controls.Add(rows);
+        return panel;
     }
 
     /// <summary>

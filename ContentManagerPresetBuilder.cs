@@ -65,6 +65,18 @@ public static class ContentManagerPresetBuilder
         StartType = "pit"
     });
 
+    // L'open day resta una sessione Practice.  La griglia degli avversari è
+    // un dato della modalità Weekend e, se inserita qui, fa rifiutare il
+    // preset a Content Manager (che richiede StartType per QuickDrive Practice).
+    public static string BuildOpenDayPracticeModeData(SessionPlan plan) => JsonSerializer.Serialize(new
+    {
+        PracticeLength = plan.PracticeMinutes,
+        Penalties = true,
+        PlayerBallast = 0,
+        PlayerRestrictor = 0,
+        StartType = "pit"
+    });
+
     /// <summary>Preset Quick Drive Practice: nessuna griglia e nessuna gara.</summary>
     public static string BuildTest(string carId, string trackId, SessionPlan plan)
     {
@@ -106,11 +118,10 @@ public static class ContentManagerPresetBuilder
     /// </summary>
     public static string BuildOpenDay(string carId, string trackId, SessionPlan plan, IReadOnlyList<string> candidates, int opponents)
     {
-        var grid = BuildGrid(carId, candidates, opponents, plan);
         var preset = new
         {
             Mode = "/Pages/Drive/QuickDrive_Practice.xaml",
-            ModeData = BuildModeData(plan, grid),
+            ModeData = BuildOpenDayPracticeModeData(plan),
             CarId = carId,
             TrackId = trackId,
             WeatherId = plan.WeatherId,

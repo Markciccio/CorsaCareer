@@ -420,6 +420,10 @@ public sealed partial class MainForm : Form
     // I contenuti si leggono all'avvio e quando lo si chiede. E' anche piu'
     // onesto: nessuno aggiunge una macchina mentre sta correndo.
     private PortalFocusServer? focusServer;
+    // Processo Content Manager aperto da questa carriera. Serve a richiuderlo
+    // quando il referto è stato importato, evitando una finestra AC lasciata in
+    // background che blocca il successivo «Riprendi test».
+    private Process? launchedContentManager;
 
     /// <summary>
     /// Riporta in primo piano la finestra su richiesta di una pagina del browser.
@@ -4844,6 +4848,7 @@ public sealed partial class MainForm : Form
         var pendingPath = Path.Combine(saveDir, "pending_weekend.json");
         if (File.Exists(pendingPath)) File.Move(pendingPath, Path.Combine(saveDir, $"completed_weekend-{DateTime.UtcNow:yyyyMMdd-HHmmss}.json"), true);
         awaitingResult = false; launchTimeUtc = DateTime.MinValue; pendingResultHash = ""; lastRejectedResultSignature = "";
+        CloseLaunchedContentManager();
     }
     private void Record(ImportedRaceResult imported, string photoPath, string resultFile)
     {
@@ -4917,7 +4922,7 @@ public sealed partial class MainForm : Form
             : $"Gara su invito {invitation.TrackName}: {(imported.Dnf ? "ritiro" : $"P{position}")} (nessun punto campionato, premio € {economy.Prize:N0})");
         career.RaceHistory.Add(new RaceHistoryEntry
         {
-            Season = career.Season, Round = 0, DateUtc = DateTime.UtcNow, StoryDate = invitation.Date,
+            Season = career.Season, Round = 0, Championship = invitation.IsWildCard ? "Wild card · fuori campionato" : "Gara su invito · fuori campionato", DateUtc = DateTime.UtcNow, StoryDate = invitation.Date,
             Track = imported.Track, Car = imported.Car, Position = position, StartingPosition = imported.StartingPosition,
             QualificationPosition = imported.QualificationPosition,
             // Il nome della sessione e' anche l'etichetta con cui la carriera
@@ -5119,8 +5124,9 @@ public sealed partial class MainForm : Form
         StoryCastService.Remember(career, StoryCastService.Manager, $"Ha ricevuto il dossier del test a {imported.Track}: ora deve trasformare i dati in un'opportunità.", imported.BestLapMilliseconds > 0 ? 1 : -1);
         var headline = imported.BestLapMilliseconds > 0 ? $"Test a {imported.Track}: {career.Driver} segna {FormatLap(imported.BestLapMilliseconds)}." : $"Test a {imported.Track}: sessione reale archiviata senza miglior giro disponibile.";
         career.Headline = headline; career.News.Add(headline); career.Events.Add(new CareerEventRecord { DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Type = "TRACK_TEST", Headline = headline, Track = imported.Track, Importance = 45, PhotoPath = photoPath, PhotoView = string.IsNullOrWhiteSpace(photoPath) ? "" : PhotoSource.View(photoPath) }); SaveCareer(); if (Environment.GetEnvironmentVariable("CORSACAREER_UI_AUTOMATION") != "1") RefreshUi();
-        // Il primo giro cronometrato della vita si racconta una volta sola.
-        RaccontaMomento(MomentoDiCarriera.PrimoTest, CareerFirsts.Test);
+        // Non riproporre qui la scena narrativa del "primo cronometro":
+        // questo percorso viene eseguito anche dopo i test successivi e
+        // finiva per mostrare il commento pre-test fuori contesto.
         if (career.CareerPhase.Equals("Evaluation", StringComparison.OrdinalIgnoreCase))
         {
             // Nella valutazione il servizio racconta il verdetto, non due volte
@@ -5532,7 +5538,7 @@ public sealed partial class MainForm : Form
         career.News.Add(position == 1 ? $"{career.Driver} vince a {r.GrandPrix}: {career.Sponsor} versa il bonus di risultato." : position <= 3 ? $"Primo podio della stagione per {career.Driver} a {r.GrandPrix}." : position == 99 ? $"Weekend da dimenticare a {r.GrandPrix}: la squadra dovrà reagire." : $"{career.Driver} chiude {outcome} a {r.GrandPrix}, rispettando l'obiettivo di {career.Sponsor}.");
         career.RaceHistory ??= new List<RaceHistoryEntry>();
         var sessionPlan = sessionPlanForRound;
-        career.RaceHistory.Add(new RaceHistoryEntry { SourceKind = pendingSourceKind, FormatLabel = sessionPlan?.FormatLabel ?? "", WeatherId = sessionPlan?.WeatherId ?? "", WeatherLabel = sessionPlan?.WeatherLabel ?? "", TemperatureC = sessionPlan?.TemperatureC ?? 0, TimeOfDaySeconds = sessionPlan?.TimeOfDaySeconds ?? 0, PlannedLaps = sessionPlan?.RaceLaps ?? 0, AiLevel = sessionPlan?.AiLevel ?? 0, Season = career.Season, Round = career.Round + 1, DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Track = track, Car = car, Position = position, TeammatePosition = teammatePosition, TeammateName = teammateName, StartingPosition = startingPosition, QualificationPosition = qualificationPosition, SessionName = sessionName, Laps = laps, BestLapMilliseconds = bestLapMilliseconds, GapMilliseconds = gapMilliseconds, PitStops = pitStops, PenaltySeconds = penaltySeconds, Damage = damage, Dnf = dnf, Points = pts, Prize = prize, SponsorBonus = sponsorAward, CashDelta = career.Cash - cashBefore, CashAfter = career.Cash, FitnessDelta = career.Fitness - fitnessBefore, FitnessAfter = career.Fitness, TrustDelta = career.TeamRelation - trustBefore, TrustAfter = career.TeamRelation, LogisticsPaid = paid.LogisticsPaid, DamagePaid = paid.DamagePaid, UnpaidCosts = paid.Unpaid, PhotoPath = photoPath, ResultFile = resultFile, ResultSha256 = HashFile(resultFile), ImportedUtc = DateTime.UtcNow, Classification = classification.Select(x => new RaceParticipantSnapshot { Name = x.Name, Car = x.Car, Position = x.Position, IsPlayer = x.IsPlayer }).ToList() });
+        career.RaceHistory.Add(new RaceHistoryEntry { SourceKind = pendingSourceKind, FormatLabel = sessionPlan?.FormatLabel ?? "", WeatherId = sessionPlan?.WeatherId ?? "", WeatherLabel = sessionPlan?.WeatherLabel ?? "", TemperatureC = sessionPlan?.TemperatureC ?? 0, TimeOfDaySeconds = sessionPlan?.TimeOfDaySeconds ?? 0, PlannedLaps = sessionPlan?.RaceLaps ?? 0, AiLevel = sessionPlan?.AiLevel ?? 0, Season = career.Season, Round = career.Round + 1, Championship = career.Championship, DateUtc = DateTime.UtcNow, StoryDate = career.StoryDate, Track = track, Car = car, Position = position, TeammatePosition = teammatePosition, TeammateName = teammateName, StartingPosition = startingPosition, QualificationPosition = qualificationPosition, SessionName = sessionName, Laps = laps, BestLapMilliseconds = bestLapMilliseconds, GapMilliseconds = gapMilliseconds, PitStops = pitStops, PenaltySeconds = penaltySeconds, Damage = damage, Dnf = dnf, Points = pts, Prize = prize, SponsorBonus = sponsorAward, CashDelta = career.Cash - cashBefore, CashAfter = career.Cash, FitnessDelta = career.Fitness - fitnessBefore, FitnessAfter = career.Fitness, TrustDelta = career.TeamRelation - trustBefore, TrustAfter = career.TeamRelation, LogisticsPaid = paid.LogisticsPaid, DamagePaid = paid.DamagePaid, UnpaidCosts = paid.Unpaid, PhotoPath = photoPath, ResultFile = resultFile, ResultSha256 = HashFile(resultFile), ImportedUtc = DateTime.UtcNow, Classification = classification.Select(x => new RaceParticipantSnapshot { Name = x.Name, Car = x.Car, Position = x.Position, IsPlayer = x.IsPlayer }).ToList() });
         StoryCastService.Remember(career, StoryCastService.Mechanic, $"Ha smontato i dati di {track}: {outcome}, {pts} punti e miglior giro {FormatLap(bestLapMilliseconds)}.", position <= 3 ? 4 : dnf ? -4 : 1);
         StoryCastService.Remember(career, StoryCastService.Manager, $"Ha aggiornato il mercato dopo {track}: il risultato {outcome} vale {pts} punti e € {prize:N0}.", position <= 3 ? 5 : dnf ? -5 : 1);
         StoryCastService.Remember(career, StoryCastService.Rival, $"Ha visto {career.Driver} chiudere {outcome} a {track}: il duello resta aperto.", position <= 3 ? 3 : 0);
@@ -7117,9 +7123,35 @@ public sealed partial class MainForm : Form
         }
         catch (Exception error) { CareerMessages.Show(null, $"Impossibile riaprire il weekend pendente: {error.Message}", "CorsaCareer", MessageBoxButtons.OK, MessageBoxIcon.Warning); }
     }
-    private static void OpenContentManagerPreset(string contentManagerPath, string presetPath)
+    private void OpenContentManagerPreset(string contentManagerPath, string presetPath)
     {
-        Process.Start(ContentManagerLaunch.Build(contentManagerPath, presetPath));
+        try
+        {
+            launchedContentManager = Process.Start(ContentManagerLaunch.Build(contentManagerPath, presetPath));
+        }
+        catch (Exception error)
+        {
+            CareerLog.Warn("assetto", $"avvio Content Manager non riuscito: {error.Message}");
+            launchedContentManager = null;
+            throw;
+        }
+    }
+
+    private void CloseLaunchedContentManager()
+    {
+        var process = launchedContentManager;
+        launchedContentManager = null;
+        if (process == null) return;
+        try
+        {
+            if (!process.HasExited)
+            {
+                process.CloseMainWindow();
+                if (!process.WaitForExit(1200) && !process.HasExited) process.Kill(entireProcessTree: false);
+            }
+        }
+        catch (Exception error) { CareerLog.Warn("assetto", $"chiusura automatica Content Manager non riuscita: {error.Message}"); }
+        finally { process.Dispose(); }
     }
 }
 

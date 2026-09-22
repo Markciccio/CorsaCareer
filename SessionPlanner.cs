@@ -237,6 +237,15 @@ public static class SessionPlanner
             plan.RaceDistanceMeters = 0;
             plan.Notes.Add($"Lunghezza di {(string.IsNullOrWhiteSpace(request.TrackName) ? request.TrackId : request.TrackName)} non dichiarata nei metadati: giri calcolati per categoria, non su distanza reale.");
         }
+        // Le manche della carriera devono restare brevi e leggibili anche in
+        // Assetto Corsa: tre giri sono sufficienti per importare un referto
+        // reale senza trasformare ogni prova in una sessione interminabile.
+        // Il round endurance mantiene invece la propria distanza speciale.
+        if (!endurance)
+        {
+            plan.RaceLaps = 3;
+            if (request.TrackLengthMeters > 0) plan.RaceDistanceMeters = plan.RaceLaps * request.TrackLengthMeters;
+        }
         if (endurance) plan.Notes.Add("Round di durata della stagione: distanza aumentata sul circuito più lungo del calendario.");
     }
 
@@ -402,13 +411,13 @@ public static class SessionPlanner
     /// </summary>
     public static double AiLevelForStep(int ladderStep) => ladderStep switch
     {
-        1 => 76.0,  // kart quattro tempi: il fondo
-        2 => 80.0,  // kart due tempi
-        3 => 84.0,  // kart 125 con cambio
-        4 => 88.0,  // formula d'ingresso, GT4, monomarca
-        5 => 92.0,  // formula nazionale, GT3, turismo internazionale
-        6 => 95.0,  // formula internazionale, prototipi
-        7 => 97.0,  // il vertice
+        1 => 90.0,  // kart quattro tempi: il fondo
+        2 => 92.0,  // kart due tempi
+        3 => 94.0,  // kart 125 con cambio
+        4 => 95.0,  // formula d'ingresso, GT4, monomarca
+        5 => 96.0,  // formula nazionale, GT3, turismo internazionale
+        6 => 98.0,  // formula internazionale, prototipi
+        7 => 99.0,  // il vertice
         _ => 0.0    // gradino sconosciuto: decide il tier, come prima
     };
 
@@ -421,8 +430,8 @@ public static class SessionPlanner
         // generico a 86: contro un esordiente — che parte intorno a 76 —
         // significava ultimo posto garantito alla prima gara, per tabella e
         // non per come era andata in pista.
-        "Rookie" => 78.0,
-        _ => 86.0
+        "Rookie" => 90.0,
+        _ => 90.0
     };
 
     private static void ApplyAi(SessionPlan plan, SessionRequest request)
@@ -437,9 +446,9 @@ public static class SessionPlanner
         var perCategoria = perGradino > 0 ? perGradino : DefaultAiLevel(request.Tier);
         var baseLevel = Math.Min(perCategoria + 2.0, perCategoria + LevelBonus(request.ChampionshipLevel));
         var level = baseLevel + SessionProfiles.DifficultyOffset(request.DifficultyProfile) + Math.Clamp(request.AiCalibrationOffset, -10, 6);
-        plan.AiLevel = Math.Clamp(Math.Round(level, 0), 70, 100);
+        plan.AiLevel = Math.Clamp(Math.Round(level, 0), 90, 100);
         var spread = request.MixedGrid ? 5 : 2;
-        plan.AiLevelMin = Math.Clamp(plan.AiLevel - spread, 70, 100);
+        plan.AiLevelMin = Math.Clamp(plan.AiLevel - spread, 90, 100);
         var aggression = BaseAggression(request.CarCategory) * SessionProfiles.AggressionMultiplier(request.DifficultyProfile);
         plan.AiAggression = Math.Clamp(Math.Round(aggression, 0), 0, 100);
         plan.AiAggressionMin = Math.Clamp(plan.AiAggression - 12, 0, 100);

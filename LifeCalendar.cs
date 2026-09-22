@@ -221,9 +221,9 @@ public static class LifeCalendar
         {
             profile.Professionalism = Math.Clamp(profile.Professionalism - 2, 0, 100);
             profile.PublicPopularity = Math.Clamp(profile.PublicPopularity - 1, 0, 100);
-            // Un'assenza pesa il doppio di una presenza: recuperare costa piu'
-            // di quanto costi tenersi in pari.
-            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance - 4, 0, 100);
+            // Un'assenza pesa il doppio del calo ordinario, ma resta leggibile
+            // e recuperabile: la scuola non deve azzerarsi in pochi giorni.
+            career.SchoolPerformance = Math.Clamp(career.SchoolPerformance - 2, 0, 100);
         }
         profile.SyncLegacyFields(career);
         var reason = automatic ? "non hai chiuso la giornata prima di far scorrere il calendario" : "hai scelto di saltarlo";

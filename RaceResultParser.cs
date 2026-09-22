@@ -169,6 +169,8 @@ public sealed class RaceHistoryEntry
 {
     public int Season { get; set; }
     public int Round { get; set; }
+    /// <summary>Campionato a cui appartiene la gara, congelato nello storico.</summary>
+    public string Championship { get; set; } = "";
     public DateTime DateUtc { get; set; }
     public DateTime StoryDate { get; set; }
     public string Track { get; set; } = "";
