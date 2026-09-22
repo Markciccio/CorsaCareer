@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Windows.Forms;
 
 namespace CorsaCareer;
@@ -159,7 +159,7 @@ public sealed class InstalledCareerAnalysisDialog : CareerDialog
         var panel = new Panel { Width = 644, Height = 456, BackColor = Color.FromArgb(20, 24, 33), BorderStyle = BorderStyle.FixedSingle };
         panel.Controls.Add(new Label { Text = title, Left = 16, Top = 13, Width = 440, Height = 26, Font = new Font("Segoe UI", 14, FontStyle.Bold), ForeColor = Color.FromArgb(245, 190, 65) });
         panel.Controls.Add(new Label { Text = subtitle, Left = 16, Top = 43, Width = 440, Height = 36, ForeColor = Color.Gainsboro });
-        var cover = new PictureBox { Left = 485, Top = 12, Width = 140, Height = 67, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(28, 33, 44), Image = TryImage(formula ? "campionato-formula-minore.jpg" : "campionato-endurance.jpg") };
+        var cover = new PictureBox { Left = 485, Top = 12, Width = 140, Height = 67, SizeMode = PictureBoxSizeMode.Zoom, BackColor = Color.FromArgb(28, 33, 44), Image = TryImage(formula ? "campionato-kart-monoposto.jpg" : "campionato-endurance.jpg") };
         panel.Controls.Add(cover);
         var rows = new FlowLayoutPanel { Left = 12, Top = 86, Width = 616, Height = 358, FlowDirection = FlowDirection.TopDown, WrapContents = false, AutoScroll = true, BackColor = Color.FromArgb(20, 24, 33) };
         var levels = formula

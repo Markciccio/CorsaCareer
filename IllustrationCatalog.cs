@@ -1,4 +1,4 @@
-namespace CorsaCareer;
+﻿namespace CorsaCareer;
 
 /// <summary>Metadati leggibili per scegliere una tavola senza affidarsi al nome tecnico del file.</summary>
 public static class IllustrationCatalog
@@ -12,7 +12,8 @@ public static class IllustrationCatalog
     /// </summary>
     private static readonly IReadOnlyDictionary<string, IllustrationInfo> Library = new Dictionary<string, IllustrationInfo>(StringComparer.OrdinalIgnoreCase)
     {
-        ["japan-kart-dawn-garage-rookie-mechanic.png"] = new("Prima dell'alba nel box", "home, sigla, kart, giappone, rookie, meccanico, officina, pioggia, gavetta, alba", "kart da competizione usato; ricambi di kart sul banco", "Rookie e meccanico riparano un kart usato in un piccolo circuito giapponese dopo la pioggia. Per prologhi, preparazione, budget basso e fiducia costruita a mano."),
+        ["campionato-kart-monoposto.jpg"] = new("Squadra kart festeggia in officina", "copertina, kart, giappone, squadra, officina, vittoria, festa", "kart da competizione in primo piano", "Sei ragazzi festeggiano intorno a un kart in un'officina aperta sulla strada: squadra al completo, pilota al volante. Copertina del ramo di carriera KART → MONOPOSTO, che comincia proprio dal kart. Il nome del file diceva «formula-minore»: non lo era.")
+        , ["japan-kart-dawn-garage-rookie-mechanic.png"] = new("Prima dell'alba nel box", "home, sigla, kart, giappone, rookie, meccanico, officina, pioggia, gavetta, alba", "kart da competizione usato; ricambi di kart sul banco", "Rookie e meccanico riparano un kart usato in un piccolo circuito giapponese dopo la pioggia. Per prologhi, preparazione, budget basso e fiducia costruita a mano."),
         ["japan-junior-formula-rain-test-step-up.png"] = new("Primo salto in formula", "home, formula-minore, giappone, test, pioggia, rookie, meccanico, promozione, tensione", "monoposto junior a ruote scoperte; kart sullo sfondo del paddock", "Il pilota entra in una monoposto junior durante un test bagnato. Per debutti in formula, secondi test, cambi categoria e obiettivi tecnici."),
         ["japan-touring-sunset-rival-duel.png"] = new("Duello turismo al tramonto", "home, touring, giappone, rivale, gara, duello, tramonto, sorpasso, tensione", "due vetture turismo da gara", "Due turismo originali combattono affiancate sul bagnato. Per qualifiche, rivalità, sorpassi, gare punto a punto e commenti provocatori."),
         ["japan-endurance-night-rain-pitstop.png"] = new("Pit stop sotto la pioggia", "home, gt, endurance, giappone, notte, pitstop, strategia, pioggia, squadra, pressione", "GT endurance; altre GT nel box sullo sfondo", "Una GT rientra ai box di notte mentre squadra e stratega lavorano sotto la pioggia. Per endurance, strategie, crisi, soste e responsabilità del team.")
@@ -123,6 +124,159 @@ public static class IllustrationCatalog
         , ["anime-archive-005.png"] = new("Griglia di partenza in formula", "manga, tavola-narrativa, carriera, giappone, formula-minore, gara", "monoposto junior a ruote scoperte", "Il rookie attende il verde in monoposto mentre il mentore si sporge per le ultime istruzioni; la griglia e piena di monoposto e il pubblico riempie le tribune. Per partenze, prime gare in formula e attese cariche di tensione.")
         , ["anime-archive-006.png"] = new("La firma in officina", "manga, tavola-narrativa, carriera, giappone, paddock, contratto", "nessun mezzo obbligatorio", "Il pilota firma un foglio su un banco da lavoro mentre il mentore e il responsabile della squadra osservano; una vettura coperta aspetta sullo sfondo. Per contratti, accordi con piccole squadre e decisioni prese lontano dalla pista.")
         , ["anime-archive-007.png"] = new("Confronto dei dati fra compagni", "manga, tavola-narrativa, carriera, giappone, formula-minore, dati", "monoposto junior a ruote scoperte", "Due piloti confrontano tabulati di telemetria in un box con due monoposto in preparazione e il monitor dei tempi acceso. Per analisi tecniche, confronto interno alla squadra e ricerca del riferimento.")
+    };
+
+    /// <summary>
+    /// Le altre 125 tavole d'archivio, guardate una per una.
+    ///
+    /// Fino a qui la posizione di una tavola d'archivio si calcolava dal
+    /// numero nel nome del file — «anime-archive-093» diventava categoria
+    /// «93 % 6», momento «93 / 6 % 7» — un segnaposto dichiaratamente
+    /// provvisorio, mai confermato. Guardando le centotrentasei tavole una
+    /// per una il segnaposto si e' rivelato quasi sempre sbagliato: kart
+    /// etichettate formula, turismo etichettato GT, due fogli di soli loghi
+    /// delle squadre trattati come scene con personaggi. Qui ogni tavola
+    /// dichiara chi si vede, l'eta' approssimativa, l'azione e il mezzo (se
+    /// c'e'), cosi' come si vede guardandola — non come suggerisce il numero.
+    ///
+    /// Le tavole 001-007 e 050 restano nella libreria sopra, dove erano gia'
+    /// descritte a mano; questa ne copre il resto. 014, 085 e 086 mancano di
+    /// proposito: sono fogli di loghi delle squadre, non scene, e Describe()
+    /// li esclude esplicitamente invece di dare loro una categoria a caso.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, IllustrationInfo> ArchiveLibrary = new Dictionary<string, IllustrationInfo>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["anime-archive-008.jpg"] = new("Giovane uomo solo alla scrivania sotto una lampada, fra attrezzi da officina", "manga, archivio, tavola-narrativa, carriera, giappone, officina", "nessun mezzo", "Giovane uomo (meccanico o pilota) seduto solo a una scrivania illuminata da una lampada, circondato da attrezzi da officina: momento riflessivo."),
+        ["anime-archive-009.jpg"] = new("Pilota adolescente in abitacolo riceve istruzioni al muretto, folla", "manga, archivio, tavola-narrativa, carriera, giappone, formula-minore, gara", "monoposto a ruote scoperte", "Pilota adolescente seduto in abitacolo riceve istruzioni gestuali da due uomini al muretto box, folla dietro le transenne: briefing prima della partenza."),
+        ["anime-archive-010.jpg"] = new("Pilota adulto in monoposto, tramonto, bandiera a scacchi sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, gara", "monoposto a ruote scoperte", "Pilota adulto alla guida di una monoposto affusolata al tramonto, motivo a scacchi sulle barriere: momento di gara."),
+        ["anime-archive-011.jpg"] = new("Uomo adulto osserva un giovane pilota in un’officina moderna, folla dietro i vetri", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, officina", "monoposto o prototipo (silhouette)", "Un uomo adulto (team manager) osserva a braccia conserte un giovane pilota in un’officina moderna e illuminata, folla dietro le vetrate: valutazione o test importante."),
+        ["anime-archive-012.jpg"] = new("Uomo maturo e giovane pilota camminano nel paddock fra fotografi, monoposto e folla", "manga, archivio, tavola-narrativa, carriera, giappone, formula-vertice, trasferta", "monoposto da vertice", "Un uomo maturo (dirigente) e un giovane pilota camminano nel paddock affollato di fotografi accanto a una monoposto di alto livello: presentazione ufficiale a un pubblico ampio."),
+        ["anime-archive-013.jpg"] = new("Due uomini adulti su un circuito vuoto al tramonto, uno regge un trofeo", "manga, archivio, tavola-narrativa, carriera, giappone, vittoria", "nessun mezzo", "Due uomini adulti (mentore e pilota) fermi su un circuito vuoto al tramonto, uno tiene un trofeo: momento di bilancio, non una gara in corso."),
+        ["anime-archive-015.jpg"] = new("Due adolescenti camminano lungo il muretto box al tramonto con i caschi in mano", "manga, archivio, tavola-narrativa, carriera, giappone, compagno", "nessun mezzo in primo piano", "Due adolescenti (pilota e compagno/rivale) camminano lungo il muretto box al tramonto, caschi in mano: momento di cameratismo fuori pista."),
+        ["anime-archive-016.jpg"] = new("Famiglia riunita a tavola la sera, casco sul tavolo, si discute un accordo", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "nessun mezzo", "Una famiglia (adulti e un adolescente) seduta a tavola la sera con un casco appoggiato al centro: si discute una decisione di carriera in casa."),
+        ["anime-archive-017.jpg"] = new("Pilota adolescente in kart, notte, rivale in kart blu alle spalle", "manga, archivio, tavola-narrativa, carriera, giappone, kart, gara", "due kart da gara", "Pilota adolescente alla guida di un kart di notte sotto le luci dell’impianto, un rivale in kart blu lo insegue da vicino: duello in pista."),
+        ["anime-archive-018.jpg"] = new("Due adolescenti studiano una mappa/tracciato vicino a un telaio di kart, notte", "manga, archivio, tavola-narrativa, carriera, giappone, kart, dati", "telaio di kart", "Due adolescenti (pilota e compagno) studiano un tracciato o dei dati vicino a un telaio di kart smontato, di notte: preparazione tecnica."),
+        ["anime-archive-019.jpg"] = new("Giovane adulto cammina da solo con il casco su una strada di campagna al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, trasferta", "furgone del team sullo sfondo", "Un pilota giovane adulto cammina da solo lungo una strada di campagna al tramonto, casco in mano, furgone del team parcheggiato dietro: trasferta o momento di solitudine."),
+        ["anime-archive-020.jpg"] = new("Pilota adolescente guida un kart sotto la pioggia, mentore cronometra dal muretto", "manga, archivio, tavola-narrativa, carriera, giappone, kart, test", "kart da competizione", "Pilota adolescente guida un kart sotto la pioggia; un mentore adulto cronometra dal bordo pista con un ombrello: sessione di test bagnata."),
+        ["anime-archive-021.jpg"] = new("Meccanico adulto lavora da solo di notte su un telaio di kart, sotto una lampada", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "telaio di kart", "Un meccanico adulto lavora da solo, di notte, su un telaio di kart smontato sotto la luce di una lampada da officina."),
+        ["anime-archive-022.jpg"] = new("Tre adulti a un tavolo con un casco, si discute un accordo", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "nessun mezzo", "Tre adulti (pilota, team manager, un terzo) seduti a un tavolo con un casco davanti: trattativa o firma di un accordo."),
+        ["anime-archive-023.jpg"] = new("Ritratto di donna adulta, capelli scuri corti, sguardo deciso", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una donna adulta con capelli scuri a caschetto e sguardo deciso: personaggio dello staff/management (stile Rei Kisaragi)."),
+        ["anime-archive-024.jpg"] = new("Ritratto di uomo maturo, capelli grigi, espressione da mentore esperto", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo maturo con capelli grigi e giacca da officina: il mentore/meccanico esperto (stile Genji Arakawa)."),
+        ["anime-archive-025.jpg"] = new("Ritratto di giovane uomo adulto, capelli scuri, sorriso sicuro, porto sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un giovane uomo adulto con capelli scuri e sorriso sicuro, sfondo di porto/circuito: personaggio del paddock, forse un rivale o un contatto sponsor."),
+        ["anime-archive-026.jpg"] = new("Ritratto di giovane uomo, capelli ricci, occhi chiari, tuta da corsa blu", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un giovane pilota con capelli ricci e tuta da corsa blu: compagno di squadra o rivale straniero."),
+        ["anime-archive-027.jpg"] = new("Ritratto di giovane uomo con quaderno in mano, sorridente, officina sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un giovane uomo con un quaderno in mano, sorridente, officina sullo sfondo: potrebbe essere l’agente al lavoro sui dati."),
+        ["anime-archive-028.jpg"] = new("Ritratto di giovane donna con auricolare, paddock sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con auricolare da comunicazioni, paddock sullo sfondo: ingegnere di pista o addetta al muretto."),
+        ["anime-archive-029.jpg"] = new("Ritratto di uomo adulto con occhiali e cuffie, ingegnere", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo adulto con occhiali e cuffie da comunicazione: ingegnere di telemetria."),
+        ["anime-archive-030.jpg"] = new("Ritratto di uomo maturo con capelli grigi, sguardo severo, tribune sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo maturo con capelli grigi e sguardo severo, tribune del circuito sullo sfondo: team manager o direttore sportivo."),
+        ["anime-archive-031.jpg"] = new("Ritratto di giovane donna con macchina fotografica, paddock", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con macchina fotografica al collo, paddock sullo sfondo: fotografa o giornalista sportiva."),
+        ["anime-archive-032.jpg"] = new("Gruppo di adolescenti festeggia con bandiere a scacchi su un molo al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, vittoria", "nessun mezzo in primo piano", "Un gruppo di adolescenti festeggia con bandiere a scacchi su un molo al tramonto: celebrazione di squadra dopo un risultato, nessun mezzo inquadrato."),
+        ["anime-archive-033.jpg"] = new("Giovane adulto seduto a terra sotto la pioggia con il casco, furgone sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, sconfitta", "furgone del team", "Un pilota giovane adulto siede a terra sotto la pioggia con il casco accanto, furgone del team sullo sfondo: momento di sconforto dopo un weekend andato male."),
+        ["anime-archive-034.jpg"] = new("Due piloti adolescenti tagliano il traguardo appaiati in kart, bandiera a scacchi", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "due kart da gara", "Due piloti adolescenti tagliano il traguardo appaiati in kart sotto la bandiera a scacchi, folla in tribuna: arrivo punto a punto."),
+        ["anime-archive-035.jpg"] = new("Gruppo di adolescenti al tavolo box con computer portatili, kart sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, kart, dati", "kart sullo sfondo", "Un gruppo di adolescenti (squadra) analizza dati al tavolo box con computer portatili, un kart visibile alle spalle."),
+        ["anime-archive-036.jpg"] = new("Ritratto di giovane donna, capelli scuri corti, espressione preoccupata", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con capelli scuri corti ed espressione preoccupata: personaggio femminile del cast in un momento di tensione."),
+        ["anime-archive-037.jpg"] = new("Ritratto di giovane uomo, capelli scuri, sorriso, tramonto in pista", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un giovane uomo con capelli scuri e sorriso rilassato, tramonto sullo sfondo di un circuito."),
+        ["anime-archive-038.jpg"] = new("Ritratto di uomo maturo, capelli grigi, tiene un pezzo meccanico in mano", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "chiave o pezzo meccanico in mano", "Ritratto di un uomo maturo con capelli grigi che tiene un pezzo meccanico in mano, officina sullo sfondo: il meccanico/mentore al lavoro (stile Genji)."),
+        ["anime-archive-039.jpg"] = new("Ritratto di uomo maturo, capelli grigi, sorriso caloroso, garage al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo maturo con capelli grigi e sorriso caloroso, garage al tramonto: il mentore in un momento sereno."),
+        ["anime-archive-040.jpg"] = new("Pilota adolescente con espressione tesa e determinata, kart sfocato dietro", "manga, archivio, tavola-narrativa, carriera, giappone, kart, gara", "kart in movimento sullo sfondo", "Ritratto ravvicinato di un pilota adolescente con espressione tesa e determinata durante una gara in kart, pista sfocata alle spalle."),
+        ["anime-archive-041.jpg"] = new("Pilota adolescente in tuta da kart giallo-nera, corsia box", "manga, archivio, tavola-narrativa, carriera, giappone, kart, ritratto", "kart sullo sfondo", "Ritratto a mezzo busto di un pilota adolescente in tuta da corsa giallo-nera, corsia box e altri kart alle spalle."),
+        ["anime-archive-042.jpg"] = new("Giovane adulto cammina da solo su una tribuna vuota sotto la pioggia, borsa in spalla", "manga, archivio, tavola-narrativa, carriera, giappone, trasferta", "nessun mezzo", "Un pilota giovane adulto cammina da solo su una tribuna vuota sotto la pioggia con una borsa in spalla: partenza o arrivo malinconico."),
+        ["anime-archive-043.jpg"] = new("Due meccanici adulti lavorano su due kart affiancati in garage", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "due kart in manutenzione", "Due meccanici adulti lavorano fianco a fianco su due kart in un garage, sotto la pioggia visibile fuori."),
+        ["anime-archive-044.jpg"] = new("Sequenza a fumetti: un giovane pilota disegna e discute strategie a tavolino", "manga, archivio, tavola-narrativa, carriera, giappone, dati", "schizzi tecnici su carta", "Sequenza in stile fumetto: un giovane pilota disegna schizzi e discute strategie a tavolino con un compagno, sfondo paddock."),
+        ["anime-archive-045.jpg"] = new("Due piloti adolescenti in tuta antipioggia restano accanto ai loro kart, prima della gara", "manga, archivio, tavola-narrativa, carriera, giappone, kart, gara", "due kart sotto la pioggia", "Due piloti adolescenti in tuta antipioggia rossa e gialla restano accanto ai loro kart in attesa della partenza sotto la pioggia."),
+        ["anime-archive-046.jpg"] = new("Squadra riunita davanti a schermi con grafici di dati in un ufficio tecnico", "manga, archivio, tavola-narrativa, carriera, giappone, dati", "nessun mezzo, solo schermi", "Una squadra (adulti e un giovane pilota) analizza grafici e dati su grandi schermi in un ufficio tecnico: riunione di strategia."),
+        ["anime-archive-047.jpg"] = new("Squadra di adolescenti festeggia con un trofeo al tramonto, kart in primo piano", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart in primo piano", "Una squadra di adolescenti festeggia con un trofeo al tramonto, un kart in primo piano: vittoria di campionato giovanile."),
+        ["anime-archive-048.jpg"] = new("Giovane uomo solo alla scrivania di notte in citta’, casco accanto, appunti", "manga, archivio, tavola-narrativa, carriera, giappone, officina", "casco appoggiato al tavolo", "Un giovane pilota siede solo a una scrivania di notte con vista sulla citta’, casco e appunti accanto: momento di riflessione dopo il lavoro."),
+        ["anime-archive-049.jpg"] = new("Furgone con carrello porta-kart su una strada costiera al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, trasferta", "furgone e carrello portamezzi", "Un furgone con carrello porta-kart percorre una strada costiera al tramonto: trasferta verso il prossimo appuntamento."),
+        ["anime-archive-051.jpg"] = new("Pilota adulto in monoposto su strada di montagna, cielo sereno", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, gara", "monoposto a ruote scoperte", "Un pilota adulto guida una monoposto bianca su una strada di montagna sotto un cielo sereno: sessione di gara o test in quota."),
+        ["anime-archive-052.jpg"] = new("Due persone adulte preparano un kart all’alba su un tracciato in collina", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in preparazione", "Due persone adulte (pilota e meccanico) preparano un kart a bordo di una strada di collina all’alba, luce calda del mattino."),
+        ["anime-archive-053.jpg"] = new("Pilota e meccanico adulti osservano note tecniche accanto a una monoposto ai box", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, dati", "monoposto a ruote scoperte", "Un pilota e un meccanico adulti osservano appunti tecnici accanto a una monoposto ferma ai box: analisi post-sessione."),
+        ["anime-archive-054.jpg"] = new("Due vetture GT/turismo corrono affiancate al tramonto, scia di polvere", "manga, archivio, tavola-narrativa, carriera, giappone, gt, gara", "due vetture GT da gara", "Due vetture da competizione con carrozzeria chiusa corrono affiancate al tramonto, atmosfera drammatica da lotta per la posizione."),
+        ["anime-archive-055.jpg"] = new("Squadra lavora di notte su una vettura GT sotto i fari, pioggia", "manga, archivio, tavola-narrativa, carriera, giappone, gt, officina", "vettura GT/sportiva chiusa", "Una squadra lavora di notte su una vettura da competizione con carrozzeria chiusa, sotto i fari e la pioggia: intervento ai box notturno."),
+        ["anime-archive-056.jpg"] = new("Ritratto di donna adulta, capelli scuri corti, tailleur scuro, tablet in mano", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una donna adulta con capelli scuri corti e tailleur scuro, tablet in mano: manager o scout (stile Rei Kisaragi)."),
+        ["anime-archive-057.jpg"] = new("Ritratto di donna adulta, capelli scuri corti, sorriso, paddock alle spalle", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una donna adulta con capelli scuri corti e leggero sorriso, paddock sfocato alle spalle."),
+        ["anime-archive-058.jpg"] = new("Ritratto di uomo maturo, capelli grigi, mano al mento, gesto deciso", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo maturo con capelli grigi in un gesto deciso, mano al mento: il mentore che da’ un consiglio importante (stile Genji)."),
+        ["anime-archive-059.jpg"] = new("Ritratto di uomo maturo, capelli grigi, sguardo concentrato, tiene una chiave", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "chiave inglese in mano", "Ritratto di un uomo maturo con capelli grigi, sguardo concentrato, tiene una chiave in mano: momento tecnico del mentore."),
+        ["anime-archive-060.jpg"] = new("Pilota adolescente sorridente in tuta giallo-nera, kart e folla sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, kart, ritratto", "kart sullo sfondo", "Ritratto di un pilota adolescente sorridente in tuta da kart giallo-nera, kart e folla di paddock alle spalle."),
+        ["anime-archive-061.jpg"] = new("Pilota adolescente con sguardo determinato, tramonto su un circuito", "manga, archivio, tavola-narrativa, carriera, giappone, kart, ritratto", "nessuno, ritratto ambientato", "Ritratto di un pilota adolescente con sguardo determinato, tramonto su un circuito alle spalle."),
+        ["anime-archive-062.jpg"] = new("Ritratto di giovane donna, capelli rossi, foulard giallo, al telefono di notte", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con capelli rossi e foulard giallo, al telefono in un ufficio di notte: addetta stampa o sponsor."),
+        ["anime-archive-063.jpg"] = new("Pilota adolescente scrive su un quaderno vicino a un kart, garage", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in garage", "Un pilota adolescente scrive appunti su un quaderno seduto vicino a un kart, dentro un garage."),
+        ["anime-archive-064.jpg"] = new("Ritratto di giovane donna, capelli rossi, foulard giallo, quaderno in mano, pioggia", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con capelli rossi e foulard giallo, quaderno in mano sotto la pioggia, gruppo sullo sfondo."),
+        ["anime-archive-065.jpg"] = new("Pilota adolescente festeggia sventolando fogli, kart e folla al traguardo", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart al traguardo", "Un pilota adolescente festeggia sventolando dei fogli (risultati) accanto al kart al traguardo, folla in tribuna."),
+        ["anime-archive-066.jpg"] = new("Ritratto di giovane donna, capelli rossi, giacca scura, circuito al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con capelli rossi e giacca scura, circuito al tramonto sullo sfondo."),
+        ["anime-archive-067.jpg"] = new("Ritratto di uomo adulto con occhiali, cuffie, gesto da indicare dati", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo adulto con occhiali e cuffie da ingegnere, gesto di chi indica un dato su uno schermo."),
+        ["anime-archive-068.jpg"] = new("Ritratto di giovane donna, capelli scuri, giacca da team, notte in paddock", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una giovane donna con capelli scuri e giacca da team, paddock notturno sullo sfondo."),
+        ["anime-archive-069.jpg"] = new("Ritratto di uomo maturo, capelli grigi, gesto deciso col dito, tablet in mano", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di un uomo maturo con capelli grigi, gesto deciso col dito indice, tablet in mano: direttore che da’ un’istruzione."),
+        ["anime-archive-070.jpg"] = new("Pilota adolescente in tuta giallo-nera indica qualcosa fuori scena, kart alle spalle", "manga, archivio, tavola-narrativa, carriera, giappone, kart, ritratto", "kart alle spalle", "Ritratto di un pilota adolescente in tuta giallo-nera mentre indica qualcosa fuori campo, kart e box alle spalle."),
+        ["anime-archive-071.jpg"] = new("Ritratto di donna adulta, capelli scuri, tailleur scuro, cartella sottobraccio", "manga, archivio, tavola-narrativa, carriera, giappone, ritratto", "nessuno, ritratto", "Ritratto di una donna adulta con capelli scuri e tailleur scuro, cartella sottobraccio: manager pronta a una riunione."),
+        ["anime-archive-072.jpg"] = new("Uomo maturo lavora su un kart all’imbrunire, luce calda", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in manutenzione", "Un meccanico/mentore maturo lavora chino su un kart all’imbrunire, luce calda di fine giornata."),
+        ["anime-archive-073.jpg"] = new("Tre adulti mostrano una giacca/livrea da corsa in paddock, bandiera visibile", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, livrea/giacca in mostra", "Tre adulti mostrano una giacca da corsa con nuova livrea in paddock: presentazione di uno sponsor o di una nuova squadra."),
+        ["anime-archive-074.jpg"] = new("Giovane donna e uomo maturo discutono con casco e documenti su un tavolo", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "casco sul tavolo", "Una giovane donna e un uomo maturo discutono seduti a un tavolo con un casco e documenti: trattativa commerciale o contrattuale."),
+        ["anime-archive-075.jpg"] = new("Pilota adolescente al muretto box reagisce mentre una vettura turismo passa sotto la pioggia", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, gara", "vettura turismo/TCR da gara", "Un pilota adolescente al muretto box reagisce con tensione mentre una vettura turismo bianca passa sotto la pioggia notturna: momento di gara ad alta tensione."),
+        ["anime-archive-076.jpg"] = new("Fotografa scatta mentre un team festeggia con una vettura GT al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, gt, vittoria", "vettura GT", "Una fotografa scatta immagini mentre un team festeggia un risultato con una vettura GT al tramonto."),
+        ["anime-archive-077.jpg"] = new("Due adulti guardano un tablet a un tavolo, componenti tecnici sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, dati", "componenti tecnici sullo sfondo, non un mezzo intero", "Due adulti (probabilmente pilota e ingegnere) osservano dati su un tablet a un tavolo, componenti meccanici sullo sfondo."),
+        ["anime-archive-078.jpg"] = new("Gruppo di adolescenti riuniti attorno a un kart sotto un tendone", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart sotto il tendone del paddock", "Un gruppo di adolescenti (squadra) si riunisce attorno a un kart sotto il tendone del paddock: lavoro di squadra prima della gara."),
+        ["anime-archive-079.jpg"] = new("Squadra lavora di notte su una vettura sportiva chiusa in un garage buio", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, officina", "vettura sportiva chiusa (stile coupe’ da corsa)", "Una squadra lavora di notte su una vettura sportiva a carrozzeria chiusa in un garage scarsamente illuminato: intervento tecnico serale."),
+        ["anime-archive-080.jpg"] = new("Furgone con carrello porta-mezzi su una strada costiera al tramonto, pilota a bordo", "manga, archivio, tavola-narrativa, carriera, giappone, trasferta", "furgone e carrello portamezzi", "Un furgone con carrello porta-mezzi percorre una strada costiera al tramonto, un giovane pilota visibile al finestrino: trasferta verso il prossimo weekend."),
+        ["anime-archive-081.jpg"] = new("Tavola in bianco e nero: due adolescenti festeggiano su un podio davanti alla folla", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart accennati sullo sfondo", "Tavola in stile flashback bianco e nero: due piloti adolescenti festeggiano su un podio davanti a una folla, prima vittoria dell’era kart."),
+        ["anime-archive-082.jpg"] = new("Due adulti accanto a un prototipo da endurance di notte sotto la pioggia", "manga, archivio, tavola-narrativa, carriera, giappone, endurance, pioggia", "prototipo endurance", "Due persone adulte accanto a un prototipo da corse endurance, di notte, sotto una pioggia intensa: attesa o guasto durante una gara di durata."),
+        ["anime-archive-083.jpg"] = new("Squadra lavora su una vettura turismo con livrea a righe in corsia box, giorno", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, officina", "vettura turismo con livrea a righe", "Una squadra lavora di giorno su una vettura turismo con livrea bianca e rossa a righe, ferma in corsia box."),
+        ["anime-archive-084.jpg"] = new("Squadra spinge una vettura GT moderna sotto la pioggia al crepuscolo", "manga, archivio, tavola-narrativa, carriera, giappone, gt, pioggia", "vettura GT moderna", "Una squadra spinge una vettura GT moderna e affusolata sotto la pioggia al crepuscolo, corsia box bagnata."),
+        ["anime-archive-087.jpg"] = new("Monoposto vista da dietro sotto la pioggia intensa, pilota adulto alla guida", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, pioggia", "monoposto a ruote scoperte", "Una monoposto vista da dietro solca la pista sotto una pioggia intensa, pilota adulto alla guida: momento di gara drammatico."),
+        ["anime-archive-088.jpg"] = new("Due telai di kart in riparazione in un’officina spoglia", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "due telai di kart", "Due telai di kart smontati sono in riparazione in un’officina spoglia e poco illuminata."),
+        ["anime-archive-089.jpg"] = new("Due adulti preparano un kart su una strada di collina al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in preparazione", "Due persone adulte (pilota e mentore) preparano un kart a bordo di una strada di collina al tramonto."),
+        ["anime-archive-090.jpg"] = new("Pilota adolescente festeggia tagliando il traguardo in kart, squadra esulta", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart al traguardo", "Un pilota adolescente festeggia tagliando il traguardo in kart, la squadra esulta a bordo pista."),
+        ["anime-archive-091.jpg"] = new("Pilota adolescente seduto appoggiato al kart con il casco, in garage", "manga, archivio, tavola-narrativa, carriera, giappone, kart, riposo", "kart in garage", "Un pilota adolescente siede appoggiato al proprio kart con il casco accanto, momento di pausa in garage."),
+        ["anime-archive-092.jpg"] = new("Pilota adolescente con asciugamano e casco, squadra carica il kart su un furgone", "manga, archivio, tavola-narrativa, carriera, giappone, kart, trasferta", "kart caricato su furgone", "Un pilota adolescente con asciugamano al collo e casco in mano osserva la squadra caricare il kart su un furgone: fine weekend."),
+        ["anime-archive-093.jpg"] = new("Due meccanici adulti lavorano su una vettura turismo blu in garage buio", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, officina", "vettura turismo (stile GT-R)", "Due meccanici adulti lavorano con attrezzi su una vettura turismo blu scuro in un garage poco illuminato."),
+        ["anime-archive-094.jpg"] = new("Due vetture turismo d’epoca affiancate, montagna sullo sfondo, giorno", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, gara", "due vetture turismo (stile AE86)", "Due vetture turismo con livree bianco-rosse sono affiancate su un rettilineo con una montagna sullo sfondo: rivalita’ diretta."),
+        ["anime-archive-095.jpg"] = new("Due monoposto corrono affiancate sotto la pioggia con una montagna sullo sfondo", "manga, archivio, tavola-narrativa, carriera, giappone, formula-alta, pioggia", "due monoposto a ruote scoperte", "Due monoposto corrono ruota a ruota sotto la pioggia con una montagna innevata sullo sfondo: duello di gara."),
+        ["anime-archive-096.jpg"] = new("Uomo e donna adulti guardano un laptop, vettura turismo visibile fuori dalla finestra", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, dati", "vettura turismo visibile fuori", "Un uomo e una donna adulti analizzano dati su un laptop in ufficio, una vettura turismo parcheggiata visibile fuori dalla finestra."),
+        ["anime-archive-097.jpg"] = new("Giovane uomo con cappuccio guarda il telefono per strada, di sera", "manga, archivio, tavola-narrativa, carriera, giappone, riposo", "nessun mezzo", "Un giovane pilota con felpa a cappuccio guarda il telefono per strada, di sera: momento privato fuori dalla pista."),
+        ["anime-archive-098.jpg"] = new("Pilota donna giovane adulta in tuta da corsa completa, guanti, monoposto rossa", "manga, archivio, tavola-narrativa, carriera, giappone, formula-minore, ritratto", "monoposto a ruote scoperte", "Ritratto di una pilota donna (giovane adulta) in tuta da corsa bianca e rossa con guanti, accanto a una monoposto: rivale o compagna di squadra."),
+        ["anime-archive-099.jpg"] = new("Uomo adulto legge dati a monitor multipli, vettura turismo blu visibile in garage", "manga, archivio, tavola-narrativa, carriera, giappone, turismo, dati", "vettura turismo (stile GT-R) sullo sfondo", "Un uomo adulto analizza dati su piu’ monitor in un ufficio tecnico, una vettura turismo blu visibile attraverso la vetrata del garage."),
+        ["anime-archive-100.jpg"] = new("Due piloti adolescenti in tuta rossa festeggiano al tramonto con bandiera a scacchi", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart accennato sullo sfondo", "Due piloti adolescenti in tuta da corsa rossa festeggiano abbracciandosi al tramonto, bandiera a scacchi in mano."),
+        ["anime-archive-101.jpg"] = new("Due uomini adulti discutono documenti dentro un furgone, di notte", "manga, archivio, tavola-narrativa, carriera, giappone, dati", "furgone del team", "Due uomini adulti discutono dei documenti seduti dentro un furgone del team, di notte: pianificazione della trasferta."),
+        ["anime-archive-102.jpg"] = new("Tavola in bianco e nero: due persone lavorano su un kart in un box vuoto", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in manutenzione", "Tavola in stile bianco e nero: due persone lavorano su un kart in un box vuoto e silenzioso."),
+        ["anime-archive-103.jpg"] = new("Due persone sedute vicine in un abitacolo stretto, conversazione ravvicinata", "manga, archivio, tavola-narrativa, carriera, giappone, kart, dati", "abitacolo di kart o vettura compatta", "Due persone (mentore e giovane pilota) sedute vicine in un abitacolo stretto: conversazione tecnica ravvicinata prima di scendere in pista."),
+        ["anime-archive-104.jpg"] = new("Pilota adolescente guida un kart su strada di montagna bagnata, mentore con cronometro", "manga, archivio, tavola-narrativa, carriera, giappone, kart, test", "kart da competizione", "Un pilota adolescente guida un kart su una strada di montagna bagnata, un mentore osserva con cronometro dal bordo pista."),
+        ["anime-archive-105.jpg"] = new("Gruppo di adulti e un adolescente si riuniscono sotto tende da paddock, giorno", "manga, archivio, tavola-narrativa, carriera, giappone, riposo", "nessun mezzo in primo piano", "Un gruppo misto di adulti e un adolescente si riunisce sotto tende da paddock colorate: pausa o briefing informale."),
+        ["anime-archive-106.jpg"] = new("Due piloti adolescenti in kart, caschi ravvicinati, duello in curva", "manga, archivio, tavola-narrativa, carriera, giappone, kart, gara", "due kart da gara", "Due piloti adolescenti si contendono la posizione in kart, caschi quasi a contatto: duello serrato in curva."),
+        ["anime-archive-107.jpg"] = new("Meccanico adulto stringe la mano a un pilota adolescente in garage, casco sul tavolo", "manga, archivio, tavola-narrativa, carriera, giappone, kart, contratto", "kart sullo sfondo", "Un meccanico/team manager adulto stringe la mano a un pilota adolescente in un garage, casco appoggiato sul tavolo: accordo raggiunto."),
+        ["anime-archive-108.jpg"] = new("Pilota adolescente accovacciato ed esausto vicino al kart di notte, pioggia", "manga, archivio, tavola-narrativa, carriera, giappone, kart, sconfitta", "kart fermo di notte", "Un pilota adolescente siede accovacciato ed esausto accanto al proprio kart, di notte, sotto la pioggia: dopo una gara pesante."),
+        ["anime-archive-109.jpg"] = new("Kart caricato su un piccolo furgone lungo una strada di montagna al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, kart, trasferta", "kart caricato su furgone", "Un kart e’ caricato su un piccolo furgone che percorre una strada di montagna al tramonto: trasferta verso casa."),
+        ["anime-archive-110.jpg"] = new("Tre adolescenti festeggiano un podio con trofeo, kart in primo piano", "manga, archivio, tavola-narrativa, carriera, giappone, kart, vittoria", "kart in primo piano", "Tre adolescenti (pilota, compagno e sostenitrice) festeggiano un podio con trofeo alzato, kart in primo piano."),
+        ["anime-archive-111.jpg"] = new("Haru adolescente e un negoziante adulto parlano a un banco di frutta e verdura", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, bancarella di un negozio", "Haru (adolescente, l’agente del pilota) parla con un negoziante adulto a un banco di frutta e verdura: visita di sponsorizzazione a un negozio di quartiere."),
+        ["anime-archive-112.jpg"] = new("Haru adolescente mostra un dossier a un negoziante adulto in un negozio di ricambi", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, negozio di ricambi", "Haru (adolescente) mostra un dossier/fotografie a un negoziante adulto in un negozio di ricambi auto: trattativa di sponsorizzazione."),
+        ["anime-archive-113.jpg"] = new("Haru adolescente parla con il cuoco di un ristorante di sushi, al bancone", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, bancone sushi", "Haru (adolescente) parla con il cuoco adulto di un ristorante di sushi seduto al bancone, fumo dai piatti: trattativa di sponsorizzazione a cena."),
+        ["anime-archive-114.jpg"] = new("Haru adolescente mostra un album fotografico a un uomo adulto in un negozio di ricambi moto", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, negozio di ricambi", "Haru (adolescente) mostra un album fotografico a un uomo adulto in un negozio di ricambi per moto/kart: presentazione del pilota a un potenziale sponsor."),
+        ["anime-archive-115.jpg"] = new("Haru adolescente mostra un dossier con foto di gara a un negoziante adulto", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, negozio", "Haru (adolescente) mostra un dossier con foto di gara a un negoziante adulto: trattativa di sponsorizzazione."),
+        ["anime-archive-116.jpg"] = new("Giovane uomo con felpa blu mostra un dossier a un fruttivendolo adulto, mercato", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, bancarella di frutta", "Un giovane (Haru) con felpa blu mostra un dossier a un fruttivendolo adulto davanti a una bancarella di frutta: visita commerciale di quartiere."),
+        ["anime-archive-117.jpg"] = new("Giovane uomo controlla dati su un tablet al bancone di un negozio di alimentari, sera", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, negozio", "Un giovane (Haru) controlla dati su un tablet seduto al bancone di un piccolo negozio di alimentari, di sera."),
+        ["anime-archive-118.jpg"] = new("Giovane uomo con documenti in un ristorante illuminato da lanterne, casco sul bancone", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "casco sul bancone", "Un giovane (Haru) con documenti in mano in un ristorante illuminato da lanterne, un casco appoggiato sul bancone: trattativa informale a cena."),
+        ["anime-archive-119.jpg"] = new("Giovane uomo mostra un dossier a un negoziante maturo circondato da ricambi", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, officina/negozio", "Un giovane (Haru) mostra un dossier a un negoziante maturo circondato da scaffali di ricambi: presentazione del progetto sportivo."),
+        ["anime-archive-120.jpg"] = new("Giovane uomo mostra un dossier con il casco in mano in un negozio di pneumatici", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "casco in mano", "Un giovane (Haru) mostra un dossier tenendo il casco del pilota in un negozio di pneumatici, scaffali di gomme sullo sfondo."),
+        ["anime-archive-121.jpg"] = new("Fumetto: uomo adulto in giacca fa un gesto di rifiuto, giovane a testa bassa", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "nessun mezzo", "Sequenza a fumetti: un uomo adulto in giacca fa un gesto di rifiuto verso un giovane pilota a testa bassa: una trattativa che va male."),
+        ["anime-archive-122.jpg"] = new("Fumetto in bianco e nero: giovane seduto alla scrivania con un dossier, ufficio spoglio", "manga, archivio, tavola-narrativa, carriera, giappone, officina", "dossier con foto di vettura", "Sequenza in bianco e nero: un giovane siede solo a una scrivania spoglia con un dossier aperto: momento di attesa o rilettura di un rifiuto."),
+        ["anime-archive-123.jpg"] = new("Fumetto: uomo maturo sorride e stringe la mano a un giovane, casco sul tavolo", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "casco sul tavolo", "Sequenza a fumetti: un uomo maturo sorride e stringe la mano a un giovane pilota, casco appoggiato sul tavolo: accordo raggiunto con successo."),
+        ["anime-archive-124.jpg"] = new("Fumetto: pilota adolescente in tuta rossa si allena su tapis roulant e a terra", "manga, archivio, tavola-narrativa, carriera, giappone, kart, allenamento", "nessun mezzo, palestra", "Sequenza a fumetti: un pilota adolescente in tuta rossa e bianca si allena su un tapis roulant e fa flessioni: preparazione fisica."),
+        ["anime-archive-125.jpg"] = new("Fumetto: pilota adolescente in tuta rossa corre lungo una strada al tramonto", "manga, archivio, tavola-narrativa, carriera, giappone, kart, allenamento", "nessun mezzo", "Sequenza a fumetti: un pilota adolescente in tuta rossa e bianca corre lungo una strada costiera al tramonto con vista su un lago: allenamento."),
+        ["anime-archive-126.jpg"] = new("Fumetto: pilota adolescente si prepara con un compagno, schizzi tecnici", "manga, archivio, tavola-narrativa, carriera, giappone, kart, preparazione", "nessun mezzo, schizzi tecnici", "Sequenza a fumetti: un pilota adolescente si prepara insieme a un compagno adulto, schizzi tecnici del mezzo sullo sfondo."),
+        ["anime-archive-127.jpg"] = new("Tuta da corsa rossa appoggiata su una sedia con appunti e una tazza di caffe’", "manga, archivio, tavola-narrativa, carriera, giappone, kart, preparazione", "tuta da corsa, nessun mezzo", "Una tuta da corsa rossa e bianca e’ appoggiata su una sedia accanto ad appunti e una tazza di caffe’: attesa prima della gara."),
+        ["anime-archive-128.jpg"] = new("Fumetto: pilota adolescente in tuta rossa con un gruppo di bambini e un kart", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "kart in primo piano", "Sequenza a fumetti: un pilota adolescente in tuta rossa e bianca posa con un gruppo di bambini e un kart: giornata promozionale o di reclutamento."),
+        ["anime-archive-129.jpg"] = new("Fumetto: pilota adolescente controlla dati su un tablet vicino a un kart", "manga, archivio, tavola-narrativa, carriera, giappone, kart, dati", "kart in primo piano", "Sequenza a fumetti: un pilota adolescente in tuta rossa controlla dati su un tablet seduto vicino a un kart."),
+        ["anime-archive-130.jpg"] = new("Fumetto: pilota adolescente con famiglia/squadra in un mercato di quartiere", "manga, archivio, tavola-narrativa, carriera, giappone, kart, trasferta", "nessun mezzo, mercato", "Sequenza a fumetti: un pilota adolescente in tuta da corsa cammina con famiglia e squadra in un mercato di quartiere: momento di vita fuori pista."),
+        ["anime-archive-131.jpg"] = new("Fumetto: pilota adolescente lavora con un meccanico maturo su componenti meccanici", "manga, archivio, tavola-narrativa, carriera, giappone, kart, officina", "componenti meccanici", "Sequenza a fumetti: un pilota adolescente in tuta rossa lavora fianco a fianco con un meccanico maturo su componenti meccanici."),
+        ["anime-archive-132.jpg"] = new("Giovane uomo con felpa stringe la mano a un meccanico adulto in un negozio di pneumatici", "manga, archivio, tavola-narrativa, carriera, giappone, contratto", "nessun mezzo, negozio", "Un giovane (Haru) con felpa blu stringe la mano a un meccanico adulto in un negozio di pneumatici: accordo di sponsorizzazione concluso."),
+        ["anime-archive-133.jpg"] = new("Giovane uomo mostra un dossier a un anziano fruttivendolo in un mercato di quartiere", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "nessun mezzo, bancarella", "Un giovane (Haru) mostra un dossier a un anziano fruttivendolo in un mercato di quartiere, cassette di frutta intorno."),
+        ["anime-archive-134.jpg"] = new("Giovane uomo discute con il cuoco di un ristorante di sushi, casco sul bancone", "manga, archivio, tavola-narrativa, carriera, giappone, sponsor", "casco sul bancone", "Un giovane (Haru) discute animatamente con il cuoco adulto di un ristorante di sushi, casco del pilota appoggiato sul bancone: trattativa di sponsorizzazione."),
+        ["anime-archive-135.jpg"] = new("Fumetto: giovane uomo parla con un negoziante in un negozio di ricambi, piu’ vignette", "manga, archivio, tavola-narrativa, carriera, giappone, officina", "nessun mezzo, negozio", "Sequenza a fumetti: un giovane (Haru) parla con un negoziante adulto in un negozio di ricambi, sequenza di piu’ vignette."),
+        ["anime-archive-136.jpg"] = new("Giovane uomo cammina da solo di notte davanti a una vetrina illuminata, aria pensierosa", "manga, archivio, tavola-narrativa, carriera, giappone, sconfitta", "nessun mezzo", "Un giovane (Haru) cammina da solo di notte davanti a una vetrina illuminata, aria pensierosa: dopo una trattativa andata male."),
+    };
+
+    /// <summary>I tre fogli di loghi delle squadre: non sono scene e non entrano nella rotazione narrativa.</summary>
+    private static readonly HashSet<string> NonScene = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "anime-archive-014.jpg", "anime-archive-085.jpg", "anime-archive-086.jpg"
     };
 
     private static readonly IReadOnlyDictionary<string, string> Contexts = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
@@ -243,6 +397,20 @@ public static class IllustrationCatalog
     private static bool DichiaraUnaCategoria(IllustrationInfo info) =>
         Categorie.Any(x => info.Tags.Contains(x, StringComparison.OrdinalIgnoreCase));
 
+    /// <summary>
+    /// Vero se questa tavola puo' comparire per la disciplina indicata: o non
+    /// dichiara nessuna categoria (e' fuori pista, vale sempre), o dichiara
+    /// proprio quella. Usata da chi pesca dalla libreria fuori da Find, per
+    /// esempio la rotazione delle attivita' quotidiane.
+    /// </summary>
+    public static bool FitsDiscipline(string path, string disciplina)
+    {
+        var info = Describe(path);
+        if (info == null) return false;
+        if (!DichiaraUnaCategoria(info)) return true;
+        return !string.IsNullOrWhiteSpace(disciplina) && info.Tags.Contains(disciplina, StringComparison.OrdinalIgnoreCase);
+    }
+
     public static IReadOnlyList<string> Find(string disciplina, string? momento = null, int seme = 0, int quante = 6)
     {
         bool Ha(IllustrationInfo i, string? tag) =>
@@ -294,48 +462,6 @@ public static class IllustrationCatalog
         return scelte.Take(Math.Max(1, quante)).ToList();
     }
 
-    /// <summary>
-    /// Collocazione provvisoria di una tavola d'archivio.
-    ///
-    /// Il numero del file decide disciplina e momento, sempre allo stesso modo:
-    /// la stessa tavola finisce sempre nella stessa fase, e le fasi ricevono
-    /// tutte una quota di tavole. La descrizione dichiara che si tratta di una
-    /// collocazione da confermare guardando l'immagine — non promette un
-    /// contenuto che nessuno ha verificato.
-    /// </summary>
-    private static IllustrationInfo ArchiveInfo(int numero)
-    {
-        // Sei discipline, per coprire tutta la scala di carriera.
-        var (disciplina, mezzi) = (numero % 6) switch
-        {
-            0 => ("kart", "kart da gara"),
-            1 => ("formula-minore", "monoposto junior a ruote scoperte"),
-            2 => ("turismo", "vettura turismo da gara"),
-            3 => ("gt", "GT da competizione"),
-            4 => ("formula-alta", "monoposto di categoria superiore a ruote scoperte"),
-            _ => ("endurance", "prototipo o GT endurance")
-        };
-
-        // Sette momenti della carriera: quello che il giocatore sta vivendo.
-        var (momento, scena) = (numero / 6 % 7) switch
-        {
-            0 => ("gara", "una gara in corso"),
-            1 => ("test", "una prova o un test"),
-            2 => ("vittoria", "un risultato conquistato"),
-            3 => ("officina", "il lavoro nel box"),
-            4 => ("trattativa", "una trattativa o un incontro"),
-            5 => ("budget", "una fase difficile o un problema economico"),
-            _ => ("rivale", "un confronto con un rivale")
-        };
-
-        var tags = $"manga, archivio, tavola-narrativa, carriera, giappone, {disciplina}, {momento}";
-        return new IllustrationInfo(
-            $"Tavola d'archivio {numero:000}",
-            tags,
-            mezzi,
-            $"Tavola narrativa d'archivio, collocata in {disciplina} per {scena}. La collocazione e provvisoria e va confermata guardando l'illustrazione: serve a rendere disponibile subito la tavola invece di lasciarla inutilizzata.");
-    }
-
     /// <summary>Un numero stabile per un file e un seme: nessun caso, nessun Random.</summary>
     private static long Impronta(string file, int seme)
     {
@@ -349,20 +475,37 @@ public static class IllustrationCatalog
         var file = Path.GetFileName(path);
         if (string.IsNullOrWhiteSpace(file)) return null;
         if (Library.TryGetValue(file, out var explicitInfo)) return explicitInfo;
+
+        // Lo stesso ripiego sull'estensione di AssetPaths.File, qui dentro.
+        //
+        // Le tavole della libreria curata a mano sono citate con estensione
+        // .png, ma ogni tavola convertita in .jpg per pesare dieci volte meno
+        // ha mantenuto lo stesso nome. Confrontando la stringa intera,
+        // "kart-dawn-garage.jpg" non trovava mai "kart-dawn-garage.png": la
+        // ricerca falliva SEMPRE per estensione sbagliata, e centotrentuno
+        // delle centotrentadue voci scritte a mano — quasi tutta la libreria —
+        // non venivano mai lette. Ogni tavola ripiegava sul riconoscimento
+        // generico dal nome, anche quelle per cui qualcuno aveva gia' scritto
+        // la scheda giusta.
+        var nomeBase = Path.GetFileNameWithoutExtension(file);
+        foreach (var estensione in new[] { ".png", ".jpg", ".jpeg", ".webp" })
+            if (Library.TryGetValue(nomeBase + estensione, out var viaEstensione))
+                return viaEstensione;
+
         if (Contexts.TryGetValue(file, out var context))
             return new IllustrationInfo(context.Split('·')[0].Trim(), "home, sigla, carriera", "mezzi variabili: verificare la tavola", context);
+        foreach (var estensione in new[] { ".png", ".jpg", ".jpeg", ".webp" })
+            if (Contexts.TryGetValue(nomeBase + estensione, out var contestoViaEstensione))
+                return new IllustrationInfo(contestoViaEstensione.Split('·')[0].Trim(), "home, sigla, carriera", "mezzi variabili: verificare la tavola", contestoViaEstensione);
+
+        // I fogli di soli loghi non sono scene: niente disciplina inventata.
+        if (NonScene.Contains(file)) return null;
+        if (ArchiveLibrary.TryGetValue(file, out var archiveInfo)) return archiveInfo;
+        foreach (var estensione in new[] { ".png", ".jpg", ".jpeg", ".webp" })
+            if (ArchiveLibrary.TryGetValue(nomeBase + estensione, out var archiveViaEstensione))
+                return archiveViaEstensione;
 
         var stem = Path.GetFileNameWithoutExtension(file).ToLowerInvariant();
-
-        // Le tavole d'archivio hanno nomi che non dicono niente: la scheda vera
-        // arriva quando vengono guardate una per una, ed e un lavoro che va
-        // avanti a blocchi. Fino a quel momento vengono distribuite fra le fasi
-        // in modo stabile, cosi entrano nella rotazione invece di restare
-        // inutilizzate — con centotrentuno tavole ferme, ogni fase mostrava
-        // sempre le stesse quattro immagini.
-        if (stem.StartsWith("anime-archive-", StringComparison.Ordinal)
-            && int.TryParse(stem[^3..], out var numero))
-            return ArchiveInfo(numero);
 
         var tags = new List<string> { "manga", "tavola-narrativa", "carriera" };
         void Tag(string token, string tag) { if (stem.Contains(token, StringComparison.Ordinal) && !tags.Contains(tag)) tags.Add(tag); }

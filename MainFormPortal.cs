@@ -1378,16 +1378,7 @@ public sealed partial class MainForm
         // Dal catalogo: la disciplina della carriera e il momento che si sta
         // vivendo, pescati fra tutte le tavole coerenti invece che da un elenco
         // di tre nomi. Le tavole scritte sopra restano in coda come garanzia.
-        var gradinoOra = CareerLadder.Current(career, contentIndex.Cars);
-        var disciplina = gradinoOra.Path switch
-        {
-            LadderPath.Karting => "kart",
-            LadderPath.SingleSeater => gradinoOra.Tier == "Formula / top tier" ? "formula-vertice"
-                : gradinoOra.Tier == "Categoria avanzata" ? "formula-alta" : "formula-minore",
-            LadderPath.Endurance => gradinoOra.Tier == "Categoria regionale" ? "gt" : "endurance",
-            LadderPath.Touring => "turismo",
-            _ => "kart"
-        };
+        var disciplina = DisciplinaCorrente();
         var momento =
             awaitingResult ? "test"
             : selection != null ? "test"

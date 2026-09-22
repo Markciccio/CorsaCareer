@@ -14,20 +14,27 @@
 public static class SceneArtwork
 {
     /// <summary>Tavola per un'attività della giornata, dal suo identificativo.</summary>
-    public static string ForActivity(string activityId, int variantSeed = 0)
+    ///
+    /// <param name="disciplina">
+    /// La disciplina in cui corre la carriera adesso (kart, formula-minore,
+    /// turismo...): filtra le tavole della libreria illustrata che ne
+    /// dichiarano una diversa, cosi' un allenamento durante una stagione GT
+    /// non pesca per caso una tavola con un kart in bella vista. Vuoto se non
+    /// nota: in quel caso si pescano solo le tavole fuori pista.
+    public static string ForActivity(string activityId, int variantSeed = 0, string disciplina = "")
     {
         var id = (activityId ?? "").ToLowerInvariant();
-        var category = id switch
+        var (category, catalogTag) = id switch
         {
-            "palestra" or "corsa" or "kart-training" => "training",
-            "studio" or "scuola-kart" or "scuola-sae" or "scuola-tooru" or "scuola-volantini" => "school",
-            "social" or "pr" or "instagram-allenamento" or "domande-follower" or "youtube" or "intervista-radio" => "social",
-            "massaggio" or "riposo" => "recovery",
-            "tifosi" or "lavoro" => "race",
-            _ when id.StartsWith("haru-", StringComparison.OrdinalIgnoreCase) => "sponsor",
-            _ => ""
+            "palestra" or "corsa" or "kart-training" => ("training", "allenamento"),
+            "studio" or "scuola-kart" or "scuola-sae" or "scuola-tooru" or "scuola-volantini" => ("school", "scuola"),
+            "social" or "pr" or "instagram-allenamento" or "domande-follower" or "youtube" or "intervista-radio" => ("social", "comunicazione"),
+            "massaggio" or "riposo" => ("recovery", "recupero"),
+            "tifosi" or "lavoro" => ("race", "tifosi"),
+            _ when id.StartsWith("haru-", StringComparison.OrdinalIgnoreCase) => ("sponsor", "sponsor"),
+            _ => ("", "")
         };
-        var rotated = PickVariant(category, variantSeed);
+        var rotated = PickVariant(category, variantSeed, catalogTag, disciplina);
         if (!string.IsNullOrWhiteSpace(rotated)) return rotated;
         return id switch
         {
@@ -71,19 +78,39 @@ public static class SceneArtwork
         };
     }
 
-    /// <summary>Selezione stabile delle tavole compatte generate per la rotazione.</summary>
-    private static string PickVariant(string category, int seed)
+    /// <summary>
+    /// Selezione stabile fra le tavole compatte generate per la rotazione E
+    /// quelle, molte di piu', della libreria illustrata.
+    ///
+    /// Guardava solo <c>variants/</c>: duecento tavole, sempre le stesse per
+    /// ogni giorno di ogni carriera. Le altre ottocento e piu' illustrazioni
+    /// della cartella — quelle con un nome vero invece di un progressivo —
+    /// non entravano mai in questa rotazione: chi giocava vedeva ogni giorno
+    /// la stessa manciata di tavole mentre la maggior parte del catalogo
+    /// restava chiusa in una cartella mai raggiunta. Ora il pacchetto e'
+    /// l'unione delle due fonti, filtrato per disciplina cosi' da non pescare
+    /// mai una tavola che mostra la categoria sbagliata.
+    /// </summary>
+    private static string PickVariant(string category, int seed, string catalogTag = "", string disciplina = "")
     {
         if (string.IsNullOrWhiteSpace(category)) return "";
         try
         {
+            var files = new List<string>();
             var dir = Path.Combine(AssetPaths.Root, "variants");
-            if (!Directory.Exists(dir)) return "";
-            var files = Directory.EnumerateFiles(dir, category + "-*.jpg")
+            if (Directory.Exists(dir))
+                files.AddRange(Directory.EnumerateFiles(dir, category + "-*.jpg")
+                    .Select(x => Path.Combine("variants", Path.GetFileName(x))));
+
+            if (!string.IsNullOrWhiteSpace(catalogTag))
+                files.AddRange(IllustrationCatalog.Find(catalogTag, null, seed, 80)
+                    .Where(x => IllustrationCatalog.FitsDiscipline(x, disciplina)));
+
+            var elenco = files.Distinct(StringComparer.OrdinalIgnoreCase)
                 .OrderBy(x => x, StringComparer.OrdinalIgnoreCase).ToArray();
-            if (files.Length == 0) return "";
-            var index = Math.Abs(seed == int.MinValue ? 0 : seed) % files.Length;
-            return Path.Combine("variants", Path.GetFileName(files[index]));
+            if (elenco.Length == 0) return "";
+            var index = Math.Abs(seed == int.MinValue ? 0 : seed) % elenco.Length;
+            return elenco[index];
         }
         catch { return ""; }
     }

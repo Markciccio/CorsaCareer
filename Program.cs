@@ -3426,16 +3426,7 @@ public sealed partial class MainForm : Form
             bilancio.ShowDialog(this);
         }
 
-        var gradino = CareerLadder.Current(career, contentIndex.Cars);
-        var disciplina = gradino.Path switch
-        {
-            LadderPath.Karting => "kart",
-            LadderPath.SingleSeater => gradino.Tier == "Formula / top tier" ? "formula-vertice"
-                : gradino.Tier == "Categoria avanzata" ? "formula-alta" : "formula-minore",
-            LadderPath.Endurance => gradino.Tier == "Categoria regionale" ? "gt" : "endurance",
-            LadderPath.Touring => "turismo",
-            _ => "kart"
-        };
+        var disciplina = DisciplinaCorrente();
         var momento = verdetto switch
         {
             SeasonVerdict.Promosso => titolo ? "vittoria" : "campionato",
@@ -3505,16 +3496,7 @@ public sealed partial class MainForm : Form
     /// </summary>
     private string TavolaPerMomento(string momento)
     {
-        var gradino = CareerLadder.Current(career, contentIndex.Cars);
-        var disciplina = gradino.Path switch
-        {
-            LadderPath.Karting => "kart",
-            LadderPath.SingleSeater => gradino.Tier == "Formula / top tier" ? "formula-vertice"
-                : gradino.Tier == "Categoria avanzata" ? "formula-alta" : "formula-minore",
-            LadderPath.Endurance => gradino.Tier == "Categoria regionale" ? "gt" : "endurance",
-            LadderPath.Touring => "turismo",
-            _ => "kart"
-        };
+        var disciplina = DisciplinaCorrente();
         var seme = (career.Driver ?? "").Length * 29 + career.Races * 5 + career.Season;
         var scelte = IllustrationCatalog.Find(disciplina, momento, seme, 1);
         return scelte.Count > 0 ? scelte[0] : "";
@@ -3829,6 +3811,30 @@ public sealed partial class MainForm : Form
     /// se il momento e' gia' successo, il catalogo fornisce le battute, il
     /// regista sceglie chi le dice.
     /// </summary>
+    /// <summary>
+    /// La disciplina in cui corre la carriera adesso, nello stesso vocabolario
+    /// che usa la libreria illustrata (kart, formula-minore, formula-alta,
+    /// formula-vertice, turismo, gt, endurance).
+    ///
+    /// Lo stesso calcolo stava scritto a mano in quattro punti diversi del
+    /// programma. Qui sta in un posto solo, cosi' la tavola di una scena e la
+    /// tavola di un'attivita' quotidiana concordano sempre su cosa sta
+    /// correndo il pilota.
+    /// </summary>
+    private string DisciplinaCorrente()
+    {
+        var gradino = CareerLadder.Current(career, contentIndex.Cars);
+        return gradino.Path switch
+        {
+            LadderPath.Karting => "kart",
+            LadderPath.SingleSeater => gradino.Tier == "Formula / top tier" ? "formula-vertice"
+                : gradino.Tier == "Categoria avanzata" ? "formula-alta" : "formula-minore",
+            LadderPath.Endurance => gradino.Tier == "Categoria regionale" ? "gt" : "endurance",
+            LadderPath.Touring => "turismo",
+            _ => "kart"
+        };
+    }
+
     private void RaccontaMomento(MomentoDiCarriera momento, string chiave = "")
     {
         // Senza nessuno davanti allo schermo la scena non si mostra, ma si
@@ -6374,7 +6380,7 @@ public sealed partial class MainForm : Form
         // La tavola dell'attività, se esiste: una palestra e una trattativa non
         // sono la stessa scena. Finché il file non c'è si ripiega sul ritratto
         // di chi parla, e la scena funziona lo stesso.
-        var artwork = SceneArtwork.ForActivity(report.Activity.Id, StableHash.Of(report.Activity.Id, career.StoryDate.ToString("yyyyMMdd")));
+        var artwork = SceneArtwork.ForActivity(report.Activity.Id, StableHash.Of(report.Activity.Id, career.StoryDate.ToString("yyyyMMdd")), DisciplinaCorrente());
         if (!SceneArtwork.Exists(artwork))
             artwork = report.Activity.Actor == DayActor.Agent
                 ? SceneArtwork.PortraitFor("Haru Senda")
@@ -6510,7 +6516,7 @@ public sealed partial class MainForm : Form
     private void OpenActivityAnimeScene(ActivityRecord record)
     {
         var isHaru = record.ActivityId.StartsWith("haru-", StringComparison.OrdinalIgnoreCase);
-        var artwork = SceneArtwork.ForActivity(record.ActivityId, StableHash.Of(record.ActivityId, record.StoryDate.ToString("yyyyMMdd")));
+        var artwork = SceneArtwork.ForActivity(record.ActivityId, StableHash.Of(record.ActivityId, record.StoryDate.ToString("yyyyMMdd")), DisciplinaCorrente());
         if (!SceneArtwork.Exists(artwork))
             artwork = isHaru ? SceneArtwork.PortraitFor("Haru Senda") : RitrattoDelPilota();
 
